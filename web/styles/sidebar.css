@@ -1,0 +1,108 @@
+body {
+    margin: 0;
+    background-color: #f8f9fa;
+    font-family: 'Segoe UI', sans-serif;
+}
+
+.sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    background-color: #343a40;
+    overflow-x: hidden;
+    padding-top: 20px;
+    z-index: 1000;
+    width: 250px;
+}
+
+
+.user-section {
+    text-align: center;
+    margin-bottom: 30px;
+    position: relative;
+}
+
+.user-img {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    border: 2px solid #0d6efd;
+    object-fit: cover;
+    cursor: pointer;
+}
+
+.user-name {
+    color: white;
+    font-size: 14px;
+    margin-top: 8px;
+
+}
+
+
+.dropdown-menu-user {
+    position: absolute;
+    top: 60px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #343a40;
+    border: 1px solid #0d6efd;
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    width: 180px;
+    display: none;
+    flex-direction: column;
+    z-index: 1100;
+}
+
+.dropdown-menu-user .dropdown-item {
+    color: #ced4da;
+    padding: 10px 15px;
+    text-decoration: none;
+    transition: background-color 0.2s ease;
+}
+
+.dropdown-menu-user .dropdown-item:hover {
+    background-color: #0d6efd;
+    color: white;
+}
+
+.dropdown-divider {
+    border-top: 1px solid #495057;
+    margin: 5px 0;
+}
+
+ul#sidebarnav {
+    padding-left: 0;
+    margin: 0;
+    list-style: none;
+}
+
+ul#sidebarnav li a.nav-link {
+    position: relative;
+    display: block;
+    color: white;
+    padding: 12px 20px 12px 24px;
+    text-decoration: none;
+    height: 48px;
+}
+
+ul#sidebarnav li a.nav-link i {
+    position: absolute;
+    top: 50%;
+    left: 24px;
+    transform: translateY(-50%);
+    font-size: 1.3rem;
+}
+
+ul#sidebarnav li a .link-text {
+    margin-left: 60px;
+
+    white-space: nowrap;
+}
+
+ul#sidebarnav li a.nav-link:hover,
+ul#sidebarnav li a.nav-link.active {
+    background-color: #0d6efd;
+    color: white !important;
+}

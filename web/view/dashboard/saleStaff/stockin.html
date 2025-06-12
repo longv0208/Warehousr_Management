@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quản Lý Kho Hàng</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono&display=swap" rel="stylesheet" />
+  <link href="./styles/index.css" rel="stylesheet"/>
+</head>
+<body>
+<div class="container-fluid">
+  <div class="row">
+    <!-- Sidebar -->
+    <nav class="col-md-2 d-none d-md-block sidebar p-3">
+      <h5 class="text-white mb-4">📦 Kho Hàng</h5>
+      <ul class="nav flex-column">
+        <li class="nav-item"><a class="nav-link" href="index.html">Dashboard</a></li>
+        <li class="nav-item"><a class="nav-link" href="product.html">Sản phẩm</a></li>
+        <li class="nav-item"><a class="nav-link" href="supplier.html">Nhà Cung Cấp</a></li>
+        <li class="nav-item"><a class="nav-link active" href="stockin.html">Nhập kho</a></li>
+        <li class="nav-item"><a class="nav-link" href="stockout.html">Xuất kho</a></li>
+        <li class="nav-item"><a class="nav-link" href="stocktake.html">Kiểm kê</a></li>
+        <li class="nav-item"><a class="nav-link" href="#">Yêu cầu mua</a></li>
+        <li class="nav-item"><a class="nav-link" href="user-management.html">Người dùng</a></li>
+      </ul>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="col-md-10 ms-sm-auto col-lg-10 px-md-4 py-4">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3>Phiếu Nhập Kho</h3>
+        <a href="add-stockin.html" class="btn btn-success">+ Tạo Phiếu Nhập</a>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-bordered table-hover">
+          <thead class="table-light">
+          <tr>
+            <th>#</th>
+            <th>Mã phiếu</th>
+            <th>Nhà cung cấp</th>
+            <th>Ngày nhập</th>
+            <th>Số lượng SP</th>
+            <th>Nhân viên tạo</th>
+            <th>Ghi chú</th>
+            <th>Hành động</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr>
+            <td>1</td>
+            <td>PNK001</td>
+            <td>Công ty ABC</td>
+            <td>2024-05-25</td>
+            <td>5</td>
+            <td>Nguyễn Văn A</td>
+            <td>Hàng đợt 1</td>
+            <td>
+              <button class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#stockInDetailModal">Chi tiết</button>
+              <button class="btn btn-sm btn-danger">Xóa</button>
+            </td>
+          </tr>
+          <!-- Dòng tiếp theo -->
+          </tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- Modal Chi Tiết Phiếu Nhập Kho -->
+<div class="modal fade" id="stockInDetailModal" tabindex="-1" aria-labelledby="stockInDetailLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title" id="stockInDetailLabel">Chi Tiết Phiếu Nhập</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p><strong>Mã phiếu:</strong> <span id="stockInCode">PNK001</span></p>
+        <p><strong>Nhà cung cấp:</strong> <span id="stockInSupplier">Công ty ABC</span></p>
+        <p><strong>Ngày nhập:</strong> <span id="stockInDate">2024-05-25</span></p>
+        <p><strong>Ghi chú:</strong> <span id="stockInNote">Lô hàng đầu tiên</span></p>
+
+        <table class="table table-bordered mt-3">
+          <thead class="table-light">
+          <tr>
+            <th>#</th>
+            <th>Tên sản phẩm</th>
+            <th>Số lượng</th>
+            <th>Đơn giá</th>
+          </tr>
+          </thead>
+          <tbody id="stockInProductList">
+          <tr>
+            <td>1</td>
+            <td>Áo sơ mi trắng</td>
+            <td>20</td>
+            <td>100,000đ</td>
+          </tr>
+          <!-- Thêm dòng khác -->
+          </tbody>
+        </table>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
