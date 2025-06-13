@@ -1,6 +1,7 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
+<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -27,29 +28,19 @@
       </div>
       
       <!-- Debug information -->
-      <%
-        Integer debugCount = (Integer) request.getAttribute("debugProductCount");
-        if (debugCount != null && debugCount > 0) {
-      %>
+      <c:if test="${debugProductCount != null && debugProductCount > 0}">
         <div class="alert alert-info alert-dismissible fade show" role="alert">
-          <strong>Debug:</strong> Tìm thấy <%= debugCount %> sản phẩm active.
+          <strong>Debug:</strong> Tìm thấy ${debugProductCount} sản phẩm active.
           <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
-      <%
-        }
-      %>
+      </c:if>
       
-      <%
-        java.util.List<?> productList2 = (java.util.List<?>) request.getAttribute("products");
-        if (productList2 == null || productList2.isEmpty()) {
-      %>
+      <c:if test="${empty products}">
         <div class="alert alert-warning alert-dismissible fade show" role="alert">
           <strong>Cảnh báo:</strong> Không có sản phẩm nào có sẵn để tạo đơn hàng. Vui lòng thêm sản phẩm trước khi tạo đơn hàng.
           <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
-      <%
-        }
-      %>
+      </c:if>
 
       <form action="${pageContext.request.contextPath}/sale-staff/sales-order" method="POST" class="needs-validation" novalidate>
         <input type="hidden" name="action" value="create">
@@ -129,199 +120,94 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/izitoast@1.4.0/dist/js/iziToast.min.js"></script>
 
-<!-- Hidden data for JavaScript -->
-<div id="productData" style="display: none;">
-<%
-  java.util.List<model.Product> productList = (java.util.List<model.Product>) request.getAttribute("products");
-  System.out.println("DEBUG JSP: Product list is null? " + (productList == null));
-  System.out.println("DEBUG JSP: Product list size: " + (productList != null ? productList.size() : "N/A"));
-  
-  if (productList != null && !productList.isEmpty()) {
-    System.out.println("DEBUG JSP: Processing " + productList.size() + " products");
-    for (int i = 0; i < productList.size(); i++) {
-      model.Product product = productList.get(i);
-      if (product != null && product.getProductId() != null) {
-        System.out.println("DEBUG JSP: Product " + (i+1) + " - ID: " + product.getProductId() + ", Name: " + product.getProductName());
-%>
-        <div class="product-item" 
-             data-id="<%= product.getProductId() %>"
-             data-name="<%= product.getProductName() != null ? product.getProductName().replace("\"", "&quot;").replace("'", "&#39;") : "" %>"
-             data-code="<%= product.getProductCode() != null ? product.getProductCode().replace("\"", "&quot;").replace("'", "&#39;") : "" %>"
-             data-price="<%= product.getSalePrice() != null ? product.getSalePrice() : 0 %>"
-             data-quantity="<%= product.getQuantity() != null ? product.getQuantity() : 0 %>"
-             data-unit="<%= product.getUnit() != null ? product.getUnit().replace("\"", "&quot;").replace("'", "&#39;") : "" %>"
-             data-description="<%= product.getDescription() != null ? product.getDescription().replace("\"", "&quot;").replace("'", "&#39;") : "" %>">
-        </div>
-<%
-      } else {
-        System.out.println("DEBUG JSP: Skipping invalid product at index " + i);
-      }
-    }
-  } else {
-    System.out.println("DEBUG JSP: No products available, adding no-products marker");
-%>
-    <div class="no-products" data-message="Không có sản phẩm nào"></div>
-<%
-  }
-%>
-</div>
+<!-- Hidden template for product options -->
+<template id="productOptionsTemplate">
+    <option value="">-- Chọn sản phẩm --</option>
+    <c:forEach var="p" items="${products}">
+        <option value="${p.productId}"
+                data-price="${p.salePrice}"
+                data-quantity="${p.quantity}"
+                data-unit="${p.unit}">
+            ${p.productCode} - ${p.productName} (${p.unit})
+        </option>
+    </c:forEach>
+</template>
 
 <script>
   let productRowIndex = 0;
-  const products = [];
+  const hasProducts = <c:out value="${not empty products}" default="false"/>;
+  const productCount = <c:out value="${fn:length(products)}" default="0"/>;
   
-  // Load product data from hidden divs
+  // Check if products are available
   document.addEventListener('DOMContentLoaded', function() {
-    console.log('Loading product data...');
-    
-    // First, let's check what's in the productData div
-    const productDataDiv = document.getElementById('productData');
-    console.log('Product data div content:', productDataDiv ? productDataDiv.innerHTML : 'Not found');
-    
-    // Check if no products available
-    const noProducts = document.querySelector('#productData .no-products');
-    if (noProducts) {
-      console.error('No products available - found no-products marker');
-      iziToast.error({
-        title: 'Lỗi', 
-        message: 'Không có sản phẩm nào có sẵn để tạo đơn hàng. Vui lòng liên hệ quản trị viên.'
-      });
-      return;
-    }
-    
-    const productItems = document.querySelectorAll('#productData .product-item');
-    console.log('Found product items in DOM:', productItems.length);
-    
-    if (productItems.length === 0) {
-      console.warn('No product items found in DOM');
-      // Let's also check what's actually there
-      console.log('ProductData children:', productDataDiv ? productDataDiv.children.length : 'ProductData div not found');
-      iziToast.warning({
-        title: 'Cảnh báo',
-        message: 'Không tìm thấy sản phẩm nào trong danh sách.'
-      });
-      return;
-    }
-    
-    productItems.forEach((item, index) => {
-      try {
-        const product = {
-          id: item.getAttribute('data-id') || '',
-          name: item.getAttribute('data-name') || '',
-          code: item.getAttribute('data-code') || '',
-          price: parseFloat(item.getAttribute('data-price') || '0') || 0,
-          quantity: parseInt(item.getAttribute('data-quantity') || '0') || 0,
-          unit: item.getAttribute('data-unit') || '',
-          description: item.getAttribute('data-description') || ''
-        };
-        
-        // Only add valid products
-        if (product.id && product.name && product.code) {
-          console.log(`Product ${index + 1}:`, product);
-          products.push(product);
-        } else {
-          console.warn(`Skipping invalid product at index ${index}:`, product);
-        }
-      } catch (error) {
-        console.error(`Error processing product at index ${index}:`, error);
-      }
-    });
-    
-    console.log('Total products loaded:', products.length);
-    
-    if (products.length > 0) {
-      addProductRow();
+    if (hasProducts) {
+      console.log('Found ' + productCount + ' products available');
+      addProductRow(); // Add first product row automatically
       iziToast.success({
         title: 'Thành công',
-        message: 'Đã tải ' + products.length + ' sản phẩm có sẵn.'
+        message: 'Đã tải ' + productCount + ' sản phẩm có sẵn.'
       });
     } else {
+      console.error('No products available');
       iziToast.error({
         title: 'Lỗi',
-        message: 'Không thể tải danh sách sản phẩm.'
+        message: 'Không có sản phẩm nào có sẵn để tạo đơn hàng.'
       });
     }
   });
 
   function addProductRow() {
-    console.log('Adding product row, total products available:', products.length);
-    console.log('Products array:', products);
-    
-    if (products.length === 0) {
-      console.error('No products available for dropdown');
-      iziToast.warning({
-        title: 'Cảnh báo',
-        message: 'Không có sản phẩm nào để thêm vào đơn hàng.'
-      });
-      return;
-    }
-    
-    const container = document.getElementById('productContainer');
-    if (!container) {
-      console.error('Product container not found!');
-      return;
-    }
-    
-    const rowDiv = document.createElement('div');
-    rowDiv.className = 'product-row mb-3 p-3 border rounded';
-    rowDiv.id = 'productRow' + productRowIndex;
-    
-    let optionsHtml = '<option value="">-- Chọn sản phẩm --</option>';
-    if (Array.isArray(products) && products.length > 0) {
-      console.log('Building options for', products.length, 'products');
-      products.forEach((p, index) => {
-        console.log(`Processing product ${index + 1}:`, p);
-        const safeP = {
-          id: p.id || '',
-          price: p.price || 0,
-          quantity: p.quantity || 0,
-          unit: p.unit || '',
-          code: p.code || '',
-          name: p.name || ''
-        };
-        console.log(`Safe product ${index + 1}:`, safeP);
-        optionsHtml += `<option value="${safeP.id}" data-price="${safeP.price}" data-quantity="${safeP.quantity}" data-unit="${safeP.unit}">${safeP.code} - ${safeP.name} (${safeP.unit})</option>`;
-      });
-    } else {
-      console.error('Products is not an array or is empty:', products);
-    }
-    
-    console.log('Generated options HTML:', optionsHtml);
-    
-    rowDiv.innerHTML = `
-      <div class="row">
-        <div class="col-md-4">
-          <label class="form-label">Sản phẩm <span class="text-danger">*</span></label>
-          <select class="form-select" name="productId" onchange="updateProductInfo(this, ${productRowIndex})" required>
-            ${optionsHtml}
-          </select>
+    const tpl = document.getElementById('productOptionsTemplate');
+    if (!tpl) return;
+
+    const container   = document.getElementById('productContainer');
+    const rowIndex    = productRowIndex++;
+    const rowWrapper  = document.createElement('div');
+    rowWrapper.className = 'product-row mb-3 p-3 border rounded';
+    rowWrapper.id       = 'productRow' + rowIndex;
+
+    // Build basic row structure (without options yet)
+    rowWrapper.innerHTML = `
+        <div class="row">
+          <div class="col-md-4">
+            <label class="form-label">Sản phẩm <span class="text-danger">*</span></label>
+            <select class="form-select"
+                    name="productId"
+                    onchange="updateProductInfo(this, ${rowIndex})"
+                    required>
+            </select>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">Số lượng <span class="text-danger">*</span></label>
+            <input type="number" class="form-control" name="quantity" min="1" onchange="calculateRowTotal(${rowIndex})" required>
+            <small class="text-muted">Tồn: <span id="stockQuantity${rowIndex}">0</span> <span id="unit${rowIndex}"></span></small>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">Đơn giá <span class="text-danger">*</span></label>
+            <input type="number" class="form-control" name="unitPrice" step="0.01" min="0" onchange="calculateRowTotal(${rowIndex})" required>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">Thành tiền</label>
+            <div class="form-control-plaintext fw-bold" id="rowTotal${rowIndex}">0 đ</div>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">&nbsp;</label>
+            <button type="button" class="btn btn-danger btn-sm d-block w-100" onclick="removeProductRow(${rowIndex})">
+              <i class="fas fa-trash"></i> Xóa
+            </button>
+          </div>
         </div>
-        <div class="col-md-2">
-          <label class="form-label">Số lượng <span class="text-danger">*</span></label>
-          <input type="number" class="form-control" name="quantity" min="1" onchange="calculateRowTotal(${productRowIndex})" required>
-          <small class="text-muted">Tồn: <span id="stockQuantity${productRowIndex}">0</span> <span id="unit${productRowIndex}"></span></small>
-        </div>
-        <div class="col-md-2">
-          <label class="form-label">Đơn giá <span class="text-danger">*</span></label>
-          <input type="number" class="form-control" name="unitPrice" step="0.01" min="0" onchange="calculateRowTotal(${productRowIndex})" required>
-        </div>
-        <div class="col-md-2">
-          <label class="form-label">Thành tiền</label>
-          <div class="form-control-plaintext fw-bold" id="rowTotal${productRowIndex}">0 đ</div>
-        </div>
-        <div class="col-md-2">
-          <label class="form-label">&nbsp;</label>
-          <button type="button" class="btn btn-danger btn-sm d-block w-100" onclick="removeProductRow(${productRowIndex})">
-            <i class="fas fa-trash"></i> Xóa
-          </button>
-        </div>
-      </div>
     `;
-    
-    container.appendChild(rowDiv);
-    productRowIndex++;
-    
-    console.log('Product row added successfully, index:', productRowIndex - 1);
+
+    container.appendChild(rowWrapper);
+
+    // Append options from template AFTER row is in DOM
+    const selectElement = rowWrapper.querySelector('select[name="productId"]');
+    if (selectElement) {
+      // Use importNode to clone <template> content properly
+      const optionsFragment = document.importNode(tpl.content, true);
+      selectElement.appendChild(optionsFragment);
+    }
   }
 
   function removeProductRow(index) {
