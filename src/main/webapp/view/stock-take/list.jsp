@@ -36,6 +36,8 @@
                                 <option value="pending" ${param.status == 'pending' ? 'selected' : ''}>Chờ xử lý</option>
                                 <option value="in_progress" ${param.status == 'in_progress' ? 'selected' : ''}>Đang kiểm kê</option>
                                 <option value="completed" ${param.status == 'completed' ? 'selected' : ''}>Hoàn thành</option>
+                                <option value="approved" ${param.status == 'approved' ? 'selected' : ''}>Đã duyệt</option>
+                                <option value="rejected" ${param.status == 'rejected' ? 'selected' : ''}>Từ chối</option>
                                 <option value="reconciled" ${param.status == 'reconciled' ? 'selected' : ''}>Đã đối soát</option>
                             </select>
                             <button type="submit" class="btn btn-outline-secondary">Lọc</button>
@@ -92,8 +94,14 @@
                                         <c:when test="${stockTake.status == 'completed'}">
                                             <span class="badge bg-success">Hoàn thành</span>
                                         </c:when>
+                                        <c:when test="${stockTake.status == 'approved'}">
+                                            <span class="badge bg-primary">Đã duyệt</span>
+                                        </c:when>
+                                        <c:when test="${stockTake.status == 'rejected'}">
+                                            <span class="badge bg-danger">Từ chối</span>
+                                        </c:when>
                                         <c:when test="${stockTake.status == 'reconciled'}">
-                                            <span class="badge bg-primary">Đã đối soát</span>
+                                            <span class="badge bg-dark">Đã đối soát</span>
                                         </c:when>
                                     </c:choose>
                                 </td>
@@ -103,7 +111,7 @@
                                     <c:if test="${stockTake.totalProducts != null && stockTake.totalProducts > 0}">
                                         <c:set var="progress" value="${(stockTake.completedProducts * 100) / stockTake.totalProducts}" />
                                         <div class="progress" style="height: 20px;">
-                                            <div class="progress-bar" role="progressbar" style="width: ${progress}%">
+                                            <div class="progress-bar" role="progressbar" style="width: ${progress}%" aria-valuenow="${progress}" aria-valuemin="0" aria-valuemax="100">
                                                 <fmt:formatNumber value="${progress}" maxFractionDigits="1" />%
                                             </div>
                                         </div>
@@ -120,14 +128,19 @@
                                         </c:if>
                                         
                                         <c:if test="${currentUser.roleId == 'admin'}">
-                                            <a href="${pageContext.request.contextPath}/stock-take?action=report&id=${stockTake.stockTakeId}" 
-                                               class="btn btn-sm btn-success">Báo cáo</a>
-                                            
                                             <c:if test="${stockTake.status == 'completed'}">
-                                                <button type="button" class="btn btn-sm btn-warning" 
-                                                        onclick="updateStatus(${stockTake.stockTakeId}, 'reconciled')">
-                                                    Đối soát
-                                                </button>
+                                                <a href="${pageContext.request.contextPath}/stock-take?action=approve-view&id=${stockTake.stockTakeId}" 
+                                                   class="btn btn-sm btn-primary">Duyệt đơn</a>
+                                            </c:if>
+                                            
+                                            <c:if test="${stockTake.status == 'approved' || stockTake.status == 'reconciled'}">
+                                                <a href="${pageContext.request.contextPath}/stock-take?action=reconcile-view&id=${stockTake.stockTakeId}" 
+                                                   class="btn btn-sm btn-warning">
+                                                    <c:choose>
+                                                        <c:when test="${stockTake.status == 'approved'}">Điều chỉnh TK</c:when>
+                                                        <c:otherwise>Xem điều chỉnh</c:otherwise>
+                                                    </c:choose>
+                                                </a>
                                             </c:if>
                                         </c:if>
                                     </div>

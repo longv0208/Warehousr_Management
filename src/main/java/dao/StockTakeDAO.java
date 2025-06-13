@@ -240,6 +240,23 @@ public class StockTakeDAO extends DBContext implements I_DAO<StockTake> {
         }
     }
 
+    // Phương thức cập nhật notes
+    public boolean updateNotes(Integer stockTakeId, String notes) {
+        String sql = "UPDATE stocktakes SET notes = ? WHERE stock_take_id = ?";
+        try {
+            conn = getConnection();
+            statement = conn.prepareStatement(sql);
+            statement.setString(1, notes);
+            statement.setInt(2, stockTakeId);
+            return statement.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        } finally {
+            close();
+        }
+    }
+
     // Tạo mã stock take code tự động
     public String generateStockTakeCode() {
         String sql = "SELECT MAX(CAST(SUBSTRING(stock_take_code, 3) AS UNSIGNED)) as max_num FROM stocktakes WHERE stock_take_code LIKE 'ST%'";

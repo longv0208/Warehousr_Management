@@ -207,24 +207,55 @@ public class StockTakeDetailDAO extends DBContext implements I_DAO<StockTakeDeta
 
     // Cập nhật counted_quantity và system_quantity
     public boolean updateCountedQuantity(Integer stockTakeDetailId, Integer countedQuantity) {
-        String sql = "UPDATE stocktakedetails std " +
-                    "LEFT JOIN inventory i ON std.product_id = i.product_id " +
-                    "SET std.counted_quantity = ?, std.system_quantity = COALESCE(i.quantity_on_hand, 0) " +
-                    "WHERE std.stock_take_detail_id = ?";
+        // Sử dụng 2 câu lệnh riêng biệt thay vì LEFT JOIN trong UPDATE
+        // Đầu tiên cập nhật system_quantity từ inventory
+        String updateSystemQtySql = "UPDATE stocktakedetails std " +
+                                   "SET std.system_quantity = (SELECT COALESCE(i.quantity_on_hand, 0) FROM inventory i WHERE i.product_id = std.product_id) " +
+                                   "WHERE std.stock_take_detail_id = ?";
+        
+        // Sau đó cập nhật counted_quantity
+        String updateCountedQtySql = "UPDATE stocktakedetails SET counted_quantity = ? WHERE stock_take_detail_id = ?";
+        
         try {
             conn = getConnection();
-            statement = conn.prepareStatement(sql);
+            conn.setAutoCommit(false); // Start transaction
+            
+            // Update system quantity first
+            statement = conn.prepareStatement(updateSystemQtySql);
+            statement.setInt(1, stockTakeDetailId);
+            statement.executeUpdate();
+            
+            // Update counted quantity
+            statement = conn.prepareStatement(updateCountedQtySql);
             if (countedQuantity != null) {
                 statement.setInt(1, countedQuantity);
             } else {
                 statement.setNull(1, Types.INTEGER);
             }
             statement.setInt(2, stockTakeDetailId);
-            return statement.executeUpdate() > 0;
+            int rowsAffected = statement.executeUpdate();
+            
+            conn.commit(); // Commit transaction
+            return rowsAffected > 0;
+            
         } catch (SQLException e) {
+            try {
+                if (conn != null) {
+                    conn.rollback(); // Rollback on error
+                }
+            } catch (SQLException rollbackEx) {
+                rollbackEx.printStackTrace();
+            }
             e.printStackTrace();
             return false;
         } finally {
+            try {
+                if (conn != null) {
+                    conn.setAutoCommit(true); // Reset auto-commit
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
             close();
         }
     }

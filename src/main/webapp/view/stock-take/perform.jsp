@@ -247,15 +247,27 @@ function saveCount(detailId, stockTakeId) {
         if (!response.ok) {
             throw new Error('Network response was not ok');
         }
-        return response.text();
+        return response.json(); // Changed from text() to json()
     })
     .then(result => {
-        // Update discrepancy immediately instead of reloading
-        updateDiscrepancy(input);
-        updateStatistics();
-        
-        // Show success message
-        showAlert('Lưu thành công!', 'success');
+        if (result.success) {
+            // Update discrepancy immediately
+            updateDiscrepancy(input);
+            updateStatistics();
+            
+            // Update input's default value to mark as saved
+            input.defaultValue = input.value;
+            
+            // Show success message
+            showAlert(result.message, 'success');
+            
+            // If all completed, show additional info
+            if (result.allCompleted) {
+                showAlert('Kiểm kê đã hoàn thành! Vui lòng chờ admin duyệt.', 'info');
+            }
+        } else {
+            showAlert(result.message || 'Có lỗi xảy ra khi lưu dữ liệu!', 'danger');
+        }
         
         // Re-enable button
         button.disabled = false;
@@ -369,6 +381,10 @@ function saveAllChanges() {
     
     let savedCount = 0;
     let errorCount = 0;
+    let totalItems = changedInputs.length;
+    
+    // Show progress
+    showAlert(`Đang lưu ${totalItems} thay đổi...`, 'info');
     
     changedInputs.forEach((input, index) => {
         const detailId = input.dataset.detailId;
@@ -389,16 +405,24 @@ function saveAllChanges() {
                 if (!response.ok) {
                     throw new Error('Network response was not ok');
                 }
-                return response.text();
+                return response.json(); // Changed from text() to json()
             })
             .then(result => {
-                savedCount++;
-                updateDiscrepancy(input);
+                if (result.success) {
+                    savedCount++;
+                    updateDiscrepancy(input);
+                    // Update input's default value to mark as saved
+                    input.defaultValue = input.value;
+                } else {
+                    errorCount++;
+                    console.error('Save failed for detail:', detailId, result.message);
+                }
                 
-                if (savedCount + errorCount === changedInputs.length) {
+                // Check if all requests completed
+                if (savedCount + errorCount === totalItems) {
                     updateStatistics();
                     if (errorCount === 0) {
-                        showAlert(`Lưu thành công ${savedCount} thay đổi!`, 'success');
+                        showAlert(`Lưu thành công tất cả ${savedCount} thay đổi!`, 'success');
                     } else {
                         showAlert(`Lưu thành công ${savedCount} thay đổi, ${errorCount} lỗi!`, 'warning');
                     }
@@ -406,9 +430,10 @@ function saveAllChanges() {
             })
             .catch(error => {
                 errorCount++;
-                console.error('Error:', error);
+                console.error('Error saving detail:', detailId, error);
                 
-                if (savedCount + errorCount === changedInputs.length) {
+                // Check if all requests completed
+                if (savedCount + errorCount === totalItems) {
                     updateStatistics();
                     showAlert(`Lưu thành công ${savedCount} thay đổi, ${errorCount} lỗi!`, 'warning');
                 }
