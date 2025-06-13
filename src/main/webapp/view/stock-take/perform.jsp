@@ -26,6 +26,29 @@
                 width: 100% !important;
             }
         }
+
+        /* Badge-like styles cho chênh lệch */
+        .difference-positive {
+            background-color: #198754; /* bootstrap success */
+            color: #fff;
+            padding: 0.35em 0.65em;
+            border-radius: 0.25rem;
+            font-size: 0.875em;
+        }
+        .difference-negative {
+            background-color: #dc3545; /* bootstrap danger */
+            color: #fff;
+            padding: 0.35em 0.65em;
+            border-radius: 0.25rem;
+            font-size: 0.875em;
+        }
+        .difference-zero {
+            background-color: #6c757d; /* bootstrap secondary */
+            color: #fff;
+            padding: 0.35em 0.65em;
+            border-radius: 0.25rem;
+            font-size: 0.875em;
+        }
     </style>
 </head>
 <body>
@@ -107,12 +130,7 @@
                                            style="width: 100px; margin: 0 auto;">
                                 </td>
                                 <td class="text-center discrepancy-cell">
-                                    <c:if test="${detail.countedQuantity != null}">
-                                        <c:set var="diff" value="${detail.countedQuantity - detail.systemQuantity}" />
-                                        <span class="badge ${diff > 0 ? 'bg-success' : diff < 0 ? 'bg-danger' : 'bg-secondary'}">
-                                            ${diff > 0 ? '+' : ''}${diff}
-                                        </span>
-                                    </c:if>
+                                    <!-- Chênh lệch sẽ được tính bằng JavaScript từ input -->
                                 </td>
                                 <td class="text-center">
                                     <button type="button" 
@@ -206,9 +224,9 @@ function updateDiscrepancy(input) {
         
         if (countedQty !== null && !isNaN(countedQty) && !isNaN(systemQty)) {
             const diff = countedQty - systemQty;
-            const badgeClass = diff > 0 ? 'bg-success' : diff < 0 ? 'bg-danger' : 'bg-secondary';
+            const diffClass = diff > 0 ? 'difference-positive' : diff < 0 ? 'difference-negative' : 'difference-zero';
             const sign = diff > 0 ? '+' : '';
-            discrepancyCell.innerHTML = `<span class="badge ${badgeClass}">${sign}${diff}</span>`;
+            discrepancyCell.innerHTML = `<span class="${diffClass}">${sign}${diff}</span>`;
         } else {
             discrepancyCell.innerHTML = '';
         }
@@ -441,6 +459,13 @@ function saveAllChanges() {
         }, index * 100); // Delay to avoid overwhelming the server
     });
 }
+
+// Tính toán chênh lệch ban đầu cho tất cả các dòng có counted_quantity
+document.querySelectorAll('.counted-input').forEach(input => {
+    if (input.value !== '') {
+        updateDiscrepancy(input);
+    }
+});
 
 // Cập nhật thống kê ban đầu
 updateStatistics();

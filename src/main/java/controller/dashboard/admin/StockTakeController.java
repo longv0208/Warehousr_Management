@@ -10,6 +10,7 @@ import model.User;
 import utils.SessionUtil;
 
 import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -21,6 +22,7 @@ import java.sql.Date;
 import java.util.List;
 
 @WebServlet(name = "StockTakeController", urlPatterns = {"/stock-take"})
+@MultipartConfig
 public class StockTakeController extends HttpServlet {
 
     private StockTakeDAO stockTakeDAO;

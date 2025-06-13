@@ -207,56 +207,39 @@ public class StockTakeDetailDAO extends DBContext implements I_DAO<StockTakeDeta
 
     // Cập nhật counted_quantity và system_quantity
     public boolean updateCountedQuantity(Integer stockTakeDetailId, Integer countedQuantity) {
-        // Sử dụng 2 câu lệnh riêng biệt thay vì LEFT JOIN trong UPDATE
-        // Đầu tiên cập nhật system_quantity từ inventory
         String updateSystemQtySql = "UPDATE stocktakedetails std " +
                                    "SET std.system_quantity = (SELECT COALESCE(i.quantity_on_hand, 0) FROM inventory i WHERE i.product_id = std.product_id) " +
                                    "WHERE std.stock_take_detail_id = ?";
-        
-        // Sau đó cập nhật counted_quantity
+
         String updateCountedQtySql = "UPDATE stocktakedetails SET counted_quantity = ? WHERE stock_take_detail_id = ?";
-        
-        try {
-            conn = getConnection();
-            conn.setAutoCommit(false); // Start transaction
-            
-            // Update system quantity first
-            statement = conn.prepareStatement(updateSystemQtySql);
-            statement.setInt(1, stockTakeDetailId);
-            statement.executeUpdate();
-            
-            // Update counted quantity
-            statement = conn.prepareStatement(updateCountedQtySql);
-            if (countedQuantity != null) {
-                statement.setInt(1, countedQuantity);
-            } else {
-                statement.setNull(1, Types.INTEGER);
+
+        // Không update cột discrepancy vì đây là generated column trong DB
+
+        // Sử dụng kết nối cục bộ để tránh xung đột kết nối chia sẻ giữa các luồng
+        try (Connection localConn = getConnection()) {
+            localConn.setAutoCommit(false);
+
+            try (PreparedStatement psSystem = localConn.prepareStatement(updateSystemQtySql)) {
+                psSystem.setInt(1, stockTakeDetailId);
+                psSystem.executeUpdate();
             }
-            statement.setInt(2, stockTakeDetailId);
-            int rowsAffected = statement.executeUpdate();
-            
-            conn.commit(); // Commit transaction
-            return rowsAffected > 0;
-            
+
+            try (PreparedStatement psCounted = localConn.prepareStatement(updateCountedQtySql)) {
+                if (countedQuantity != null) {
+                    psCounted.setInt(1, countedQuantity);
+                } else {
+                    psCounted.setNull(1, Types.INTEGER);
+                }
+                psCounted.setInt(2, stockTakeDetailId);
+                psCounted.executeUpdate();
+            }
+
+            localConn.commit();
+            return true;
         } catch (SQLException e) {
-            try {
-                if (conn != null) {
-                    conn.rollback(); // Rollback on error
-                }
-            } catch (SQLException rollbackEx) {
-                rollbackEx.printStackTrace();
-            }
             e.printStackTrace();
+            // rollback nếu cần
             return false;
-        } finally {
-            try {
-                if (conn != null) {
-                    conn.setAutoCommit(true); // Reset auto-commit
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-            close();
         }
     }
 
