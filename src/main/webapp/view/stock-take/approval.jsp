@@ -8,12 +8,12 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8" />
-    <title>Quản Lý Kho Hàng - Duyệt Đơn Kiểm Kê</title>
+    <title>Quản Lý Kho Hàng - Xem Đơn Kiểm Kê</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono&display=swap" rel="stylesheet"/>
     <link href="./styles/index.css" rel="stylesheet"/>
     <style>
-        .approval-card {
+        .view-card {
             border-left: 4px solid #007bff;
         }
         .discrepancy-item {
@@ -24,7 +24,7 @@
             border-left-color: #28a745;
             background-color: #f8fff9;
         }
-        .approval-summary {
+        .view-summary {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border-radius: 10px;
@@ -42,10 +42,11 @@
 
 <div class="container-fluid">
     <div class="row">
-        <main class="col-md-12 px-md-4 py-4">
+        <div class="col-md-2"></div> <!-- Space for sidebar -->
+        <main class="col-md-10 px-md-4 py-4">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
-                    <h3><i class="bi bi-clipboard-check"></i> Duyệt Đơn Kiểm Kê</h3>
+                    <h3><i class="bi bi-clipboard-check"></i> Xem Đơn Kiểm Kê</h3>
                     <p class="text-muted mb-0">Phiếu: ${stockTake.stockTakeCode} - Ngày: <fmt:formatDate value="${stockTake.stockTakeDate}" pattern="dd/MM/yyyy HH:mm" /></p>
                 </div>
                 <div>
@@ -73,7 +74,7 @@
             <!-- Thông tin phiếu kiểm kê -->
             <div class="row mb-4">
                 <div class="col-12">
-                    <div class="card approval-summary">
+                    <div class="card view-summary">
                         <div class="card-body">
                             <div class="row">
                                 <div class="col-md-3">
@@ -90,6 +91,7 @@
                                         <span class="badge bg-success fs-6">
                                             <c:choose>
                                                 <c:when test="${stockTake.status == 'completed'}">Hoàn thành</c:when>
+                                                <c:when test="${stockTake.status == 'reconciled'}">Đã điều chỉnh</c:when>
                                                 <c:otherwise>${stockTake.status}</c:otherwise>
                                             </c:choose>
                                         </span>
@@ -167,7 +169,7 @@
             <c:if test="${not empty discrepancies}">
                 <div class="row mb-4">
                     <div class="col-12">
-                        <div class="card approval-card">
+                        <div class="card view-card">
                             <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
                                 <h5 class="mb-0"><i class="bi bi-exclamation-triangle"></i> Sản phẩm có chênh lệch</h5>
                                 <span class="badge bg-dark">${discrepancies.size()} sản phẩm</span>
@@ -223,68 +225,60 @@
                 </div>
             </c:if>
 
-            <!-- Phần quyết định duyệt/từ chối -->
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="card border-success">
-                        <div class="card-header bg-success text-white">
-                            <h5 class="mb-0"><i class="bi bi-check-circle"></i> Duyệt đơn kiểm kê</h5>
-                        </div>
-                        <div class="card-body">
-                            <form id="approveForm" method="POST" action="${pageContext.request.contextPath}/stock-take">
-                                <input type="hidden" name="action" value="approve">
-                                <input type="hidden" name="stockTakeId" value="${stockTake.stockTakeId}">
-                                
-                                <div class="mb-3">
-                                    <label for="approvalNotes" class="form-label">Ghi chú duyệt (tùy chọn):</label>
-                                    <textarea class="form-control" name="approvalNotes" id="approvalNotes" rows="3" 
-                                              placeholder="Nhập ghi chú về việc duyệt đơn..."></textarea>
-                                </div>
-                                
-                                <div class="d-grid">
-                                    <button type="button" class="btn btn-success btn-lg" onclick="confirmApprove()">
-                                        <i class="bi bi-check-circle"></i> Duyệt đơn
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="col-md-6">
-                    <div class="card border-danger">
-                        <div class="card-header bg-danger text-white">
-                            <h5 class="mb-0"><i class="bi bi-x-circle"></i> Từ chối đơn kiểm kê</h5>
-                        </div>
-                        <div class="card-body">
-                            <form id="rejectForm" method="POST" action="${pageContext.request.contextPath}/stock-take">
-                                <input type="hidden" name="action" value="reject">
-                                <input type="hidden" name="stockTakeId" value="${stockTake.stockTakeId}">
-                                
-                                <div class="mb-3">
-                                    <label for="rejectionReason" class="form-label">Lý do từ chối <span class="text-danger">*</span>:</label>
-                                    <textarea class="form-control" name="rejectionReason" id="rejectionReason" rows="3" 
-                                              placeholder="Nhập lý do từ chối đơn kiểm kê..." required></textarea>
-                                </div>
-                                
-                                <div class="d-grid">
-                                    <button type="button" class="btn btn-danger btn-lg" onclick="confirmReject()">
-                                        <i class="bi bi-x-circle"></i> Từ chối đơn
-                                    </button>
-                                </div>
-                            </form>
+            <!-- Phần điều chỉnh tồn kho -->
+            <c:if test="${stockTake.status == 'completed'}">
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="card border-success">
+                            <div class="card-header bg-success text-white">
+                                <h5 class="mb-0"><i class="bi bi-arrow-repeat"></i> Điều chỉnh tồn kho</h5>
+                            </div>
+                            <div class="card-body">
+                                <form id="reconcileForm" method="POST" action="${pageContext.request.contextPath}/stock-take">
+                                    <input type="hidden" name="action" value="reconcile">
+                                    <input type="hidden" name="stockTakeId" value="${stockTake.stockTakeId}">
+                                    
+                                    <div class="mb-3">
+                                        <div class="alert alert-info">
+                                            <i class="bi bi-info-circle"></i>
+                                            <strong>Lưu ý:</strong> Việc điều chỉnh tồn kho sẽ cập nhật số lượng trong inventory theo số lượng kiểm đếm thực tế.
+                                            <c:if test="${not empty discrepancies}">
+                                                <br><strong>Sẽ điều chỉnh ${discrepancies.size()} sản phẩm có chênh lệch.</strong>
+                                            </c:if>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="d-grid">
+                                        <button type="button" class="btn btn-success btn-lg" onclick="confirmReconcile()">
+                                            <i class="bi bi-arrow-repeat"></i> Điều chỉnh tồn kho theo kết quả kiểm kê
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            </c:if>
 
-            <c:if test="${empty discrepancies}">
+            <c:if test="${stockTake.status == 'reconciled'}">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="alert alert-success text-center" role="alert">
+                            <i class="bi bi-check-circle-fill fs-1"></i>
+                            <h4 class="mt-2">Đã điều chỉnh tồn kho</h4>
+                            <p class="mb-0">Tồn kho đã được cập nhật theo kết quả kiểm kê.</p>
+                        </div>
+                    </div>
+                </div>
+            </c:if>
+
+            <c:if test="${empty discrepancies && stockTake.status == 'completed'}">
                 <div class="row mt-4">
                     <div class="col-12">
                         <div class="alert alert-success text-center" role="alert">
                             <i class="bi bi-check-circle-fill fs-1"></i>
                             <h4 class="mt-2">Kiểm kê chính xác 100%</h4>
-                            <p class="mb-0">Tất cả sản phẩm đều khớp với số lượng hệ thống. Đây là một kết quả kiểm kê tuyệt vời!</p>
+                            <p class="mb-0">Tất cả sản phẩm đều khớp với số lượng hệ thống. Không cần điều chỉnh tồn kho!</p>
                         </div>
                     </div>
                 </div>
@@ -294,22 +288,9 @@
 </div>
 
 <script>
-function confirmApprove() {
-    if (confirm('Bạn có chắc chắn muốn duyệt đơn kiểm kê này?\n\nSau khi duyệt, đơn sẽ được chuyển sang trạng thái "Đã duyệt" và có thể thực hiện điều chỉnh tồn kho.')) {
-        document.getElementById('approveForm').submit();
-    }
-}
-
-function confirmReject() {
-    const reason = document.getElementById('rejectionReason').value.trim();
-    if (!reason) {
-        alert('Vui lòng nhập lý do từ chối!');
-        document.getElementById('rejectionReason').focus();
-        return;
-    }
-    
-    if (confirm('Bạn có chắc chắn muốn từ chối đơn kiểm kê này?\n\nLý do: ' + reason + '\n\nSau khi từ chối, warehouse staff sẽ cần chỉnh sửa và gửi lại.')) {
-        document.getElementById('rejectForm').submit();
+function confirmReconcile() {
+    if (confirm('Bạn có chắc chắn muốn điều chỉnh tồn kho theo kết quả kiểm kê?\n\nSau khi điều chỉnh, số lượng tồn kho sẽ được cập nhật theo số lượng kiểm đếm thực tế.')) {
+        document.getElementById('reconcileForm').submit();
     }
 }
 </script>

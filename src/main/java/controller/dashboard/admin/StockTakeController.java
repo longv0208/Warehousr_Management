@@ -63,11 +63,10 @@ public class StockTakeController extends HttpServlet {
                 handlePerformStockTake(request, response);
                 break;
             case "approve-view":
-                handleViewApproval(request, response);
+            case "view-completed":
+                handleViewCompleted(request, response);
                 break;
-            case "reconcile-view":
-                handleViewReconcile(request, response);
-                break;
+
             default:
                 handleListStockTakes(request, response);
                 break;
@@ -96,12 +95,7 @@ public class StockTakeController extends HttpServlet {
             case "update-count":
                 handleUpdateCount(request, response);
                 break;
-            case "approve":
-                handleApproveStockTake(request, response);
-                break;
-            case "reject":
-                handleRejectStockTake(request, response);
-                break;
+
             case "reconcile":
                 handleReconcileStockTake(request, response);
                 break;
@@ -302,20 +296,20 @@ public class StockTakeController extends HttpServlet {
             int stockTakeId = Integer.parseInt(request.getParameter("stockTakeId"));
             StockTake stockTake = stockTakeDAO.findById(stockTakeId);
             
-            if (stockTake == null || !"approved".equals(stockTake.getStatus())) {
-                session.setAttribute("errorMessage", "Phiếu kiểm kê không hợp lệ hoặc chưa được duyệt!");
+            if (stockTake == null || !"completed".equals(stockTake.getStatus())) {
+                session.setAttribute("errorMessage", "Phiếu kiểm kê không hợp lệ hoặc chưa hoàn thành!");
                 response.sendRedirect(request.getContextPath() + "/stock-take");
                 return;
             }
 
-            // Lấy danh sách chi tiết kiểm kê có chênh lệch
-            List<StockTakeDetail> discrepancies = stockTakeDetailDAO.findDiscrepanciesByStockTakeId(stockTakeId);
+            // Lấy danh sách tất cả chi tiết kiểm kê đã được kiểm đếm
+            List<StockTakeDetail> allDetails = stockTakeDetailDAO.findByStockTakeId(stockTakeId);
             
             boolean hasErrors = false;
             int updatedItems = 0;
             
-            // Điều chỉnh inventory cho từng sản phẩm có chênh lệch
-            for (StockTakeDetail detail : discrepancies) {
+            // Điều chỉnh inventory cho tất cả sản phẩm đã được kiểm đếm
+            for (StockTakeDetail detail : allDetails) {
                 if (detail.getCountedQuantity() != null) {
                     boolean success = inventoryDAO.updateQuantityByProductId(
                         detail.getProductId(), 
@@ -415,7 +409,9 @@ public class StockTakeController extends HttpServlet {
         }
     }
 
-    private void handleViewReconcile(HttpServletRequest request, HttpServletResponse response)
+
+
+    private void handleViewCompleted(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         HttpSession session = request.getSession();
         User currentUser = SessionUtil.getUserFromSession(request);
@@ -435,51 +431,8 @@ public class StockTakeController extends HttpServlet {
                 return;
             }
 
-            // Chỉ cho phép reconcile với trạng thái approved hoặc reconciled
-            if (!"approved".equals(stockTake.getStatus()) && !"reconciled".equals(stockTake.getStatus())) {
-                session.setAttribute("errorMessage", "Phiếu kiểm kê chưa được duyệt!");
-                response.sendRedirect(request.getContextPath() + "/stock-take");
-                return;
-            }
-
-            List<StockTakeDetail> details = stockTakeDetailDAO.findByStockTakeId(stockTakeId);
-            List<StockTakeDetail> discrepancies = stockTakeDetailDAO.findDiscrepanciesByStockTakeId(stockTakeId);
-            List<Object[]> statistics = stockTakeDetailDAO.getStockTakeStatistics(stockTakeId);
-            
-            request.setAttribute("stockTake", stockTake);
-            request.setAttribute("stockTakeDetails", details);
-            request.setAttribute("discrepancies", discrepancies);
-            request.setAttribute("statistics", statistics);
-            request.getRequestDispatcher("/view/stock-take/reconcile.jsp").forward(request, response);
-            
-        } catch (NumberFormatException e) {
-            session.setAttribute("errorMessage", "Dữ liệu không hợp lệ!");
-            response.sendRedirect(request.getContextPath() + "/stock-take");
-        }
-    }
-
-    private void handleViewApproval(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        HttpSession session = request.getSession();
-        User currentUser = SessionUtil.getUserFromSession(request);
-        
-        if (currentUser == null || !"admin".equals(currentUser.getRoleId())) {
-            response.sendRedirect(request.getContextPath() + "/stock-take");
-            return;
-        }
-
-        try {
-            int stockTakeId = Integer.parseInt(request.getParameter("id"));
-            StockTake stockTake = stockTakeDAO.findById(stockTakeId);
-            
-            if (stockTake == null) {
-                session.setAttribute("errorMessage", "Không tìm thấy phiếu kiểm kê!");
-                response.sendRedirect(request.getContextPath() + "/stock-take");
-                return;
-            }
-
-            // Chỉ cho phép duyệt với trạng thái completed
-            if (!"completed".equals(stockTake.getStatus())) {
+            // Cho phép xem với trạng thái completed hoặc reconciled
+            if (!"completed".equals(stockTake.getStatus()) && !"reconciled".equals(stockTake.getStatus())) {
                 session.setAttribute("errorMessage", "Phiếu kiểm kê chưa hoàn thành!");
                 response.sendRedirect(request.getContextPath() + "/stock-take");
                 return;
@@ -501,100 +454,5 @@ public class StockTakeController extends HttpServlet {
         }
     }
 
-    private void handleApproveStockTake(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        HttpSession session = request.getSession();
-        User currentUser = SessionUtil.getUserFromSession(request);
-        
-        if (currentUser == null || !"admin".equals(currentUser.getRoleId())) {
-            response.sendRedirect(request.getContextPath() + "/stock-take");
-            return;
-        }
 
-        try {
-            int stockTakeId = Integer.parseInt(request.getParameter("stockTakeId"));
-            String approvalNotes = request.getParameter("approvalNotes");
-            
-            StockTake stockTake = stockTakeDAO.findById(stockTakeId);
-            
-            if (stockTake == null || !"completed".equals(stockTake.getStatus())) {
-                session.setAttribute("errorMessage", "Phiếu kiểm kê không hợp lệ hoặc chưa hoàn thành!");
-                response.sendRedirect(request.getContextPath() + "/stock-take");
-                return;
-            }
-
-            // Cập nhật trạng thái thành approved và thêm ghi chú duyệt
-            boolean updated = stockTakeDAO.updateStatus(stockTakeId, "approved");
-            
-            if (updated) {
-                // Cập nhật ghi chú duyệt nếu có
-                if (approvalNotes != null && !approvalNotes.trim().isEmpty()) {
-                    String combinedNotes = stockTake.getNotes() + " | Duyệt: " + approvalNotes.trim();
-                    stockTakeDAO.updateNotes(stockTakeId, combinedNotes);
-                }
-                
-                session.setAttribute("successMessage", "Duyệt phiếu kiểm kê thành công! Bây giờ có thể thực hiện điều chỉnh tồn kho.");
-            } else {
-                session.setAttribute("errorMessage", "Có lỗi xảy ra khi duyệt phiếu kiểm kê!");
-            }
-            
-        } catch (NumberFormatException e) {
-            session.setAttribute("errorMessage", "Dữ liệu không hợp lệ!");
-        } catch (Exception e) {
-            e.printStackTrace();
-            session.setAttribute("errorMessage", "Có lỗi xảy ra: " + e.getMessage());
-        }
-        
-        response.sendRedirect(request.getContextPath() + "/stock-take");
-    }
-
-    private void handleRejectStockTake(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        HttpSession session = request.getSession();
-        User currentUser = SessionUtil.getUserFromSession(request);
-        
-        if (currentUser == null || !"admin".equals(currentUser.getRoleId())) {
-            response.sendRedirect(request.getContextPath() + "/stock-take");
-            return;
-        }
-
-        try {
-            int stockTakeId = Integer.parseInt(request.getParameter("stockTakeId"));
-            String rejectionReason = request.getParameter("rejectionReason");
-            
-            if (rejectionReason == null || rejectionReason.trim().isEmpty()) {
-                session.setAttribute("errorMessage", "Vui lòng nhập lý do từ chối!");
-                response.sendRedirect(request.getContextPath() + "/stock-take?action=approve-view&id=" + stockTakeId);
-                return;
-            }
-            
-            StockTake stockTake = stockTakeDAO.findById(stockTakeId);
-            
-            if (stockTake == null || !"completed".equals(stockTake.getStatus())) {
-                session.setAttribute("errorMessage", "Phiếu kiểm kê không hợp lệ hoặc chưa hoàn thành!");
-                response.sendRedirect(request.getContextPath() + "/stock-take");
-                return;
-            }
-
-            // Cập nhật trạng thái thành rejected và thêm lý do từ chối
-            boolean updated = stockTakeDAO.updateStatus(stockTakeId, "rejected");
-            
-            if (updated) {
-                String combinedNotes = stockTake.getNotes() + " | Từ chối: " + rejectionReason.trim();
-                stockTakeDAO.updateNotes(stockTakeId, combinedNotes);
-                
-                session.setAttribute("successMessage", "Đã từ chối phiếu kiểm kê. Warehouse staff có thể chỉnh sửa và gửi lại.");
-            } else {
-                session.setAttribute("errorMessage", "Có lỗi xảy ra khi từ chối phiếu kiểm kê!");
-            }
-            
-        } catch (NumberFormatException e) {
-            session.setAttribute("errorMessage", "Dữ liệu không hợp lệ!");
-        } catch (Exception e) {
-            e.printStackTrace();
-            session.setAttribute("errorMessage", "Có lỗi xảy ra: " + e.getMessage());
-        }
-        
-        response.sendRedirect(request.getContextPath() + "/stock-take");
-    }
 } 
