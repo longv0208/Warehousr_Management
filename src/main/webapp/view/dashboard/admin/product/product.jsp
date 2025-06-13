@@ -72,7 +72,6 @@
             <th>#</th>
             <th>Mã SP</th>
             <th>Tên sản phẩm</th>
-            <th>Số lượng</th>
             <th>Giá mua</th>
             <th>Giá bán</th>
             <th>NCC</th>
@@ -89,7 +88,6 @@
                   <td>${(currentPage - 1) * 10 + loop.count}</td>
                   <td><c:out value="${product.productCode}"/></td>
                   <td><c:out value="${product.productName}"/></td>
-                  <td><c:out value="${product.quantity}"/></td>
                   <td><fmt:formatNumber value="${product.purchasePrice}" type="currency" currencySymbol="đ" maxFractionDigits="0"/></td>
                   <td><fmt:formatNumber value="${product.salePrice}" type="currency" currencySymbol="đ" maxFractionDigits="0"/></td>
                   <td>
@@ -140,7 +138,7 @@
             </c:when>
             <c:otherwise>
               <tr>
-                <td colspan="10" class="text-center">Không tìm thấy sản phẩm nào.</td>
+                <td colspan="9" class="text-center">Không tìm thấy sản phẩm nào.</td>
               </tr>
             </c:otherwise>
           </c:choose>

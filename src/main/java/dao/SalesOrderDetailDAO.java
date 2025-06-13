@@ -235,10 +235,11 @@ public class SalesOrderDetailDAO extends DBContext implements I_DAO<SalesOrderDe
     public List<SalesOrderDetailWithProduct> findBySalesOrderIdWithCompleteProductInfo(Integer salesOrderId) {
         List<SalesOrderDetailWithProduct> list = new ArrayList<>();
         String sql = "SELECT sod.order_detail_id, sod.sales_order_id, sod.product_id, sod.quantity_ordered, sod.unit_sale_price, " +
-                     "p.product_code, p.product_name, p.description, p.unit, p.quantity as stock_quantity, " +
+                     "p.product_code, p.product_name, p.description, p.unit, i.quantity_on_hand as stock_quantity, " +
                      "p.purchase_price, p.sale_price, p.is_active " +
                      "FROM salesorderdetails sod " +
                      "INNER JOIN products p ON sod.product_id = p.product_id " +
+                     "LEFT JOIN inventory i ON p.product_id = i.product_id " +
                      "WHERE sod.sales_order_id = ? " +
                      "ORDER BY sod.order_detail_id";
         try {

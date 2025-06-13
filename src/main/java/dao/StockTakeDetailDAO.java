@@ -163,9 +163,10 @@ public class StockTakeDetailDAO extends DBContext implements I_DAO<StockTakeDeta
     // Tìm chi tiết theo stock_take_id
     public List<StockTakeDetail> findByStockTakeId(Integer stockTakeId) {
         List<StockTakeDetail> list = new ArrayList<>();
-        String sql = "SELECT std.*, p.product_code, p.product_name, p.unit, p.quantity as current_quantity " +
+        String sql = "SELECT std.*, p.product_code, p.product_name, p.unit, COALESCE(i.quantity_on_hand, 0) as current_quantity " +
                     "FROM stocktakedetails std " +
                     "LEFT JOIN products p ON std.product_id = p.product_id " +
+                    "LEFT JOIN inventory i ON p.product_id = i.product_id " +
                     "WHERE std.stock_take_id = ? " +
                     "ORDER BY p.product_code";
         try {
@@ -207,8 +208,8 @@ public class StockTakeDetailDAO extends DBContext implements I_DAO<StockTakeDeta
     // Cập nhật counted_quantity và system_quantity
     public boolean updateCountedQuantity(Integer stockTakeDetailId, Integer countedQuantity) {
         String sql = "UPDATE stocktakedetails std " +
-                    "JOIN products p ON std.product_id = p.product_id " +
-                    "SET std.counted_quantity = ?, std.system_quantity = p.quantity " +
+                    "LEFT JOIN inventory i ON std.product_id = i.product_id " +
+                    "SET std.counted_quantity = ?, std.system_quantity = COALESCE(i.quantity_on_hand, 0) " +
                     "WHERE std.stock_take_detail_id = ?";
         try {
             conn = getConnection();
@@ -231,8 +232,9 @@ public class StockTakeDetailDAO extends DBContext implements I_DAO<StockTakeDeta
     // Tạo chi tiết kiểm kê cho tất cả sản phẩm có tồn kho
     public boolean createStockTakeDetailsForAllProducts(Integer stockTakeId) {
         String sql = "INSERT INTO stocktakedetails (stock_take_id, product_id, system_quantity) " +
-                    "SELECT ?, p.product_id, 0 " +
+                    "SELECT ?, p.product_id, COALESCE(i.quantity_on_hand, 0) " +
                     "FROM products p " +
+                    "LEFT JOIN inventory i ON p.product_id = i.product_id " +
                     "WHERE p.is_active = 1";
         try {
             conn = getConnection();

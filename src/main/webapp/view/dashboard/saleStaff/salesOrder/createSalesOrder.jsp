@@ -124,11 +124,11 @@
 <template id="productOptionsTemplate">
     <option value="">-- Chọn sản phẩm --</option>
     <c:forEach var="p" items="${products}">
-        <option value="${p.productId}"
-                data-price="${p.salePrice}"
-                data-quantity="${p.quantity}"
-                data-unit="${p.unit}">
-            ${p.productCode} - ${p.productName} (${p.unit})
+        <option value="${p['productId']}"
+                data-price="${p['salePrice']}"
+                data-quantity="${p['quantity']}"
+                data-unit="${p['unit']}">
+            ${p['productCode']} - ${p['productName']} (${p['unit']})
         </option>
     </c:forEach>
 </template>
@@ -179,12 +179,16 @@
           </div>
           <div class="col-md-2">
             <label class="form-label">Số lượng <span class="text-danger">*</span></label>
-            <input type="number" class="form-control" name="quantity" min="1" onchange="calculateRowTotal(${rowIndex})" required>
+            <input type="number" class="form-control" name="quantity" min="1" 
+                   onchange="calculateRowTotal(${rowIndex})" 
+                   oninput="calculateRowTotal(${rowIndex})" required>
             <small class="text-muted">Tồn: <span id="stockQuantity${rowIndex}">0</span> <span id="unit${rowIndex}"></span></small>
           </div>
           <div class="col-md-2">
             <label class="form-label">Đơn giá <span class="text-danger">*</span></label>
-            <input type="number" class="form-control" name="unitPrice" step="0.01" min="0" onchange="calculateRowTotal(${rowIndex})" required>
+            <input type="number" class="form-control" name="unitPrice" step="0.01" min="0" 
+                   onchange="calculateRowTotal(${rowIndex})" 
+                   oninput="calculateRowTotal(${rowIndex})" required>
           </div>
           <div class="col-md-2">
             <label class="form-label">Thành tiền</label>

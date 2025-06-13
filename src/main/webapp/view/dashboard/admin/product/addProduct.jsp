@@ -64,10 +64,7 @@
             <div class="invalid-feedback"></div>
           </div>
           <div class="col-md-6">
-            <label for="quantity" class="form-label">Số Lượng <span class="text-danger">*</span></label>
-            <input type="number" class="form-control" id="quantity" name="quantity" min="0" required>
-            <div class="invalid-feedback"></div>
-            <div class="form-text">Số lượng sản phẩm trong kho</div>
+            <!-- Empty column for better layout -->
           </div>
         </div>
 
@@ -140,7 +137,6 @@
     const productCodeInput = document.getElementById('productCode');
     const productNameInput = document.getElementById('productName');
     const descriptionInput = document.getElementById('description');
-    const quantityInput = document.getElementById('quantity');
     const purchasePriceInput = document.getElementById('purchasePrice');
     const salePriceInput = document.getElementById('salePrice');
     const lowStockThresholdInput = document.getElementById('lowStockThreshold');
@@ -199,25 +195,6 @@
       } else {
         descriptionInput.classList.remove('is-invalid');
         descriptionInput.classList.add('is-valid');
-        return true;
-      }
-    }
-    
-    function validateQuantity() {
-      const value = parseInt(quantityInput.value);
-      const feedback = quantityInput.nextElementSibling;
-      
-      if (quantityInput.value === '') {
-        quantityInput.classList.add('is-invalid');
-        feedback.textContent = 'Số lượng không được để trống';
-        return false;
-      } else if (isNaN(value) || value < 0) {
-        quantityInput.classList.add('is-invalid');
-        feedback.textContent = 'Số lượng phải là số nguyên không âm';
-        return false;
-      } else {
-        quantityInput.classList.remove('is-invalid');
-        quantityInput.classList.add('is-valid');
         return true;
       }
     }
@@ -326,9 +303,6 @@
       validateLowStockThreshold();
     });
     
-    quantityInput.addEventListener('input', validateQuantity);
-    quantityInput.addEventListener('blur', validateQuantity);
-    
     // Form submission validation
     form.addEventListener('submit', function(e) {
       e.preventDefault();
@@ -342,12 +316,10 @@
       const isPurchasePriceValid = validateNumberInput(purchasePriceInput, 'Giá mua');
       const isSalePriceValid = validateNumberInput(salePriceInput, 'Giá bán');
       const isLowStockThresholdValid = validateLowStockThreshold();
-      const isQuantityValid = validateQuantity();
       
       if (isProductCodeValid && isProductNameValid && isDescriptionValid && 
           isUnitValid && isSupplierValid && isCategoryValid &&
-          isPurchasePriceValid && isSalePriceValid && isLowStockThresholdValid &&
-          isQuantityValid) {
+          isPurchasePriceValid && isSalePriceValid && isLowStockThresholdValid) {
         form.submit();
       } else {
         // Scroll to first invalid field

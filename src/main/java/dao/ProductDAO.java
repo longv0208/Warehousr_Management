@@ -25,7 +25,6 @@ public class ProductDAO extends DBContext implements I_DAO<Product> {
                 .productName(rs.getString("product_name"))
                 .description(rs.getString("description"))
                 .unit(rs.getString("unit"))
-                .quantity(rs.getInt("quantity"))
                 .purchasePrice(rs.getFloat("purchase_price"))
                 .salePrice(rs.getFloat("sale_price"))
                 .supplierId(rs.getObject("supplier_id") != null ? rs.getInt("supplier_id") : null)
@@ -74,9 +73,9 @@ public class ProductDAO extends DBContext implements I_DAO<Product> {
 
     @Override
     public int insert(Product product) {
-        String sql = "INSERT INTO products (product_code, product_name, description, unit, quantity, purchase_price, "
+        String sql = "INSERT INTO products (product_code, product_name, description, unit, purchase_price, "
                 + "sale_price, supplier_id, low_stock_threshold, is_active, created_at, updated_at) "
-                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)";
+                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)";
         try {
             conn = getConnection();
             statement = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
@@ -84,16 +83,15 @@ public class ProductDAO extends DBContext implements I_DAO<Product> {
             statement.setString(2, product.getProductName());
             statement.setString(3, product.getDescription());
             statement.setString(4, product.getUnit());
-            statement.setInt(5, product.getQuantity());
-            statement.setFloat(6, product.getPurchasePrice());
-            statement.setFloat(7, product.getSalePrice());
+            statement.setFloat(5, product.getPurchasePrice());
+            statement.setFloat(6, product.getSalePrice());
             if (product.getSupplierId() != null) {
-                statement.setInt(8, product.getSupplierId());
+                statement.setInt(7, product.getSupplierId());
             } else {
-                statement.setNull(8, Types.INTEGER);
+                statement.setNull(7, Types.INTEGER);
             }
-            statement.setInt(9, product.getLowStockThreshold());
-            statement.setBoolean(10, product.getIsActive());
+            statement.setInt(8, product.getLowStockThreshold());
+            statement.setBoolean(9, product.getIsActive());
 
             int affectedRows = statement.executeUpdate();
             if (affectedRows == 0) {
@@ -117,7 +115,7 @@ public class ProductDAO extends DBContext implements I_DAO<Product> {
     @Override
     public boolean update(Product product) {
         String sql = "UPDATE products SET product_code = ?, product_name = ?, description = ?, unit = ?, "
-                + "quantity = ?, purchase_price = ?, sale_price = ?, supplier_id = ?, low_stock_threshold = ?, "
+                + "purchase_price = ?, sale_price = ?, supplier_id = ?, low_stock_threshold = ?, "
                 + "is_active = ?, updated_at = CURRENT_TIMESTAMP WHERE product_id = ?";
         try {
             conn = getConnection();
@@ -126,17 +124,16 @@ public class ProductDAO extends DBContext implements I_DAO<Product> {
             statement.setString(2, product.getProductName());
             statement.setString(3, product.getDescription());
             statement.setString(4, product.getUnit());
-            statement.setInt(5, product.getQuantity());
-            statement.setFloat(6, product.getPurchasePrice());
-            statement.setFloat(7, product.getSalePrice());
+            statement.setFloat(5, product.getPurchasePrice());
+            statement.setFloat(6, product.getSalePrice());
             if (product.getSupplierId() != null) {
-                statement.setInt(8, product.getSupplierId());
+                statement.setInt(7, product.getSupplierId());
             } else {
-                statement.setNull(8, Types.INTEGER);
+                statement.setNull(7, Types.INTEGER);
             }
-            statement.setInt(9, product.getLowStockThreshold());
-            statement.setBoolean(10, product.getIsActive());
-            statement.setInt(11, product.getProductId());
+            statement.setInt(8, product.getLowStockThreshold());
+            statement.setBoolean(9, product.getIsActive());
+            statement.setInt(10, product.getProductId());
 
             return statement.executeUpdate() > 0;
         } catch (SQLException ex) {

@@ -4,6 +4,7 @@ import dao.ProductDAO;
 import dao.SalesOrderDAO;
 import dao.SalesOrderDetailDAO;
 import dao.UserDAO;
+import dao.InventoryDAO;
 import model.Product;
 import model.SalesOrder;
 import model.SalesOrderDetail;
@@ -30,6 +31,7 @@ public class ManageSalesOrderController extends HttpServlet {
     private SalesOrderDetailDAO salesOrderDetailDAO;
     private ProductDAO productDAO;
     private UserDAO userDAO;
+    private InventoryDAO inventoryDAO;
 
     @Override
     public void init() throws ServletException {
@@ -38,6 +40,7 @@ public class ManageSalesOrderController extends HttpServlet {
         salesOrderDetailDAO = new SalesOrderDetailDAO();
         productDAO = new ProductDAO();
         userDAO = new UserDAO();
+        inventoryDAO = new InventoryDAO();
     }
 
     @Override
@@ -229,6 +232,30 @@ public class ManageSalesOrderController extends HttpServlet {
                     }
                 }
                 
+                // Create a list of maps containing product and inventory information
+                List<Map<String, Object>> productsWithInventory = new ArrayList<>();
+                if (products != null && !products.isEmpty()) {
+                    for (Product p : products) {
+                        Integer quantity = inventoryDAO.getQuantityByProductId(p.getProductId());
+                        
+                        // Create a map with product and inventory info
+                        Map<String, Object> productWithInventory = new HashMap<>();
+                        productWithInventory.put("productId", p.getProductId());
+                        productWithInventory.put("productCode", p.getProductCode());
+                        productWithInventory.put("productName", p.getProductName());
+                        productWithInventory.put("description", p.getDescription());
+                        productWithInventory.put("unit", p.getUnit());
+                        productWithInventory.put("purchasePrice", p.getPurchasePrice());
+                        productWithInventory.put("salePrice", p.getSalePrice());
+                        productWithInventory.put("supplierId", p.getSupplierId());
+                        productWithInventory.put("lowStockThreshold", p.getLowStockThreshold());
+                        productWithInventory.put("isActive", p.getIsActive());
+                        productWithInventory.put("quantity", quantity != null ? quantity : 0);
+                        
+                        productsWithInventory.add(productWithInventory);
+                    }
+                }
+                
                 // Create combined order details with product information for editing
                 List<Map<String, Object>> orderDetailsWithProduct = new ArrayList<>();
                 
@@ -242,7 +269,10 @@ public class ManageSalesOrderController extends HttpServlet {
                         detailWithProduct.put("unit", product.getUnit());
                         detailWithProduct.put("quantityOrdered", detail.getQuantityOrdered());
                         detailWithProduct.put("unitSalePrice", detail.getUnitSalePrice());
-                        detailWithProduct.put("availableQuantity", product.getQuantity());
+                        
+                        // Get quantity from inventory instead of product
+                        Integer availableQuantity = inventoryDAO.getQuantityByProductId(product.getProductId());
+                        detailWithProduct.put("availableQuantity", availableQuantity);
                         
                         orderDetailsWithProduct.add(detailWithProduct);
                     }
@@ -251,19 +281,15 @@ public class ManageSalesOrderController extends HttpServlet {
                 request.setAttribute("order", order);
                 request.setAttribute("orderDetails", orderDetails);
                 request.setAttribute("orderDetailsWithProduct", orderDetailsWithProduct);
-                request.setAttribute("products", products);
+                request.setAttribute("products", productsWithInventory);
                 request.setAttribute("salesStaff", salesStaff);
                 request.setAttribute("creator", creator);
                 
                 request.getRequestDispatcher("/view/dashboard/admin/salesOrder/editSalesOrder.jsp").forward(request, response);
             } else {
-                session.setAttribute("toastMessage", "Không tìm thấy đơn hàng!");
-                session.setAttribute("toastType", "error");
                 response.sendRedirect(request.getContextPath() + "/admin/manage-sales-order?action=list");
             }
         } catch (NumberFormatException e) {
-            session.setAttribute("toastMessage", "ID đơn hàng không hợp lệ!");
-            session.setAttribute("toastType", "error");
             response.sendRedirect(request.getContextPath() + "/admin/manage-sales-order?action=list");
         }
     }
@@ -453,6 +479,11 @@ public class ManageSalesOrderController extends HttpServlet {
      * Validate if the status transition is allowed
      */
     private boolean isValidStatusTransition(String currentStatus, String newStatus) {
+        // Handle null values
+        if (currentStatus == null || newStatus == null) {
+            return false;
+        }
+        
         // If same status, no transition needed
         if (currentStatus.equals(newStatus)) {
             return false;
@@ -475,6 +506,10 @@ public class ManageSalesOrderController extends HttpServlet {
      * Get user-friendly status display name
      */
     private String getStatusDisplayName(String status) {
+        if (status == null) {
+            return "Không xác định";
+        }
+        
         switch (status) {
             case "pending_stock_check":
                 return "Chờ kiểm tra kho";
@@ -520,6 +555,11 @@ public class ManageSalesOrderController extends HttpServlet {
      * This method is public so JSP can access it
      */
     public List<String> getValidNextStatuses(String currentStatus) {
+        // Handle null status
+        if (currentStatus == null) {
+            return new ArrayList<>();
+        }
+        
         Map<String, List<String>> validTransitions = new HashMap<>();
         
         // Define valid status transitions (same as in isValidStatusTransition)

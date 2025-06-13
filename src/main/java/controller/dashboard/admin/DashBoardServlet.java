@@ -74,7 +74,7 @@ public class DashBoardServlet extends HttpServlet {
                     product.setPurchasePrice(rs.getFloat("purchase_price"));
                     product.setSalePrice(rs.getFloat("sale_price"));
                     product.setSupplierId(rs.getInt("supplier_id"));
-                    product.setCategoryId(rs.getInt("category_id"));
+//                    product.setCategoryId(rs.getInt("category_id"));
                     product.setLowStockThreshold(rs.getInt("low_stock_threshold"));
                     product.setCreatedAt(rs.getTimestamp("created_at"));
                     product.setUpdatedAt(rs.getTimestamp("updated_at"));

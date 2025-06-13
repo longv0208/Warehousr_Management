@@ -4,6 +4,7 @@ import dao.ProductDAO;
 import dao.SalesOrderDAO;
 import dao.SalesOrderDetailDAO;
 import dao.UserDAO;
+import dao.InventoryDAO;
 import utils.SessionUtil;
 import model.Product;
 import model.SalesOrder;
@@ -21,7 +22,9 @@ import java.sql.Date;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @WebServlet(name = "SalesOrderController", urlPatterns = {"/sale-staff/sales-order"})
 public class SalesOrderController extends HttpServlet {
@@ -30,6 +33,7 @@ public class SalesOrderController extends HttpServlet {
     private SalesOrderDetailDAO salesOrderDetailDAO;
     private ProductDAO productDAO;
     private UserDAO userDAO;
+    private InventoryDAO inventoryDAO;
 
     @Override
     public void init() throws ServletException {
@@ -38,6 +42,7 @@ public class SalesOrderController extends HttpServlet {
         salesOrderDetailDAO = new SalesOrderDetailDAO();
         productDAO = new ProductDAO();
         userDAO = new UserDAO();
+        inventoryDAO = new InventoryDAO();
     }
 
     @Override
@@ -128,14 +133,33 @@ public class SalesOrderController extends HttpServlet {
             List<Product> products = productDAO.findActiveProducts();
             System.out.println("DEBUG: Found " + (products != null ? products.size() : 0) + " active products");
             
+            // Create a list of maps containing product and inventory information
+            List<Map<String, Object>> productsWithInventory = new ArrayList<>();
+            
             if (products != null && !products.isEmpty()) {
-                for (int i = 0; i < Math.min(3, products.size()); i++) {
-                    Product p = products.get(i);
-                    System.out.println("DEBUG: Product " + (i+1) + " - ID: " + p.getProductId() + 
+                for (Product p : products) {
+                    Integer quantity = inventoryDAO.getQuantityByProductId(p.getProductId());
+                    System.out.println("DEBUG: Product ID: " + p.getProductId() + 
                                      ", Name: " + p.getProductName() + 
                                      ", Code: " + p.getProductCode() +
                                      ", Price: " + p.getSalePrice() +
-                                     ", Quantity: " + p.getQuantity());
+                                     ", Quantity: " + quantity);
+                    
+                    // Create a map with product and inventory info
+                    Map<String, Object> productWithInventory = new HashMap<>();
+                    productWithInventory.put("productId", p.getProductId());
+                    productWithInventory.put("productCode", p.getProductCode());
+                    productWithInventory.put("productName", p.getProductName());
+                    productWithInventory.put("description", p.getDescription());
+                    productWithInventory.put("unit", p.getUnit());
+                    productWithInventory.put("purchasePrice", p.getPurchasePrice());
+                    productWithInventory.put("salePrice", p.getSalePrice());
+                    productWithInventory.put("supplierId", p.getSupplierId());
+                    productWithInventory.put("lowStockThreshold", p.getLowStockThreshold());
+                    productWithInventory.put("isActive", p.getIsActive());
+                    productWithInventory.put("quantity", quantity != null ? quantity : 0);
+                    
+                    productsWithInventory.add(productWithInventory);
                 }
             } else {
                 System.err.println("ERROR: No products found or products list is empty!");
@@ -145,11 +169,11 @@ public class SalesOrderController extends HttpServlet {
             String orderCode = salesOrderDAO.generateOrderCode();
             System.out.println("DEBUG: Generated order code: " + orderCode);
             
-            request.setAttribute("products", products);
+            request.setAttribute("products", productsWithInventory);
             request.setAttribute("orderCode", orderCode);
             
             // Add debug attribute and product count for JSP
-            int productCount = products != null ? products.size() : 0;
+            int productCount = productsWithInventory != null ? productsWithInventory.size() : 0;
             request.setAttribute("debugProductCount", productCount);
             request.setAttribute("productCount", productCount);
             
@@ -339,9 +363,33 @@ public class SalesOrderController extends HttpServlet {
                 // Get all active products for selection
                 List<Product> products = productDAO.findActiveProducts();
                 
+                // Create a list of maps containing product and inventory information
+                List<Map<String, Object>> productsWithInventory = new ArrayList<>();
+                if (products != null && !products.isEmpty()) {
+                    for (Product p : products) {
+                        Integer quantity = inventoryDAO.getQuantityByProductId(p.getProductId());
+                        
+                        // Create a map with product and inventory info
+                        Map<String, Object> productWithInventory = new HashMap<>();
+                        productWithInventory.put("productId", p.getProductId());
+                        productWithInventory.put("productCode", p.getProductCode());
+                        productWithInventory.put("productName", p.getProductName());
+                        productWithInventory.put("description", p.getDescription());
+                        productWithInventory.put("unit", p.getUnit());
+                        productWithInventory.put("purchasePrice", p.getPurchasePrice());
+                        productWithInventory.put("salePrice", p.getSalePrice());
+                        productWithInventory.put("supplierId", p.getSupplierId());
+                        productWithInventory.put("lowStockThreshold", p.getLowStockThreshold());
+                        productWithInventory.put("isActive", p.getIsActive());
+                        productWithInventory.put("quantity", quantity != null ? quantity : 0);
+                        
+                        productsWithInventory.add(productWithInventory);
+                    }
+                }
+                
                 request.setAttribute("order", order);
                 request.setAttribute("orderDetailsWithProduct", orderDetailsWithProduct);
-                request.setAttribute("products", products);
+                request.setAttribute("products", productsWithInventory);
                 
                 request.getRequestDispatcher("/view/dashboard/saleStaff/salesOrder/editSalesOrder.jsp").forward(request, response);
             } else {
@@ -518,11 +566,12 @@ public class SalesOrderController extends HttpServlet {
                     // Validate product exists and get stock information
                     Product product = productDAO.findById(productId);
                     if (product != null) {
-                        // Check stock availability
-                        if (product.getQuantity() < quantity) {
+                        // Check stock availability from inventory
+                        Integer stockQuantity = inventoryDAO.getQuantityByProductId(productId);
+                        if (stockQuantity < quantity) {
                             session.setAttribute("toastMessage", 
                                 "Sản phẩm " + product.getProductName() + " không đủ tồn kho! " +
-                                "Tồn kho hiện tại: " + product.getQuantity() + ", Yêu cầu: " + quantity);
+                                "Tồn kho hiện tại: " + stockQuantity + ", Yêu cầu: " + quantity);
                             session.setAttribute("toastType", "warning");
                             hasStockIssue = true;
                         }

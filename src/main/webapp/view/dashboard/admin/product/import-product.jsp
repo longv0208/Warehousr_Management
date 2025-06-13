@@ -44,7 +44,6 @@
                   <th>Cột G</th>
                   <th>Cột H</th>
                   <th>Cột I</th>
-                  <th>Cột J</th>
                 </tr>
               </thead>
               <tbody>
@@ -53,7 +52,6 @@
                   <td>Tên SP</td>
                   <td>Mô tả</td>
                   <td>Đơn vị</td>
-                  <td>Số lượng</td>
                   <td>Giá mua</td>
                   <td>Giá bán</td>
                   <td>Ngưỡng tồn kho</td>
@@ -65,7 +63,6 @@
                   <td>Áo thun nam</td>
                   <td>Áo thun cotton 100%</td>
                   <td>Cái</td>
-                  <td>100</td>
                   <td>50000</td>
                   <td>75000</td>
                   <td>20</td>

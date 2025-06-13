@@ -46,9 +46,9 @@
           <div class="col-md-4">
             <select class="form-select" name="productId" required>
               <c:forEach var="p" items="${products}">
-                <option value="${p.productId}" data-price="${p.salePrice}" data-quantity="${p.quantity}" data-unit="${p.unit}"
-                  <c:if test="${p.productId == detail.productId}">selected</c:if>>
-                  ${p.productCode} - ${p.productName} (${p.unit})
+                <option value="${p['productId']}" data-price="${p['salePrice']}" data-quantity="${p['quantity']}" data-unit="${p['unit']}"
+                  <c:if test="${p['productId'] == detail.productId}">selected</c:if>>
+                  ${p['productCode']} - ${p['productName']} (${p['unit']})
                 </option>
               </c:forEach>
             </select>

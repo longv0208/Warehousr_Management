@@ -205,7 +205,6 @@ public class ManageProductController extends HttpServlet {
             String productName = request.getParameter("productName");
             String description = request.getParameter("description");
             String unit = request.getParameter("unit");
-            String quantity = request.getParameter("quantity");
             String purchasePriceStr = request.getParameter("purchasePrice");
             String salePriceStr = request.getParameter("salePrice");
             String lowStockThresholdStr = request.getParameter("lowStockThreshold");
@@ -235,19 +234,6 @@ public class ManageProductController extends HttpServlet {
             
             if (unit == null || unit.trim().isEmpty()) {
                 errorMessages.append("Đơn vị tính không được để trống. ");
-            }
-            
-            if (quantity == null || quantity.trim().isEmpty()) {
-                errorMessages.append("Số lượng không được để trống. ");
-            } else {
-                try {
-                    int quantityValue = Integer.parseInt(quantity.trim());
-                    if (quantityValue < 0) {
-                        errorMessages.append("Số lượng không được âm. ");
-                    }
-                } catch (NumberFormatException e) {
-                    errorMessages.append("Số lượng phải là số nguyên hợp lệ. ");
-                }
             }
             
             if (supplierId == null) {
@@ -301,7 +287,6 @@ public class ManageProductController extends HttpServlet {
                     .productName(productName.trim())
                     .description(description != null ? description.trim() : "")
                     .unit(unit)
-                    .quantity(Integer.parseInt(quantity.trim()))
                     .purchasePrice(purchasePrice)
                     .salePrice(salePrice)
                     .supplierId(supplierId)
@@ -373,7 +358,6 @@ public class ManageProductController extends HttpServlet {
             String productName = request.getParameter("productName");
             String description = request.getParameter("description");
             String unit = request.getParameter("unit");
-            String quantity = request.getParameter("quantity");
             String purchasePriceStr = request.getParameter("purchasePrice");
             String salePriceStr = request.getParameter("salePrice");
             String lowStockThresholdStr = request.getParameter("lowStockThreshold");
@@ -403,19 +387,6 @@ public class ManageProductController extends HttpServlet {
             
             if (unit == null || unit.trim().isEmpty()) {
                 errorMessages.append("Đơn vị tính không được để trống. ");
-            }
-            
-            if (quantity == null || quantity.trim().isEmpty()) {
-                errorMessages.append("Số lượng không được để trống. ");
-            } else {
-                try {
-                    int quantityValue = Integer.parseInt(quantity.trim());
-                    if (quantityValue < 0) {
-                        errorMessages.append("Số lượng không được âm. ");
-                    }
-                } catch (NumberFormatException e) {
-                    errorMessages.append("Số lượng phải là số nguyên hợp lệ. ");
-                }
             }
             
             if (supplierId == null) {
@@ -470,7 +441,6 @@ public class ManageProductController extends HttpServlet {
                     .productName(productName.trim())
                     .description(description != null ? description.trim() : "")
                     .unit(unit)
-                    .quantity(Integer.parseInt(quantity.trim()))
                     .purchasePrice(purchasePrice)
                     .salePrice(salePrice)
                     .supplierId(supplierId)
@@ -563,7 +533,7 @@ public class ManageProductController extends HttpServlet {
             csvContent.append("\uFEFF");
             
             // Add header row
-            csvContent.append("Mã SP,Tên SP,Mô tả,Đơn vị,Số lượng,Giá mua,Giá bán,Ngưỡng tồn kho,Trạng thái,Nhà cung cấp\n");
+            csvContent.append("Mã SP,Tên SP,Mô tả,Đơn vị,Giá mua,Giá bán,Ngưỡng tồn kho,Trạng thái,Nhà cung cấp\n");
             
             // Add data rows
             for (Product product : products) {
@@ -571,7 +541,6 @@ public class ManageProductController extends HttpServlet {
                 csvContent.append("\"").append(escapeCSV(product.getProductName())).append("\",");
                 csvContent.append("\"").append(escapeCSV(product.getDescription())).append("\",");
                 csvContent.append("\"").append(escapeCSV(product.getUnit())).append("\",");
-                csvContent.append(product.getQuantity()).append(",");
                 csvContent.append(product.getPurchasePrice()).append(",");
                 csvContent.append(product.getSalePrice()).append(",");
                 csvContent.append(product.getLowStockThreshold()).append(",");
@@ -659,7 +628,7 @@ public class ManageProductController extends HttpServlet {
                 try {
                     // Parse CSV line (handle quoted fields)
                     String[] fields = parseCSVLine(line);
-                    if (fields.length < 10) {
+                    if (fields.length < 9) {
                         errorMessages.append("Dòng ").append(lineNumber).append(": Không đủ cột dữ liệu.\n");
                         errorCount++;
                         continue;
@@ -670,16 +639,15 @@ public class ManageProductController extends HttpServlet {
                     String productName = fields[1].trim();
                     String description = fields[2].trim();
                     String unit = fields[3].trim();
-                    String quantityStr = fields[4].trim();
-                    String purchasePriceStr = fields[5].trim();
-                    String salePriceStr = fields[6].trim();
-                    String lowStockThresholdStr = fields[7].trim();
-                    String statusStr = fields[8].trim();
-                    String supplierName = fields[9].trim();
+                    String purchasePriceStr = fields[4].trim();
+                    String salePriceStr = fields[5].trim();
+                    String lowStockThresholdStr = fields[6].trim();
+                    String statusStr = fields[7].trim();
+                    String supplierName = fields[8].trim();
                     
                     // Validate required fields
                     if (productCode.isEmpty() || productName.isEmpty() || unit.isEmpty() || 
-                        quantityStr.isEmpty() || purchasePriceStr.isEmpty() || salePriceStr.isEmpty() ||
+                        purchasePriceStr.isEmpty() || salePriceStr.isEmpty() ||
                         lowStockThresholdStr.isEmpty() || supplierName.isEmpty()) {
                         errorMessages.append("Dòng ").append(lineNumber).append(": Thiếu dữ liệu bắt buộc.\n");
                         errorCount++;
@@ -695,15 +663,14 @@ public class ManageProductController extends HttpServlet {
                     }
                     
                     // Parse numeric fields
-                    int quantity = Integer.parseInt(quantityStr);
                     float purchasePrice = Float.parseFloat(purchasePriceStr);
                     float salePrice = Float.parseFloat(salePriceStr);
                     int lowStockThreshold = Integer.parseInt(lowStockThresholdStr);
                     boolean isActive = "Hoạt động".equals(statusStr);
                     
                     // Validate values
-                    if (quantity < 0 || purchasePrice < 0 || salePrice < 0 || lowStockThreshold < 10) {
-                        errorMessages.append("Dòng ").append(lineNumber).append(": Giá trị không hợp lệ (số lượng, giá >= 0, ngưỡng tồn kho >= 10).\n");
+                    if (purchasePrice < 0 || salePrice < 0 || lowStockThreshold < 10) {
+                        errorMessages.append("Dòng ").append(lineNumber).append(": Giá trị không hợp lệ (giá >= 0, ngưỡng tồn kho >= 10).\n");
                         errorCount++;
                         continue;
                     }
@@ -721,7 +688,6 @@ public class ManageProductController extends HttpServlet {
                             .productName(productName)
                             .description(description)
                             .unit(unit)
-                            .quantity(quantity)
                             .purchasePrice(purchasePrice)
                             .salePrice(salePrice)
                             .supplierId(supplier.getSupplierId())

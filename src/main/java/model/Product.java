@@ -23,7 +23,6 @@ public class Product {
     private String productName;
     private String description;
     private String unit;
-    private Integer quantity;
     private Float purchasePrice;
     private Float salePrice;
     private Integer supplierId;
