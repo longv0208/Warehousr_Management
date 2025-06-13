@@ -11,6 +11,19 @@
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono&display=swap" rel="stylesheet"/>
   <link href="${pageContext.request.contextPath}/css/index.css" rel="stylesheet"/>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/izitoast@1.4.0/dist/css/iziToast.min.css">
+  <style>
+    .status-transition-info {
+      font-size: 0.8em;
+      color: #6c757d;
+      margin-top: 5px;
+    }
+    .dropdown-item:hover {
+      background-color: #f8f9fa;
+    }
+    .dropdown-item-text {
+      font-style: italic;
+    }
+  </style>
 </head>
 <body>
 <div class="container-fluid">
@@ -23,9 +36,21 @@
       
       <div class="d-flex justify-content-between align-items-center mb-4">
         <h3>Quản Lý Đơn Bán Hàng</h3>
-        <div>
+<!--        <div>
           <a href="${pageContext.request.contextPath}/admin/manage-sales-order?action=create" class="btn btn-success">+ Tạo Đơn Hàng</a>
-        </div>
+        </div>-->
+      </div>
+      
+      <!-- Status Workflow Info -->
+      <div class="alert alert-info mb-4">
+        <h6><i class="fas fa-info-circle"></i> Quy trình chuyển trạng thái đơn hàng:</h6>
+        <small>
+          <strong>Chờ kiểm tra kho</strong> → Chờ giao hàng, Đã hủy<br/>
+          <strong>Chờ giao hàng</strong> → Đã giao, Chờ kiểm tra kho (nếu cần kiểm tra lại), Đã hủy<br/>
+          <strong>Đã giao</strong> → Hoàn thành, Chờ giao hàng (nếu cần giao lại), Đã hủy<br/>
+          <strong>Hoàn thành</strong> → Đã giao (nếu cần xử lý vấn đề)<br/>
+          <strong>Đã hủy</strong> → Chờ kiểm tra kho (khôi phục đơn hàng)
+        </small>
       </div>
 
       <!-- Filter Form -->
@@ -48,7 +73,7 @@
           <select name="userId" class="form-select">
             <option value="">-- Tất cả nhân viên --</option>
             <c:forEach var="staff" items="${salesStaff}">
-              <option value="${staff.userId}" ${userIdFilter == staff.userId ? 'selected' : ''}>${staff.fullName}</option>
+              <option value="${staff.userId}" ${userIdFilter eq staff.userId.toString() ? 'selected' : ''}>${staff.fullName}</option>
             </c:forEach>
           </select>
         </div>
@@ -57,7 +82,7 @@
         </div>
       </form>
 
-      <div class="table-responsive">
+      <div class="table-responsive-lg">
         <table class="table table-bordered table-hover">
           <thead class="table-light">
           <tr>
@@ -136,21 +161,23 @@
                           Trạng thái
                         </button>
                         <ul class="dropdown-menu">
-                          <c:if test="${order.status != 'pending_stock_check'}">
-                            <li><a class="dropdown-item" href="${pageContext.request.contextPath}/admin/manage-sales-order?action=update-status&id=${order.salesOrderId}&status=pending_stock_check">Chờ kiểm tra kho</a></li>
-                          </c:if>
-                          <c:if test="${order.status != 'awaiting_shipment'}">
-                            <li><a class="dropdown-item" href="${pageContext.request.contextPath}/admin/manage-sales-order?action=update-status&id=${order.salesOrderId}&status=awaiting_shipment">Chờ giao hàng</a></li>
-                          </c:if>
-                          <c:if test="${order.status != 'shipped'}">
-                            <li><a class="dropdown-item" href="${pageContext.request.contextPath}/admin/manage-sales-order?action=update-status&id=${order.salesOrderId}&status=shipped">Đã giao</a></li>
-                          </c:if>
-                          <c:if test="${order.status != 'completed'}">
-                            <li><a class="dropdown-item" href="${pageContext.request.contextPath}/admin/manage-sales-order?action=update-status&id=${order.salesOrderId}&status=completed">Hoàn thành</a></li>
-                          </c:if>
-                          <c:if test="${order.status != 'cancelled'}">
-                            <li><a class="dropdown-item" href="${pageContext.request.contextPath}/admin/manage-sales-order?action=update-status&id=${order.salesOrderId}&status=cancelled">Hủy đơn</a></li>
-                          </c:if>
+                          <c:set var="validStatuses" value="${orderValidStatuses[order.salesOrderId]}" />
+                          <c:choose>
+                            <c:when test="${not empty validStatuses}">
+                              <c:forEach var="validStatus" items="${validStatuses}">
+                                <li>
+                                  <a class="dropdown-item" 
+                                     href="${pageContext.request.contextPath}/admin/manage-sales-order?action=update-status&id=${order.salesOrderId}&status=${validStatus}"
+                                     onclick="return confirm('Bạn có chắc chắn muốn chuyển trạng thái đơn hàng từ &quot;${statusDisplayNames[order.status]}&quot; thành &quot;${statusDisplayNames[validStatus]}&quot;?')">
+                                    ${statusDisplayNames[validStatus]}
+                                  </a>
+                                </li>
+                              </c:forEach>
+                            </c:when>
+                            <c:otherwise>
+                              <li><span class="dropdown-item-text text-muted">Không thể thay đổi trạng thái</span></li>
+                            </c:otherwise>
+                          </c:choose>
                         </ul>
                       </div>
                       

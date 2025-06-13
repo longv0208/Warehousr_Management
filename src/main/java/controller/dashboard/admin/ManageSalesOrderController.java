@@ -19,7 +19,9 @@ import java.math.BigDecimal;
 import java.sql.Date;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @WebServlet(name = "ManageSalesOrderController", urlPatterns = {"/admin/manage-sales-order"})
 public class ManageSalesOrderController extends HttpServlet {
@@ -61,9 +63,6 @@ public class ManageSalesOrderController extends HttpServlet {
             case "update-status":
                 updateOrderStatus(request, response);
                 break;
-            case "create":
-                showCreateForm(request, response);
-                break;
             default:
                 listAllOrders(request, response);
                 break;
@@ -79,14 +78,11 @@ public class ManageSalesOrderController extends HttpServlet {
         }
 
         switch (action) {
-            case "create":
-                createOrder(request, response);
-                break;
             case "edit":
                 updateOrder(request, response);
                 break;
             case "update-status":
-                updateOrderStatusPost(request, response);
+                updateOrderStatus(request, response);
                 break;
             default:
                 listAllOrders(request, response);
@@ -115,6 +111,22 @@ public class ManageSalesOrderController extends HttpServlet {
                 salesStaff.add(user);
             }
         }
+        
+        // Prepare valid statuses for each order
+        Map<Integer, List<String>> orderValidStatuses = new HashMap<>();
+        Map<String, String> statusDisplayNames = new HashMap<>();
+        
+        // Prepare status display names
+        statusDisplayNames.put("pending_stock_check", "Chờ kiểm tra kho");
+        statusDisplayNames.put("awaiting_shipment", "Chờ giao hàng");
+        statusDisplayNames.put("shipped", "Đã giao");
+        statusDisplayNames.put("completed", "Hoàn thành");
+        statusDisplayNames.put("cancelled", "Đã hủy");
+        
+        for (SalesOrder order : orders) {
+            List<String> validStatuses = getValidNextStatuses(order.getStatus());
+            orderValidStatuses.put(order.getSalesOrderId(), validStatuses);
+        }
 
         request.setAttribute("orders", orders);
         request.setAttribute("salesStaff", salesStaff);
@@ -125,6 +137,8 @@ public class ManageSalesOrderController extends HttpServlet {
         request.setAttribute("statusFilter", statusFilter);
         request.setAttribute("customerFilter", customerFilter);
         request.setAttribute("userIdFilter", userIdFilter);
+        request.setAttribute("orderValidStatuses", orderValidStatuses);
+        request.setAttribute("statusDisplayNames", statusDisplayNames);
 
         request.getRequestDispatcher("/view/dashboard/admin/salesOrder/manageSalesOrder.jsp").forward(request, response);
     }
@@ -144,16 +158,33 @@ public class ManageSalesOrderController extends HttpServlet {
                 List<SalesOrderDetail> orderDetails = salesOrderDetailDAO.findBySalesOrderId(orderId);
                 User creator = userDAO.findById(order.getUserId());
                 
-                // Get product information for each detail
+                // Create combined order details with product information
+                List<Map<String, Object>> orderDetailsWithProduct = new ArrayList<>();
+                BigDecimal totalOrderValue = BigDecimal.ZERO;
+                
                 for (SalesOrderDetail detail : orderDetails) {
                     Product product = productDAO.findById(detail.getProductId());
-                    request.setAttribute("product_" + detail.getProductId(), product);
+                    if (product != null) {
+                        // Create a map with combined information
+                        Map<String, Object> detailWithProduct = new HashMap<>();
+                        detailWithProduct.put("productCode", product.getProductCode());
+                        detailWithProduct.put("productName", product.getProductName());
+                        detailWithProduct.put("unit", product.getUnit());
+                        detailWithProduct.put("quantityOrdered", detail.getQuantityOrdered());
+                        detailWithProduct.put("unitSalePrice", detail.getUnitSalePrice());
+                        
+                        BigDecimal totalPrice = detail.getUnitSalePrice().multiply(new BigDecimal(detail.getQuantityOrdered()));
+                        detailWithProduct.put("totalPrice", totalPrice);
+                        
+                        totalOrderValue = totalOrderValue.add(totalPrice);
+                        orderDetailsWithProduct.add(detailWithProduct);
+                    }
                 }
                 
                 request.setAttribute("order", order);
-                request.setAttribute("orderDetails", orderDetails);
+                request.setAttribute("orderDetailsWithProduct", orderDetailsWithProduct);
+                request.setAttribute("totalOrderValue", totalOrderValue);
                 request.setAttribute("creator", creator);
-                request.setAttribute("productDAO", productDAO);
                 
                 request.getRequestDispatcher("/view/dashboard/admin/salesOrder/viewSalesOrder.jsp").forward(request, response);
             } else {
@@ -165,6 +196,7 @@ public class ManageSalesOrderController extends HttpServlet {
     }
 
     private void showEditForm(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        HttpSession session = request.getSession();
         String idStr = request.getParameter("id");
         if (idStr == null || idStr.isEmpty()) {
             response.sendRedirect(request.getContextPath() + "/admin/manage-sales-order?action=list");
@@ -176,8 +208,19 @@ public class ManageSalesOrderController extends HttpServlet {
             SalesOrder order = salesOrderDAO.findById(orderId);
             
             if (order != null) {
+                // Validate that order can only be edited when status is pending_stock_check
+                if (!"pending_stock_check".equals(order.getStatus())) {
+                    session.setAttribute("toastMessage", "Chỉ có thể chỉnh sửa đơn hàng khi trạng thái là 'Chờ kiểm tra kho'. Trạng thái hiện tại: '" + getStatusDisplayName(order.getStatus()) + "'");
+                    session.setAttribute("toastType", "error");
+                    response.sendRedirect(request.getContextPath() + "/admin/manage-sales-order?action=view&id=" + orderId);
+                    return;
+                }
+                
                 List<SalesOrderDetail> orderDetails = salesOrderDetailDAO.findBySalesOrderId(orderId);
                 List<Product> products = productDAO.findActiveProducts();
+                User creator = userDAO.findById(order.getUserId());
+                
+                // Get all users for staff selection
                 List<User> users = userDAO.findAll();
                 List<User> salesStaff = new ArrayList<>();
                 for (User user : users) {
@@ -186,115 +229,43 @@ public class ManageSalesOrderController extends HttpServlet {
                     }
                 }
                 
+                // Create combined order details with product information for editing
+                List<Map<String, Object>> orderDetailsWithProduct = new ArrayList<>();
+                
+                for (SalesOrderDetail detail : orderDetails) {
+                    Product product = productDAO.findById(detail.getProductId());
+                    if (product != null) {
+                        Map<String, Object> detailWithProduct = new HashMap<>();
+                        detailWithProduct.put("productId", detail.getProductId());
+                        detailWithProduct.put("productCode", product.getProductCode());
+                        detailWithProduct.put("productName", product.getProductName());
+                        detailWithProduct.put("unit", product.getUnit());
+                        detailWithProduct.put("quantityOrdered", detail.getQuantityOrdered());
+                        detailWithProduct.put("unitSalePrice", detail.getUnitSalePrice());
+                        detailWithProduct.put("availableQuantity", product.getQuantity());
+                        
+                        orderDetailsWithProduct.add(detailWithProduct);
+                    }
+                }
+                
                 request.setAttribute("order", order);
                 request.setAttribute("orderDetails", orderDetails);
+                request.setAttribute("orderDetailsWithProduct", orderDetailsWithProduct);
                 request.setAttribute("products", products);
                 request.setAttribute("salesStaff", salesStaff);
-                request.setAttribute("productDAO", productDAO);
+                request.setAttribute("creator", creator);
                 
                 request.getRequestDispatcher("/view/dashboard/admin/salesOrder/editSalesOrder.jsp").forward(request, response);
             } else {
+                session.setAttribute("toastMessage", "Không tìm thấy đơn hàng!");
+                session.setAttribute("toastType", "error");
                 response.sendRedirect(request.getContextPath() + "/admin/manage-sales-order?action=list");
             }
         } catch (NumberFormatException e) {
+            session.setAttribute("toastMessage", "ID đơn hàng không hợp lệ!");
+            session.setAttribute("toastType", "error");
             response.sendRedirect(request.getContextPath() + "/admin/manage-sales-order?action=list");
         }
-    }
-
-    private void showCreateForm(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        // Get all active products and sales staff for selection
-        List<Product> products = productDAO.findActiveProducts();
-        List<User> users = userDAO.findAll();
-        List<User> salesStaff = new ArrayList<>();
-        for (User user : users) {
-            if ("sales_staff".equals(user.getRoleId())) {
-                salesStaff.add(user);
-            }
-        }
-        
-        request.setAttribute("products", products);
-        request.setAttribute("salesStaff", salesStaff);
-        request.setAttribute("orderCode", salesOrderDAO.generateOrderCode());
-        
-        request.getRequestDispatcher("/view/dashboard/admin/salesOrder/createSalesOrder.jsp").forward(request, response);
-    }
-
-    private void createOrder(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        HttpSession session = request.getSession();
-        
-        try {
-            // Get order information
-            String orderCode = request.getParameter("orderCode");
-            String customerName = request.getParameter("customerName");
-            String notes = request.getParameter("notes");
-            String orderDateStr = request.getParameter("orderDate");
-            String userIdStr = request.getParameter("userId");
-            String status = request.getParameter("status");
-            
-            // Parse order date
-            Date orderDate = Date.valueOf(orderDateStr != null ? orderDateStr : LocalDate.now().toString());
-            
-            // Create sales order
-            SalesOrder salesOrder = new SalesOrder();
-            salesOrder.setOrderCode(orderCode);
-            salesOrder.setCustomerName(customerName);
-            salesOrder.setUserId(Integer.parseInt(userIdStr));
-            salesOrder.setOrderDate(orderDate);
-            salesOrder.setStatus(status != null ? status : "pending_stock_check");
-            salesOrder.setNotes(notes);
-
-            int salesOrderId = salesOrderDAO.insert(salesOrder);
-            
-            if (salesOrderId > 0) {
-                // Get product details from form
-                String[] productIds = request.getParameterValues("productId");
-                String[] quantities = request.getParameterValues("quantity");
-                String[] unitPrices = request.getParameterValues("unitPrice");
-                
-                List<SalesOrderDetail> orderDetails = new ArrayList<>();
-                
-                if (productIds != null && quantities != null && unitPrices != null) {
-                    for (int i = 0; i < productIds.length; i++) {
-                        if (productIds[i] != null && !productIds[i].isEmpty() &&
-                            quantities[i] != null && !quantities[i].isEmpty() &&
-                            unitPrices[i] != null && !unitPrices[i].isEmpty()) {
-                            
-                            SalesOrderDetail detail = new SalesOrderDetail();
-                            detail.setSalesOrderId(salesOrderId);
-                            detail.setProductId(Integer.parseInt(productIds[i]));
-                            detail.setQuantityOrdered(Integer.parseInt(quantities[i]));
-                            detail.setUnitSalePrice(new BigDecimal(unitPrices[i]));
-                            
-                            orderDetails.add(detail);
-                        }
-                    }
-                }
-                
-                if (!orderDetails.isEmpty()) {
-                    boolean detailsInserted = salesOrderDetailDAO.insertDetails(orderDetails);
-                    if (detailsInserted) {
-                        session.setAttribute("toastMessage", "Đơn bán hàng đã được tạo thành công!");
-                        session.setAttribute("toastType", "success");
-                    } else {
-                        session.setAttribute("toastMessage", "Lỗi khi tạo chi tiết đơn hàng!");
-                        session.setAttribute("toastType", "error");
-                    }
-                } else {
-                    session.setAttribute("toastMessage", "Đơn hàng đã được tạo nhưng không có sản phẩm nào!");
-                    session.setAttribute("toastType", "warning");
-                }
-            } else {
-                session.setAttribute("toastMessage", "Lỗi khi tạo đơn bán hàng!");
-                session.setAttribute("toastType", "error");
-            }
-            
-        } catch (Exception e) {
-            e.printStackTrace();
-            session.setAttribute("toastMessage", "Lỗi hệ thống: " + e.getMessage());
-            session.setAttribute("toastType", "error");
-        }
-        
-        response.sendRedirect(request.getContextPath() + "/admin/manage-sales-order?action=list");
     }
 
     private void updateOrder(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
@@ -309,6 +280,14 @@ public class ManageSalesOrderController extends HttpServlet {
                 session.setAttribute("toastMessage", "Không tìm thấy đơn hàng!");
                 session.setAttribute("toastType", "error");
                 response.sendRedirect(request.getContextPath() + "/admin/manage-sales-order?action=list");
+                return;
+            }
+            
+            // Validate that order can only be updated when status is pending_stock_check
+            if (!"pending_stock_check".equals(existingOrder.getStatus())) {
+                session.setAttribute("toastMessage", "Chỉ có thể cập nhật đơn hàng khi trạng thái là 'Chờ kiểm tra kho'. Trạng thái hiện tại: '" + getStatusDisplayName(existingOrder.getStatus()) + "'");
+                session.setAttribute("toastType", "error");
+                response.sendRedirect(request.getContextPath() + "/admin/manage-sales-order?action=view&id=" + orderId);
                 return;
             }
             
@@ -422,10 +401,11 @@ public class ManageSalesOrderController extends HttpServlet {
     }
 
     private void updateOrderStatus(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        HttpSession session = request.getSession();
         String idStr = request.getParameter("id");
-        String status = request.getParameter("status");
+        String newStatus = request.getParameter("status");
         
-        if (idStr == null || idStr.isEmpty() || status == null || status.isEmpty()) {
+        if (idStr == null || idStr.isEmpty() || newStatus == null || newStatus.isEmpty()) {
             response.sendRedirect(request.getContextPath() + "/admin/manage-sales-order?action=list");
             return;
         }
@@ -434,34 +414,28 @@ public class ManageSalesOrderController extends HttpServlet {
             int orderId = Integer.parseInt(idStr);
             SalesOrder order = salesOrderDAO.findById(orderId);
             
-            if (order != null) {
-                request.setAttribute("order", order);
-                request.setAttribute("newStatus", status);
-                request.getRequestDispatcher("/view/dashboard/admin/salesOrder/confirmStatusUpdate.jsp").forward(request, response);
-            } else {
+            if (order == null) {
+                session.setAttribute("toastMessage", "Không tìm thấy đơn hàng!");
+                session.setAttribute("toastType", "error");
                 response.sendRedirect(request.getContextPath() + "/admin/manage-sales-order?action=list");
+                return;
             }
-        } catch (NumberFormatException e) {
-            response.sendRedirect(request.getContextPath() + "/admin/manage-sales-order?action=list");
-        }
-    }
-
-    private void updateOrderStatusPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        HttpSession session = request.getSession();
-        String idStr = request.getParameter("id");
-        String status = request.getParameter("status");
-        
-        if (idStr == null || idStr.isEmpty() || status == null || status.isEmpty()) {
-            response.sendRedirect(request.getContextPath() + "/admin/manage-sales-order?action=list");
-            return;
-        }
-
-        try {
-            int orderId = Integer.parseInt(idStr);
-            boolean updated = salesOrderDAO.updateStatus(orderId, status);
+            
+            String currentStatus = order.getStatus();
+            
+            // Validate status transition
+            if (!isValidStatusTransition(currentStatus, newStatus)) {
+                session.setAttribute("toastMessage", getStatusTransitionErrorMessage(currentStatus, newStatus));
+                session.setAttribute("toastType", "error");
+                response.sendRedirect(request.getContextPath() + "/admin/manage-sales-order?action=list");
+                return;
+            }
+            
+            boolean updated = salesOrderDAO.updateStatus(orderId, newStatus);
             
             if (updated) {
-                session.setAttribute("toastMessage", "Trạng thái đơn hàng đã được cập nhật thành công!");
+                session.setAttribute("toastMessage", "Trạng thái đơn hàng đã được cập nhật thành công từ '" + 
+                    getStatusDisplayName(currentStatus) + "' thành '" + getStatusDisplayName(newStatus) + "'!");
                 session.setAttribute("toastType", "success");
             } else {
                 session.setAttribute("toastMessage", "Lỗi khi cập nhật trạng thái đơn hàng!");
@@ -474,4 +448,96 @@ public class ManageSalesOrderController extends HttpServlet {
         
         response.sendRedirect(request.getContextPath() + "/admin/manage-sales-order?action=list");
     }
+    
+    /**
+     * Validate if the status transition is allowed
+     */
+    private boolean isValidStatusTransition(String currentStatus, String newStatus) {
+        // If same status, no transition needed
+        if (currentStatus.equals(newStatus)) {
+            return false;
+        }
+        
+        Map<String, List<String>> validTransitions = new HashMap<>();
+        
+        // Define valid status transitions
+        validTransitions.put("pending_stock_check", List.of("awaiting_shipment", "cancelled"));
+        validTransitions.put("awaiting_shipment", List.of("shipped", "pending_stock_check", "cancelled"));
+        validTransitions.put("shipped", List.of("completed", "awaiting_shipment", "cancelled"));
+        validTransitions.put("completed", List.of("shipped")); // Allow reverting completed orders if needed
+        validTransitions.put("cancelled", List.of("pending_stock_check")); // Allow restoring cancelled orders
+        
+        List<String> allowedNextStatuses = validTransitions.get(currentStatus);
+        return allowedNextStatuses != null && allowedNextStatuses.contains(newStatus);
+    }
+    
+    /**
+     * Get user-friendly status display name
+     */
+    private String getStatusDisplayName(String status) {
+        switch (status) {
+            case "pending_stock_check":
+                return "Chờ kiểm tra kho";
+            case "awaiting_shipment":
+                return "Chờ giao hàng";
+            case "shipped":
+                return "Đã giao";
+            case "completed":
+                return "Hoàn thành";
+            case "cancelled":
+                return "Đã hủy";
+            default:
+                return status;
+        }
+    }
+    
+    /**
+     * Get specific error message for invalid status transition
+     */
+    private String getStatusTransitionErrorMessage(String currentStatus, String newStatus) {
+        String currentDisplayName = getStatusDisplayName(currentStatus);
+        String newDisplayName = getStatusDisplayName(newStatus);
+        
+        // Specific error messages for common invalid transitions
+        if ("completed".equals(currentStatus) && !"shipped".equals(newStatus)) {
+            return "Đơn hàng đã hoàn thành chỉ có thể chuyển về trạng thái 'Đã giao' nếu cần xử lý vấn đề.";
+        }
+        
+        if ("cancelled".equals(currentStatus) && !"pending_stock_check".equals(newStatus)) {
+            return "Đơn hàng đã hủy chỉ có thể được khôi phục về trạng thái 'Chờ kiểm tra kho'.";
+        }
+        
+        if ("shipped".equals(currentStatus) && "pending_stock_check".equals(newStatus)) {
+            return "Đơn hàng đã giao không thể chuyển về trạng thái 'Chờ kiểm tra kho'. Chỉ có thể chuyển về 'Chờ giao hàng' nếu cần giao lại.";
+        }
+        
+        // Generic error message
+        return "Không thể chuyển trạng thái từ '" + currentDisplayName + "' thành '" + newDisplayName + "'. Vui lòng kiểm tra quy trình xử lý đơn hàng.";
+    }
+    
+    /**
+     * Get list of valid next statuses for a given current status
+     * This method is public so JSP can access it
+     */
+    public List<String> getValidNextStatuses(String currentStatus) {
+        Map<String, List<String>> validTransitions = new HashMap<>();
+        
+        // Define valid status transitions (same as in isValidStatusTransition)
+        validTransitions.put("pending_stock_check", List.of("awaiting_shipment", "cancelled"));
+        validTransitions.put("awaiting_shipment", List.of("shipped", "pending_stock_check", "cancelled"));
+        validTransitions.put("shipped", List.of("completed", "awaiting_shipment", "cancelled"));
+        validTransitions.put("completed", List.of("shipped"));
+        validTransitions.put("cancelled", List.of("pending_stock_check"));
+        
+        return validTransitions.getOrDefault(currentStatus, new ArrayList<>());
+    }
+    
+    /**
+     * Public method to get status display name for JSP
+     */
+    public String getStatusDisplayNamePublic(String status) {
+        return getStatusDisplayName(status);
+    }
+
+
 } 
