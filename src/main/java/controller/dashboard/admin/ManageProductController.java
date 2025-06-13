@@ -23,11 +23,12 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
-// import javax.servlet.annotation.MultipartConfig;
-// import javax.servlet.http.Part;
+import jakarta.servlet.annotation.MultipartConfig;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 @WebServlet(name = "ManageProductController", urlPatterns = {"/admin/manage-product"})
-// @MultipartConfig(maxFileSize = 10485760) // 10MB - Comment out until servlet API is properly configured
+@MultipartConfig(maxFileSize = 10485760) // 10MB
 public class ManageProductController extends HttpServlet {
 
     private ProductDAO productDAO;
@@ -67,6 +68,9 @@ public class ManageProductController extends HttpServlet {
                 break;
             case "export":
                 exportToExcel(request, response);
+                break;
+            case "download-template":
+                downloadImportTemplate(request, response);
                 break;
             case "show-import":
                 showImportForm(request, response);
@@ -578,198 +582,179 @@ public class ManageProductController extends HttpServlet {
 
     private void importFromExcel(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         try {
-            // Check if the request is multipart
+            // Ensure multipart/form-data request
             String contentType = request.getContentType();
             if (contentType == null || !contentType.toLowerCase().startsWith("multipart/")) {
-                request.getSession().setAttribute("toastMessage", "Vui lòng chọn file CSV để import.");
+                request.getSession().setAttribute("toastMessage", "Vui lòng chọn file Excel để import.");
                 request.getSession().setAttribute("toastType", "error");
                 response.sendRedirect(request.getContextPath() + "/admin/manage-product?action=show-import");
                 return;
             }
 
-            Part filePart = request.getPart("csvFile");
+            Part filePart = request.getPart("excelFile");
             if (filePart == null || filePart.getSize() == 0) {
-                request.getSession().setAttribute("toastMessage", "Vui lòng chọn file CSV để import.");
+                request.getSession().setAttribute("toastMessage", "Vui lòng chọn file Excel để import.");
                 request.getSession().setAttribute("toastType", "error");
                 response.sendRedirect(request.getContextPath() + "/admin/manage-product?action=show-import");
                 return;
             }
 
-            // Check file extension
             String fileName = filePart.getSubmittedFileName();
-            if (fileName == null || !fileName.toLowerCase().endsWith(".csv")) {
-                request.getSession().setAttribute("toastMessage", "Chỉ chấp nhận file CSV.");
+            if (fileName == null || !fileName.toLowerCase().endsWith(".xlsx")) {
+                request.getSession().setAttribute("toastMessage", "Chỉ chấp nhận file định dạng .xlsx.");
                 request.getSession().setAttribute("toastType", "error");
                 response.sendRedirect(request.getContextPath() + "/admin/manage-product?action=show-import");
                 return;
             }
 
-            InputStream inputStream = filePart.getInputStream();
-            BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, "UTF-8"));
-            
-            String line;
-            int lineNumber = 0;
             int successCount = 0;
             int errorCount = 0;
             StringBuilder errorMessages = new StringBuilder();
-            
-            // Skip the header line and BOM if present
-            line = reader.readLine();
-            if (line != null && line.startsWith("\uFEFF")) {
-                line = line.substring(1); // Remove BOM
-            }
-            lineNumber++;
-            
-            // Process each data line
-            while ((line = reader.readLine()) != null) {
-                lineNumber++;
-                if (line.trim().isEmpty()) continue;
-                
-                try {
-                    // Parse CSV line (handle quoted fields)
-                    String[] fields = parseCSVLine(line);
-                    if (fields.length < 9) {
-                        errorMessages.append("Dòng ").append(lineNumber).append(": Không đủ cột dữ liệu.\n");
+
+            try (InputStream inputStream = filePart.getInputStream(); Workbook workbook = new XSSFWorkbook(inputStream)) {
+                Sheet sheet = workbook.getSheetAt(0);
+                DataFormatter formatter = new DataFormatter();
+
+                int rowNumber = 0;
+                for (Row row : sheet) {
+                    rowNumber++;
+                    if (rowNumber == 1) continue; // Skip header
+
+                    // If the row is completely empty, skip
+                    if (row == null || row.getLastCellNum() <= 0) continue;
+
+                    try {
+                        String productCode = formatter.formatCellValue(row.getCell(0)).trim();
+                        String productName = formatter.formatCellValue(row.getCell(1)).trim();
+                        String description = formatter.formatCellValue(row.getCell(2)).trim();
+                        String unit = formatter.formatCellValue(row.getCell(3)).trim();
+                        String purchasePriceStr = formatter.formatCellValue(row.getCell(4)).trim();
+                        String salePriceStr = formatter.formatCellValue(row.getCell(5)).trim();
+                        String lowStockThresholdStr = formatter.formatCellValue(row.getCell(6)).trim();
+                        String statusStr = formatter.formatCellValue(row.getCell(7)).trim();
+                        String supplierName = formatter.formatCellValue(row.getCell(8)).trim();
+
+                        // Validate required fields
+                        if (productCode.isEmpty() || productName.isEmpty() || unit.isEmpty() ||
+                                purchasePriceStr.isEmpty() || salePriceStr.isEmpty() ||
+                                lowStockThresholdStr.isEmpty() || supplierName.isEmpty()) {
+                            errorMessages.append("Dòng ").append(rowNumber).append(": Thiếu dữ liệu bắt buộc.\n");
+                            errorCount++;
+                            continue;
+                        }
+
+                        Supplier supplier = null;
+                        try {
+                            int supplierIdNumeric = Integer.parseInt(supplierName);
+                            supplier = supplierDAO.findById(supplierIdNumeric);
+                        } catch (NumberFormatException nfeId) {
+                            // Not numeric, treat as name
+                            supplier = supplierDAO.findBySupplierName(supplierName);
+                        }
+
+                        if (supplier == null) {
+                            errorMessages.append("Dòng ").append(rowNumber).append(": Không tìm thấy nhà cung cấp '").append(supplierName).append("'.\n");
+                            errorCount++;
+                            continue;
+                        }
+
+                        float purchasePrice = Float.parseFloat(purchasePriceStr);
+                        float salePrice = Float.parseFloat(salePriceStr);
+                        int lowStockThreshold = Integer.parseInt(lowStockThresholdStr);
+                        boolean isActive = "Hoạt động".equalsIgnoreCase(statusStr);
+
+                        if (purchasePrice < 0 || salePrice < 0 || lowStockThreshold < 10) {
+                            errorMessages.append("Dòng ").append(rowNumber).append(": Giá trị không hợp lệ (giá >= 0, ngưỡng tồn kho >= 10).\n");
+                            errorCount++;
+                            continue;
+                        }
+
+                        if (productDAO.existsByProductCode(productCode)) {
+                            errorMessages.append("Dòng ").append(rowNumber).append(": Mã sản phẩm '").append(productCode).append("' đã tồn tại.\n");
+                            errorCount++;
+                            continue;
+                        }
+
+                        Product product = Product.builder()
+                                .productCode(productCode)
+                                .productName(productName)
+                                .description(description)
+                                .unit(unit)
+                                .purchasePrice(purchasePrice)
+                                .salePrice(salePrice)
+                                .supplierId(supplier.getSupplierId())
+                                .lowStockThreshold(lowStockThreshold)
+                                .isActive(isActive)
+                                .build();
+
+                        int generatedId = productDAO.insert(product);
+                        if (generatedId > 0) {
+                            successCount++;
+                        } else {
+                            errorMessages.append("Dòng ").append(rowNumber).append(": Lỗi khi tạo sản phẩm.\n");
+                            errorCount++;
+                        }
+
+                    } catch (NumberFormatException nfe) {
+                        errorMessages.append("Dòng ").append(rowNumber).append(": Định dạng số không hợp lệ.\n");
                         errorCount++;
-                        continue;
-                    }
-                    
-                    // Extract data from CSV fields
-                    String productCode = fields[0].trim();
-                    String productName = fields[1].trim();
-                    String description = fields[2].trim();
-                    String unit = fields[3].trim();
-                    String purchasePriceStr = fields[4].trim();
-                    String salePriceStr = fields[5].trim();
-                    String lowStockThresholdStr = fields[6].trim();
-                    String statusStr = fields[7].trim();
-                    String supplierName = fields[8].trim();
-                    
-                    // Validate required fields
-                    if (productCode.isEmpty() || productName.isEmpty() || unit.isEmpty() || 
-                        purchasePriceStr.isEmpty() || salePriceStr.isEmpty() ||
-                        lowStockThresholdStr.isEmpty() || supplierName.isEmpty()) {
-                        errorMessages.append("Dòng ").append(lineNumber).append(": Thiếu dữ liệu bắt buộc.\n");
-                        errorCount++;
-                        continue;
-                    }
-                    
-                    // Find supplier by name
-                    Supplier supplier = supplierDAO.findBySupplierName(supplierName);
-                    if (supplier == null) {
-                        errorMessages.append("Dòng ").append(lineNumber).append(": Không tìm thấy nhà cung cấp '").append(supplierName).append("'.\n");
-                        errorCount++;
-                        continue;
-                    }
-                    
-                    // Parse numeric fields
-                    float purchasePrice = Float.parseFloat(purchasePriceStr);
-                    float salePrice = Float.parseFloat(salePriceStr);
-                    int lowStockThreshold = Integer.parseInt(lowStockThresholdStr);
-                    boolean isActive = "Hoạt động".equals(statusStr);
-                    
-                    // Validate values
-                    if (purchasePrice < 0 || salePrice < 0 || lowStockThreshold < 10) {
-                        errorMessages.append("Dòng ").append(lineNumber).append(": Giá trị không hợp lệ (giá >= 0, ngưỡng tồn kho >= 10).\n");
-                        errorCount++;
-                        continue;
-                    }
-                    
-                    // Check if product code already exists
-                    if (productDAO.existsByProductCode(productCode)) {
-                        errorMessages.append("Dòng ").append(lineNumber).append(": Mã sản phẩm '").append(productCode).append("' đã tồn tại.\n");
-                        errorCount++;
-                        continue;
-                    }
-                    
-                    // Create product
-                    Product product = Product.builder()
-                            .productCode(productCode)
-                            .productName(productName)
-                            .description(description)
-                            .unit(unit)
-                            .purchasePrice(purchasePrice)
-                            .salePrice(salePrice)
-                            .supplierId(supplier.getSupplierId())
-                            .lowStockThreshold(lowStockThreshold)
-                            .isActive(isActive)
-                            .build();
-                    
-                    int generatedId = productDAO.insert(product);
-                    if (generatedId > 0) {
-                        successCount++;
-                    } else {
-                        errorMessages.append("Dòng ").append(lineNumber).append(": Lỗi khi tạo sản phẩm.\n");
+                    } catch (Exception exRow) {
+                        errorMessages.append("Dòng ").append(rowNumber).append(": Lỗi: ").append(exRow.getMessage()).append("\n");
                         errorCount++;
                     }
-                    
-                } catch (NumberFormatException e) {
-                    errorMessages.append("Dòng ").append(lineNumber).append(": Định dạng số không hợp lệ.\n");
-                    errorCount++;
-                } catch (Exception e) {
-                    errorMessages.append("Dòng ").append(lineNumber).append(": Lỗi: ").append(e.getMessage()).append("\n");
-                    errorCount++;
                 }
             }
-            
-            reader.close();
-            inputStream.close();
-            
-            // Set result message
+
             StringBuilder resultMessage = new StringBuilder();
-            resultMessage.append("Import hoàn thành! ");
-            resultMessage.append("Thành công: ").append(successCount).append(" sản phẩm. ");
+            resultMessage.append("Import hoàn thành! ")
+                    .append("Thành công: ").append(successCount).append(" sản phẩm. ");
             if (errorCount > 0) {
-                resultMessage.append("Lỗi: ").append(errorCount).append(" dòng.\n");
-                resultMessage.append(errorMessages.toString());
+                resultMessage.append("Lỗi: ").append(errorCount).append(" dòng.\n").append(errorMessages);
                 request.getSession().setAttribute("toastType", "warning");
             } else {
                 request.getSession().setAttribute("toastType", "success");
             }
             request.getSession().setAttribute("toastMessage", resultMessage.toString());
-            
+
         } catch (Exception e) {
-            request.getSession().setAttribute("toastMessage", "Lỗi khi import file CSV: " + e.getMessage());
+            request.getSession().setAttribute("toastMessage", "Lỗi khi import file Excel: " + e.getMessage());
             request.getSession().setAttribute("toastType", "error");
         }
-        
+
         response.sendRedirect(request.getContextPath() + "/admin/manage-product?action=list");
     }
-    
-    /**
-     * Parse a CSV line handling quoted fields
-     */
-    private String[] parseCSVLine(String line) {
-        List<String> fields = new ArrayList<>();
-        boolean inQuotes = false;
-        StringBuilder currentField = new StringBuilder();
-        
-        for (int i = 0; i < line.length(); i++) {
-            char c = line.charAt(i);
-            
-            if (c == '"') {
-                if (inQuotes && i + 1 < line.length() && line.charAt(i + 1) == '"') {
-                    // Double quote - escaped quote within field
-                    currentField.append('"');
-                    i++; // Skip next quote
-                } else {
-                    // Toggle quote mode
-                    inQuotes = !inQuotes;
-                }
-            } else if (c == ',' && !inQuotes) {
-                // Field separator
-                fields.add(currentField.toString());
-                currentField = new StringBuilder();
-            } else {
-                currentField.append(c);
-            }
-        }
-        
-        // Add the last field
-        fields.add(currentField.toString());
-        
-        return fields.toArray(new String[0]);
-    }
 
+    /**
+     * Tạo và gửi file Excel mẫu cho chức năng import
+     */
+    private void downloadImportTemplate(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        Workbook workbook = new XSSFWorkbook();
+        Sheet sheet = workbook.createSheet("Products");
+
+        // Header row
+        Row header = sheet.createRow(0);
+        String[] headers = {"Mã SP", "Tên SP", "Mô tả", "Đơn vị", "Giá mua", "Giá bán", "Ngưỡng tồn kho", "Trạng thái", "Nhà cung cấp"};
+        for (int i = 0; i < headers.length; i++) {
+            header.createCell(i).setCellValue(headers[i]);
+        }
+
+        // Sample data row
+        Row sample = sheet.createRow(1);
+        Object[] sampleValues = {"SP001", "Áo sơ mi", "Áo sơ mi cotton", "chiếc", 100000, 150000, 10, "Hoạt động", "Nhà cung cấp A"};
+        for (int i = 0; i < sampleValues.length; i++) {
+            sample.createCell(i).setCellValue(sampleValues[i].toString());
+        }
+
+        // Autosize columns
+        for (int i = 0; i < headers.length; i++) {
+            sheet.autoSizeColumn(i);
+        }
+
+        response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        response.setHeader("Content-Disposition", "attachment; filename=product_import_template.xlsx");
+
+        workbook.write(response.getOutputStream());
+        workbook.close();
+    }
 
 }

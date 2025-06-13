@@ -27,7 +27,7 @@
         <div>
           <!--<a href="${pageContext.request.contextPath}/admin/manage-product?action=init-sample-data" class="btn btn-warning btn-sm me-2" onclick="return confirm('Initialize sample category data? This will clear existing data.')">Init Sample Data</a>-->
           <a href="${pageContext.request.contextPath}/admin/manage-product?action=export" class="btn btn-outline-success btn-sm me-2">📊 Xuất CSV</a>
-          <a href="${pageContext.request.contextPath}/admin/manage-product?action=show-import" class="btn btn-outline-primary btn-sm me-2">📁 Nhập CSV</a>
+          <a href="${pageContext.request.contextPath}/admin/manage-product?action=show-import" class="btn btn-outline-primary btn-sm me-2">📥 Nhập Excel</a>
           <a href="${pageContext.request.contextPath}/admin/manage-product?action=create" class="btn btn-success">+ Thêm Sản Phẩm</a>
         </div>
       </div>
