@@ -227,6 +227,13 @@ ul#sidebarnav li a.nav-link.active {
             </li>
             <% } %>
             
+            <!-- Báo cáo sắp hết hàng - admin and warehouse_staff -->
+            <% if ("admin".equals(userRole) || "warehouse_staff".equals(userRole)) { %>
+            <li class="nav-item">
+                <a href="${pageContext.request.contextPath}/low-stock-report" class="nav-link"><i class="bi bi-exclamation-triangle"></i><span class="link-text">Sắp hết hàng</span></a>
+            </li>
+            <% } %>
+            
             <!-- Đơn mua hàng - purchasing_staff only -->
             <% if ("purchasing_staff".equals(userRole)) { %>
             <li class="nav-item">
