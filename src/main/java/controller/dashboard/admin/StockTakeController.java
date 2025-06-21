@@ -4,9 +4,11 @@ import dao.StockTakeDAO;
 import dao.StockTakeDetailDAO;
 import dao.ProductDAO;
 import dao.InventoryDAO;
+import dao.WarehouseDAO;
 import model.StockTake;
 import model.StockTakeDetail;
 import model.User;
+import model.Warehouse;
 import utils.SessionUtil;
 
 import jakarta.servlet.ServletException;
@@ -29,6 +31,7 @@ public class StockTakeController extends HttpServlet {
     private StockTakeDetailDAO stockTakeDetailDAO;
     private ProductDAO productDAO;
     private InventoryDAO inventoryDAO;
+    private WarehouseDAO warehouseDAO;
 
     @Override
     public void init() throws ServletException {
@@ -36,6 +39,7 @@ public class StockTakeController extends HttpServlet {
         stockTakeDetailDAO = new StockTakeDetailDAO();
         productDAO = new ProductDAO();
         inventoryDAO = new InventoryDAO();
+        warehouseDAO = new WarehouseDAO();
     }
 
     @Override
@@ -66,7 +70,9 @@ public class StockTakeController extends HttpServlet {
             case "view-completed":
                 handleViewCompleted(request, response);
                 break;
-
+            case "check-warehouse":
+                handleCheckWarehouse(request, response);
+                break;
             default:
                 handleListStockTakes(request, response);
                 break;
@@ -119,6 +125,7 @@ public class StockTakeController extends HttpServlet {
         }
 
         String status = request.getParameter("status");
+        String warehouseIdStr = request.getParameter("warehouseId");
         List<StockTake> stockTakes;
 
         if ("warehouse_staff".equals(currentUser.getRoleId())) {
@@ -130,16 +137,36 @@ public class StockTakeController extends HttpServlet {
                 stockTakes = stockTakeDAO.findByUserId(currentUser.getUserId());
             }
         } else {
-            // Admin xem được tất cả
-            if (status != null && !status.isEmpty()) {
+            // Admin xem được tất cả, có thể lọc theo warehouse
+            if (warehouseIdStr != null && !warehouseIdStr.isEmpty()) {
+                try {
+                    int warehouseId = Integer.parseInt(warehouseIdStr);
+                    stockTakes = stockTakeDAO.findByWarehouseId(warehouseId);
+                    if (status != null && !status.isEmpty()) {
+                        stockTakes.removeIf(st -> !status.equals(st.getStatus()));
+                    }
+                } catch (NumberFormatException e) {
+                    stockTakes = stockTakeDAO.findAll();
+                    if (status != null && !status.isEmpty()) {
+                        stockTakes.removeIf(st -> !status.equals(st.getStatus()));
+                    }
+                }
+            } else if (status != null && !status.isEmpty()) {
                 stockTakes = stockTakeDAO.findByStatus(status);
             } else {
                 stockTakes = stockTakeDAO.findAll();
             }
         }
 
+        // Lấy danh sách warehouse cho filter (admin only)
+        if ("admin".equals(currentUser.getRoleId())) {
+            List<Warehouse> warehouses = warehouseDAO.findAll();
+            request.setAttribute("warehouses", warehouses);
+        }
+
         request.setAttribute("stockTakes", stockTakes);
         request.setAttribute("currentUser", currentUser);
+        request.setAttribute("selectedWarehouseId", warehouseIdStr);
         request.getRequestDispatcher("/view/stock-take/list.jsp").forward(request, response);
     }
 
@@ -152,6 +179,10 @@ public class StockTakeController extends HttpServlet {
             response.sendRedirect(request.getContextPath() + "/stock-take");
             return;
         }
+
+        // Lấy danh sách warehouse cho form
+        List<Warehouse> warehouses = warehouseDAO.findAll();
+        request.setAttribute("warehouses", warehouses);
 
         request.getRequestDispatcher("/view/stock-take/create.jsp").forward(request, response);
     }
@@ -168,6 +199,33 @@ public class StockTakeController extends HttpServlet {
 
         try {
             String notes = request.getParameter("notes");
+            String warehouseIdStr = request.getParameter("warehouseId");
+            
+            if (warehouseIdStr == null || warehouseIdStr.trim().isEmpty()) {
+                session.setAttribute("errorMessage", "Vui lòng chọn kho hàng!");
+                response.sendRedirect(request.getContextPath() + "/stock-take?action=create");
+                return;
+            }
+            
+            int warehouseId;
+            try {
+                warehouseId = Integer.parseInt(warehouseIdStr);
+            } catch (NumberFormatException e) {
+                session.setAttribute("errorMessage", "Thông tin kho hàng không hợp lệ!");
+                response.sendRedirect(request.getContextPath() + "/stock-take?action=create");
+                return;
+            }
+
+            // Kiểm tra xem warehouse có sản phẩm tồn kho hay không
+            if (!inventoryDAO.hasProductsInWarehouse(warehouseId)) {
+                int productCount = inventoryDAO.countProductsInWarehouse(warehouseId);
+                session.setAttribute("errorMessage", 
+                    String.format("Kho hàng được chọn không có sản phẩm nào có tồn kho! " +
+                                 "Hiện tại có %d sản phẩm trong kho này. " +
+                                 "Vui lòng chọn kho khác hoặc nhập hàng vào kho trước.", productCount));
+                response.sendRedirect(request.getContextPath() + "/stock-take?action=create");
+                return;
+            }
             
             StockTake stockTake = new StockTake();
             stockTake.setStockTakeCode(stockTakeDAO.generateStockTakeCode());
@@ -175,15 +233,18 @@ public class StockTakeController extends HttpServlet {
             stockTake.setStockTakeDate(new Date(System.currentTimeMillis()));
             stockTake.setStatus("pending");
             stockTake.setNotes(notes);
+            stockTake.setWarehouseId(warehouseId);
 
             int stockTakeId = stockTakeDAO.insert(stockTake);
             
             if (stockTakeId > 0) {
-                // Tạo chi tiết kiểm kê cho tất cả sản phẩm với system_quantity từ inventory
-                boolean detailsCreated = stockTakeDetailDAO.createStockTakeDetailsForAllProducts(stockTakeId);
+                // Tạo chi tiết kiểm kê cho tất cả sản phẩm có tồn kho trong warehouse được chọn
+                boolean detailsCreated = stockTakeDetailDAO.createStockTakeDetailsForWarehouse(stockTakeId, stockTake.getWarehouseId());
                 
                 if (detailsCreated) {
-                    session.setAttribute("successMessage", "Tạo phiếu kiểm kê thành công! System quantity đã được lấy từ bảng inventory.");
+                    int productCount = inventoryDAO.countProductsInWarehouse(warehouseId);
+                    session.setAttribute("successMessage", 
+                        String.format("Tạo phiếu kiểm kê thành công! Đã tạo chi tiết kiểm kê cho %d sản phẩm trong kho hàng được chọn.", productCount));
                     response.sendRedirect(request.getContextPath() + "/stock-take?action=perform&id=" + stockTakeId);
                 } else {
                     session.setAttribute("errorMessage", "Có lỗi xảy ra khi tạo chi tiết kiểm kê!");
@@ -308,12 +369,15 @@ public class StockTakeController extends HttpServlet {
             boolean hasErrors = false;
             int updatedItems = 0;
             
-            // Điều chỉnh inventory cho tất cả sản phẩm đã được kiểm đếm
+            // Điều chỉnh inventory cho tất cả sản phẩm đã được kiểm đếm theo đúng warehouse
+            Integer warehouseId = stockTake.getWarehouseId() != null ? stockTake.getWarehouseId() : 1;
+            
             for (StockTakeDetail detail : allDetails) {
                 if (detail.getCountedQuantity() != null) {
                     boolean success = inventoryDAO.updateQuantityByProductId(
                         detail.getProductId(), 
-                        detail.getCountedQuantity()
+                        detail.getCountedQuantity(),
+                        warehouseId
                     );
                     
                     if (success) {
@@ -454,5 +518,37 @@ public class StockTakeController extends HttpServlet {
         }
     }
 
+    private void handleCheckWarehouse(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+        
+        try {
+            String warehouseIdStr = request.getParameter("warehouseId");
+            
+            if (warehouseIdStr == null || warehouseIdStr.trim().isEmpty()) {
+                response.getWriter().write("{\"success\": false, \"message\": \"Warehouse ID không hợp lệ\"}");
+                return;
+            }
+            
+            int warehouseId = Integer.parseInt(warehouseIdStr);
+            int productCount = inventoryDAO.countProductsInWarehouse(warehouseId);
+            boolean hasProducts = productCount > 0;
+            
+            String message = hasProducts 
+                ? String.format("Kho này có %d sản phẩm có thể kiểm kê", productCount)
+                : "Kho này không có sản phẩm nào có tồn kho";
+            
+            response.getWriter().write(String.format(
+                "{\"success\": true, \"hasProducts\": %s, \"productCount\": %d, \"message\": \"%s\"}", 
+                hasProducts, productCount, message));
+                
+        } catch (NumberFormatException e) {
+            response.getWriter().write("{\"success\": false, \"message\": \"Warehouse ID không hợp lệ\"}");
+        } catch (Exception e) {
+            e.printStackTrace();
+            response.getWriter().write("{\"success\": false, \"message\": \"Có lỗi xảy ra khi kiểm tra kho hàng\"}");
+        }
+    }
 
 } 
