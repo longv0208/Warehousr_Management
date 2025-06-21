@@ -117,4 +117,80 @@ public class WarehouseDAO extends DBContext implements I_DAO<Warehouse> {
         }
         return null;
     }
+
+    public List<Warehouse> searchWarehouses(String searchTerm) {
+        List<Warehouse> list = new ArrayList<>();
+        String sql = "SELECT * FROM warehouses WHERE warehouse_name LIKE ? OR address LIKE ? ORDER BY warehouse_name";
+        try {
+            conn = getConnection();
+            statement = conn.prepareStatement(sql);
+            String searchPattern = "%" + searchTerm + "%";
+            statement.setString(1, searchPattern);
+            statement.setString(2, searchPattern);
+            resultSet = statement.executeQuery();
+            while (resultSet.next()) {
+                list.add(getFromResultSet(resultSet));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            close();
+        }
+        return list;
+    }
+
+    public boolean isWarehouseNameExists(String warehouseName) {
+        String sql = "SELECT COUNT(*) FROM warehouses WHERE warehouse_name = ?";
+        try {
+            conn = getConnection();
+            statement = conn.prepareStatement(sql);
+            statement.setString(1, warehouseName);
+            resultSet = statement.executeQuery();
+            if (resultSet.next()) {
+                return resultSet.getInt(1) > 0;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            close();
+        }
+        return false;
+    }
+
+    public boolean isWarehouseNameExistsExcluding(String warehouseName, int excludeId) {
+        String sql = "SELECT COUNT(*) FROM warehouses WHERE warehouse_name = ? AND warehouse_id != ?";
+        try {
+            conn = getConnection();
+            statement = conn.prepareStatement(sql);
+            statement.setString(1, warehouseName);
+            statement.setInt(2, excludeId);
+            resultSet = statement.executeQuery();
+            if (resultSet.next()) {
+                return resultSet.getInt(1) > 0;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            close();
+        }
+        return false;
+    }
+
+    public boolean isWarehouseInUse(int warehouseId) {
+        String sql = "SELECT COUNT(*) FROM inventory WHERE warehouse_id = ?";
+        try {
+            conn = getConnection();
+            statement = conn.prepareStatement(sql);
+            statement.setInt(1, warehouseId);
+            resultSet = statement.executeQuery();
+            if (resultSet.next()) {
+                return resultSet.getInt(1) > 0;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            close();
+        }
+        return false;
+    }
 } 

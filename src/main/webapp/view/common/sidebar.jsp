@@ -185,6 +185,11 @@ ul#sidebarnav li a.nav-link.active {
             </li>
             <% } %>
             
+            <!-- Quản lý kho hàng - All roles can view -->
+            <li class="nav-item">
+                <a href="${pageContext.request.contextPath}/admin/manage-warehouse" class="nav-link"><i class="bi bi-building"></i><span class="link-text">Kho hàng</span></a>
+            </li>
+            
             <!-- Quản lý đơn bán hàng - Admin only -->
             <% if ("admin".equals(userRole)) { %>
             <li class="nav-item">
