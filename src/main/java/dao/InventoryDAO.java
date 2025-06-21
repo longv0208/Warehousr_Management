@@ -2,6 +2,7 @@ package dao;
 
 import context.DBContext;
 import model.Inventory;
+import model.InventoryWithProduct;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -306,5 +307,41 @@ public class InventoryDAO extends DBContext implements I_DAO<Inventory> {
      */
     public boolean hasProductsInWarehouse(Integer warehouseId) {
         return countProductsInWarehouse(warehouseId) > 0;
+    }
+
+    /**
+     * Find all inventory with product and warehouse information
+     */
+    public List<InventoryWithProduct> findAllWithProductInfo() {
+        List<InventoryWithProduct> inventories = new ArrayList<>();
+        String sql = "SELECT i.*, p.product_name, p.product_code, p.unit, w.warehouse_name " +
+                    "FROM inventory i " +
+                    "LEFT JOIN products p ON i.product_id = p.product_id " +
+                    "LEFT JOIN warehouses w ON i.warehouse_id = w.warehouse_id " +
+                    "ORDER BY w.warehouse_name, p.product_name";
+        try {
+            conn = getConnection();
+            statement = conn.prepareStatement(sql);
+            resultSet = statement.executeQuery();
+            while (resultSet.next()) {
+                InventoryWithProduct inventory = InventoryWithProduct.builder()
+                    .inventoryId(resultSet.getInt("inventory_id"))
+                    .productId(resultSet.getInt("product_id"))
+                    .quantityOnHand(resultSet.getInt("quantity_on_hand"))
+                    .lastUpdated(resultSet.getTimestamp("last_updated"))
+                    .warehouseId(resultSet.getInt("warehouse_id"))
+                    .productName(resultSet.getString("product_name"))
+                    .productCode(resultSet.getString("product_code"))
+                    .unit(resultSet.getString("unit"))
+                    .warehouseName(resultSet.getString("warehouse_name"))
+                    .build();
+                inventories.add(inventory);
+            }
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Error getting all inventories with product info", ex);
+        } finally {
+            close();
+        }
+        return inventories;
     }
 } 

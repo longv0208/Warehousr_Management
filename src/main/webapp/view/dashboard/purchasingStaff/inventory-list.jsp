@@ -46,9 +46,9 @@
                                     </select>
                                 </div>
                                 <div class="col-md-4">
-                                    <label for="search" class="form-label">Tìm kiếm</label>
-                                    <input type="text" class="form-control" id="search" name="search" 
-                                           value="${searchTerm}" placeholder="Nhập tên sản phẩm...">
+                                    <label for="searchTerm" class="form-label">Tìm kiếm</label>
+                                    <input type="text" class="form-control" id="searchTerm" name="searchTerm" 
+                                           value="${searchTerm}" placeholder="Nhập tên hoặc mã sản phẩm...">
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label">&nbsp;</label>
@@ -89,34 +89,10 @@
                                             <c:forEach var="inventory" items="${inventoryList}" varStatus="status">
                                                 <tr>
                                                     <td>${status.index + 1}</td>
-                                                    <td>
-                                                        <c:forEach var="warehouse" items="${warehouses}">
-                                                            <c:if test="${warehouse.warehouseId == inventory.warehouseId}">
-                                                                ${warehouse.warehouseName}
-                                                            </c:if>
-                                                        </c:forEach>
-                                                    </td>
-                                                    <td>
-                                                        <c:forEach var="product" items="${products}">
-                                                            <c:if test="${product.productId == inventory.productId}">
-                                                                <code>${product.productCode}</code>
-                                                            </c:if>
-                                                        </c:forEach>
-                                                    </td>
-                                                    <td>
-                                                        <c:forEach var="product" items="${products}">
-                                                            <c:if test="${product.productId == inventory.productId}">
-                                                                ${product.productName}
-                                                            </c:if>
-                                                        </c:forEach>
-                                                    </td>
-                                                    <td>
-                                                        <c:forEach var="product" items="${products}">
-                                                            <c:if test="${product.productId == inventory.productId}">
-                                                                ${product.unit}
-                                                            </c:if>
-                                                        </c:forEach>
-                                                    </td>
+                                                    <td>${inventory.warehouseName}</td>
+                                                    <td><code>${inventory.productCode}</code></td>
+                                                    <td>${inventory.productName}</td>
+                                                    <td>${inventory.unit}</td>
                                                     <td>
                                                         <span class="badge bg-info fs-6">${inventory.quantityOnHand}</span>
                                                     </td>

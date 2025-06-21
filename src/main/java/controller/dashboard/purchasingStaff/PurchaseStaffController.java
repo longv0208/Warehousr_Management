@@ -14,7 +14,8 @@ import java.util.List;
 
 @WebServlet(name = "PurchaseStaffController", urlPatterns = {
     "/purchase-staff/inventory", 
-    "/purchase-staff/purchase-request"
+    "/purchase-staff/purchase-request",
+    "/purchase-staff/purchase-order"
 })
 public class PurchaseStaffController extends HttpServlet {
 
@@ -67,6 +68,15 @@ public class PurchaseStaffController extends HttpServlet {
                     listPurchaseRequests(request, response, currentUser);
                 }
                 break;
+            case "/purchase-staff/purchase-order":
+                if ("create".equals(action)) {
+                    showCreatePurchaseOrderForm(request, response);
+                } else if ("view".equals(action)) {
+                    viewPurchaseOrder(request, response);
+                } else {
+                    listPurchaseOrders(request, response);
+                }
+                break;
             default:
                 response.sendRedirect(request.getContextPath() + "/purchase-staff/inventory");
                 break;
@@ -96,6 +106,11 @@ public class PurchaseStaffController extends HttpServlet {
                     createPurchaseRequest(request, response, currentUser);
                 }
                 break;
+            case "/purchase-staff/purchase-order":
+                if ("create".equals(action)) {
+                    createPurchaseOrder(request, response, currentUser);
+                }
+                break;
             default:
                 response.sendRedirect(request.getContextPath() + "/purchase-staff/inventory");
                 break;
@@ -108,7 +123,8 @@ public class PurchaseStaffController extends HttpServlet {
         String warehouseIdStr = request.getParameter("warehouseId");
         String searchTerm = request.getParameter("searchTerm");
         
-        List<Inventory> inventoryList = inventoryDAO.findAll();
+        // Sử dụng method mới để lấy thông tin inventory kèm product và warehouse
+        List<InventoryWithProduct> inventoryList = inventoryDAO.findAllWithProductInfo();
         List<Warehouse> warehouses = warehouseDAO.findAll();
         
         // Filter by warehouse if specified
@@ -123,8 +139,16 @@ public class PurchaseStaffController extends HttpServlet {
             }
         }
         
-        // Note: Search functionality would require joining with products table
-        // For now, only warehouse filtering is supported
+        // Filter by search term if specified
+        if (searchTerm != null && !searchTerm.trim().isEmpty()) {
+            String searchLower = searchTerm.toLowerCase().trim();
+            inventoryList = inventoryList.stream()
+                .filter(inv -> 
+                    (inv.getProductName() != null && inv.getProductName().toLowerCase().contains(searchLower)) ||
+                    (inv.getProductCode() != null && inv.getProductCode().toLowerCase().contains(searchLower))
+                )
+                .collect(java.util.stream.Collectors.toList());
+        }
         
         request.setAttribute("inventoryList", inventoryList);
         request.setAttribute("warehouses", warehouses);
@@ -228,5 +252,30 @@ public class PurchaseStaffController extends HttpServlet {
         } catch (NumberFormatException e) {
             response.sendRedirect(request.getContextPath() + "/purchase-staff/purchase-request");
         }
+    }
+
+    // ============ PURCHASE ORDER MANAGEMENT ============
+    private void listPurchaseOrders(HttpServletRequest request, HttpServletResponse response) 
+            throws ServletException, IOException {
+        // Hiển thị trang purchase order với thông báo đang phát triển
+        request.getRequestDispatcher("/view/dashboard/purchasingStaff/purchase-order/purchase-order-list.jsp").forward(request, response);
+    }
+
+    private void showCreatePurchaseOrderForm(HttpServletRequest request, HttpServletResponse response) 
+            throws ServletException, IOException {
+        // Tạm thời redirect về inventory cho đến khi implement đầy đủ purchase order
+        response.sendRedirect(request.getContextPath() + "/purchase-staff/inventory");
+    }
+
+    private void viewPurchaseOrder(HttpServletRequest request, HttpServletResponse response) 
+            throws ServletException, IOException {
+        // Tạm thời redirect về inventory cho đến khi implement đầy đủ purchase order
+        response.sendRedirect(request.getContextPath() + "/purchase-staff/inventory");
+    }
+
+    private void createPurchaseOrder(HttpServletRequest request, HttpServletResponse response, User currentUser) 
+            throws ServletException, IOException {
+        // Tạm thời redirect về inventory cho đến khi implement đầy đủ purchase order
+        response.sendRedirect(request.getContextPath() + "/purchase-staff/inventory");
     }
 } 
