@@ -68,6 +68,19 @@
                 </div>
                 
                 <div class="mb-3">
+                  <label for="warehouseId" class="form-label">Kho xuất hàng <span class="text-danger">*</span></label>
+                  <select class="form-select" id="warehouseId" name="warehouseId" required>
+                    <option value="">-- Chọn kho xuất hàng --</option>
+                    <c:forEach var="warehouse" items="${warehouses}">
+                      <option value="${warehouse.warehouseId}">${warehouse.warehouseName} - ${warehouse.address}</option>
+                    </c:forEach>
+                  </select>
+                  <div class="invalid-feedback">
+                    Vui lòng chọn kho xuất hàng.
+                  </div>
+                </div>
+                
+                <div class="mb-3">
                   <label for="notes" class="form-label">Ghi chú</label>
                   <textarea class="form-control" id="notes" name="notes" rows="3" placeholder="Ghi chú về đơn hàng..."></textarea>
                 </div>
@@ -226,20 +239,40 @@
     const priceInput = row.querySelector('input[name="unitPrice"]');
     const stockSpan = row.querySelector('#stockQuantity' + index);
     const unitSpan = row.querySelector('#unit' + index);
+    const warehouseSelect = document.getElementById('warehouseId');
     
     if (price && quantity) {
       priceInput.value = price;
-      stockSpan.textContent = quantity;
+      
+      // Show warning about warehouse-specific stock
+      if (warehouseSelect && warehouseSelect.value) {
+        stockSpan.textContent = quantity + ' (tổng tất cả kho)';
+        stockSpan.parentElement.className = 'text-warning';
+        stockSpan.title = 'Đây là tổng tồn kho từ tất cả kho. Tồn kho tại kho đã chọn có thể khác.';
+      } else {
+        stockSpan.textContent = quantity;
+        stockSpan.parentElement.className = 'text-muted';
+        stockSpan.title = '';
+      }
+      
       unitSpan.textContent = unit || '';
       calculateRowTotal(index);
       
       // Highlight low stock
       if (parseInt(quantity) < 10) {
         stockSpan.parentElement.className = 'text-warning';
-      } else {
-        stockSpan.parentElement.className = 'text-muted';
       }
     }
+  }
+  
+  // Update all product info when warehouse changes
+  function onWarehouseChange() {
+    document.querySelectorAll('.product-row').forEach((row, index) => {
+      const productSelect = row.querySelector('select[name="productId"]');
+      if (productSelect && productSelect.value) {
+        updateProductInfo(productSelect, index);
+      }
+    });
   }
 
   function calculateRowTotal(index) {
@@ -269,6 +302,14 @@
       currency: 'VND'
     }).format(amount);
   }
+
+  // Add event listener for warehouse selection
+  document.addEventListener('DOMContentLoaded', function() {
+    const warehouseSelect = document.getElementById('warehouseId');
+    if (warehouseSelect) {
+      warehouseSelect.addEventListener('change', onWarehouseChange);
+    }
+  });
 
   // Form validation
   (function() {
@@ -300,5 +341,5 @@
   })();
 </script>
 
-</body>
+  </body>
 </html> 

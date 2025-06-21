@@ -5,10 +5,12 @@ import dao.SalesOrderDAO;
 import dao.SalesOrderDetailDAO;
 import dao.UserDAO;
 import dao.InventoryDAO;
+import dao.WarehouseDAO;
 import model.Product;
 import model.SalesOrder;
 import model.SalesOrderDetail;
 import model.User;
+import model.Warehouse;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -32,6 +34,7 @@ public class ManageSalesOrderController extends HttpServlet {
     private ProductDAO productDAO;
     private UserDAO userDAO;
     private InventoryDAO inventoryDAO;
+    private WarehouseDAO warehouseDAO;
 
     @Override
     public void init() throws ServletException {
@@ -41,6 +44,7 @@ public class ManageSalesOrderController extends HttpServlet {
         productDAO = new ProductDAO();
         userDAO = new UserDAO();
         inventoryDAO = new InventoryDAO();
+        warehouseDAO = new WarehouseDAO();
     }
 
     @Override

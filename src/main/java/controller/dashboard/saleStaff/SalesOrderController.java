@@ -5,11 +5,13 @@ import dao.SalesOrderDAO;
 import dao.SalesOrderDetailDAO;
 import dao.UserDAO;
 import dao.InventoryDAO;
+import dao.WarehouseDAO;
 import utils.SessionUtil;
 import model.Product;
 import model.SalesOrder;
 import model.SalesOrderDetail;
 import model.User;
+import model.Warehouse;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -34,6 +36,7 @@ public class SalesOrderController extends HttpServlet {
     private ProductDAO productDAO;
     private UserDAO userDAO;
     private InventoryDAO inventoryDAO;
+    private WarehouseDAO warehouseDAO;
 
     @Override
     public void init() throws ServletException {
@@ -43,6 +46,7 @@ public class SalesOrderController extends HttpServlet {
         productDAO = new ProductDAO();
         userDAO = new UserDAO();
         inventoryDAO = new InventoryDAO();
+        warehouseDAO = new WarehouseDAO();
     }
 
     @Override
@@ -162,7 +166,11 @@ public class SalesOrderController extends HttpServlet {
             // Generate new order code
             String orderCode = salesOrderDAO.generateOrderCode();
             
+            // Get all warehouses for selection
+            List<Warehouse> warehouses = warehouseDAO.findAll();
+            
             request.setAttribute("products", productsWithInventory);
+            request.setAttribute("warehouses", warehouses);
             request.setAttribute("orderCode", orderCode);
             
             // Set product count for JSP
@@ -191,17 +199,35 @@ public class SalesOrderController extends HttpServlet {
             String customerName = request.getParameter("customerName");
             String notes = request.getParameter("notes");
             String orderDateStr = request.getParameter("orderDate");
+            String warehouseIdStr = request.getParameter("warehouseId");
             
             // Parse order date
             Date orderDate = Date.valueOf(orderDateStr != null ? orderDateStr : LocalDate.now().toString());
+            
+            // Validate warehouse selection
+            if (warehouseIdStr == null || warehouseIdStr.isEmpty()) {
+                session.setAttribute("toastMessage", "Vui lòng chọn kho xuất hàng!");
+                session.setAttribute("toastType", "error");
+                response.sendRedirect(request.getContextPath() + "/sale-staff/sales-order?action=create");
+                return;
+            }
+            
+            Integer warehouseId = Integer.parseInt(warehouseIdStr);
+            Warehouse warehouse = warehouseDAO.findById(warehouseId);
+            if (warehouse == null) {
+                session.setAttribute("toastMessage", "Kho xuất hàng không hợp lệ!");
+                session.setAttribute("toastType", "error");
+                response.sendRedirect(request.getContextPath() + "/sale-staff/sales-order?action=create");
+                return;
+            }
             
             // Get product details from form for validation
             String[] productIds = request.getParameterValues("productId");
             String[] quantities = request.getParameterValues("quantity");
             String[] unitPrices = request.getParameterValues("unitPrice");
             
-            // Validate products and calculate total
-            BigDecimal orderTotal = validateAndCalculateOrderTotal(productIds, quantities, unitPrices, session);
+            // Validate products and calculate total (with warehouse-specific stock check)
+            BigDecimal orderTotal = validateAndCalculateOrderTotal(productIds, quantities, unitPrices, warehouseId, session);
             
             if (orderTotal.compareTo(BigDecimal.ZERO) == 0) {
                 session.setAttribute("toastMessage", "Đơn hàng phải có ít nhất một sản phẩm hợp lệ!");
@@ -534,16 +560,31 @@ public class SalesOrderController extends HttpServlet {
     }
 
     /**
-     * Validate product availability and calculate order total
+     * Validate product availability and calculate order total (legacy method - total stock from all warehouses)
      */
     private BigDecimal validateAndCalculateOrderTotal(String[] productIds, String[] quantities, 
                                                      String[] unitPrices, HttpSession session) {
+        return validateAndCalculateOrderTotal(productIds, quantities, unitPrices, null, session);
+    }
+    
+    /**
+     * Validate product availability and calculate order total with warehouse-specific stock check
+     */
+    private BigDecimal validateAndCalculateOrderTotal(String[] productIds, String[] quantities, 
+                                                     String[] unitPrices, Integer warehouseId, HttpSession session) {
         if (productIds == null || quantities == null || unitPrices == null) {
             return BigDecimal.ZERO;
         }
         
         BigDecimal total = BigDecimal.ZERO;
         boolean hasStockIssue = false;
+        String warehouseName = "";
+        
+        // Get warehouse name for error messages
+        if (warehouseId != null) {
+            Warehouse warehouse = warehouseDAO.findById(warehouseId);
+            warehouseName = warehouse != null ? warehouse.getWarehouseName() : "Kho không xác định";
+        }
         
         for (int i = 0; i < productIds.length; i++) {
             if (productIds[i] != null && !productIds[i].isEmpty() &&
@@ -559,11 +600,23 @@ public class SalesOrderController extends HttpServlet {
                     Product product = productDAO.findById(productId);
                     if (product != null) {
                         // Check stock availability from inventory
-                        Integer stockQuantity = inventoryDAO.getQuantityByProductId(productId);
+                        Integer stockQuantity;
+                        String stockMessage;
+                        
+                        if (warehouseId != null) {
+                            // Check stock in specific warehouse
+                            stockQuantity = inventoryDAO.getQuantityByProductIdAndWarehouse(productId, warehouseId);
+                            stockMessage = "Sản phẩm " + product.getProductName() + " tại " + warehouseName + 
+                                         " không đủ tồn kho! Tồn kho hiện tại: " + stockQuantity + ", Yêu cầu: " + quantity;
+                        } else {
+                            // Check total stock from all warehouses (legacy)
+                            stockQuantity = inventoryDAO.getQuantityByProductId(productId);
+                            stockMessage = "Sản phẩm " + product.getProductName() + " không đủ tồn kho! " +
+                                         "Tồn kho hiện tại: " + stockQuantity + ", Yêu cầu: " + quantity;
+                        }
+                        
                         if (stockQuantity < quantity) {
-                            session.setAttribute("toastMessage", 
-                                "Sản phẩm " + product.getProductName() + " không đủ tồn kho! " +
-                                "Tồn kho hiện tại: " + stockQuantity + ", Yêu cầu: " + quantity);
+                            session.setAttribute("toastMessage", stockMessage);
                             session.setAttribute("toastType", "warning");
                             hasStockIssue = true;
                         }

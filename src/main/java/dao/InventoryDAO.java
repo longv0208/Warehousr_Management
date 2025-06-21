@@ -21,6 +21,7 @@ public class InventoryDAO extends DBContext implements I_DAO<Inventory> {
                 .productId(rs.getInt("product_id"))
                 .quantityOnHand(rs.getInt("quantity_on_hand"))
                 .lastUpdated(rs.getTimestamp("last_updated"))
+                .warehouseId(rs.getInt("warehouse_id"))
                 .build();
     }
 
@@ -45,12 +46,13 @@ public class InventoryDAO extends DBContext implements I_DAO<Inventory> {
 
     @Override
     public int insert(Inventory inventory) {
-        String sql = "INSERT INTO inventory (product_id, quantity_on_hand) VALUES (?, ?)";
+        String sql = "INSERT INTO inventory (product_id, quantity_on_hand, warehouse_id) VALUES (?, ?, ?)";
         try {
             conn = getConnection();
             statement = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
             statement.setInt(1, inventory.getProductId());
             statement.setInt(2, inventory.getQuantityOnHand());
+            statement.setInt(3, inventory.getWarehouseId() != null ? inventory.getWarehouseId() : 1); // Default warehouse
 
             int affectedRows = statement.executeUpdate();
             if (affectedRows == 0) {
@@ -124,20 +126,42 @@ public class InventoryDAO extends DBContext implements I_DAO<Inventory> {
     }
 
     /**
-     * Get inventory quantity for a specific product
+     * Get inventory quantity for a specific product (tổng từ tất cả kho)
      */
     public Integer getQuantityByProductId(Integer productId) {
-        String sql = "SELECT quantity_on_hand FROM inventory WHERE product_id = ?";
+        String sql = "SELECT SUM(quantity_on_hand) as total_quantity FROM inventory WHERE product_id = ?";
         try {
             conn = getConnection();
             statement = conn.prepareStatement(sql);
             statement.setInt(1, productId);
             resultSet = statement.executeQuery();
             if (resultSet.next()) {
-                return resultSet.getInt("quantity_on_hand");
+                return resultSet.getInt("total_quantity");
             }
         } catch (SQLException ex) {
             LOGGER.log(Level.SEVERE, "Error getting quantity for product ID: " + productId, ex);
+        } finally {
+            close();
+        }
+        return 0; // Return 0 if no inventory record found
+    }
+
+    /**
+     * Get inventory quantity for a specific product in a specific warehouse
+     */
+    public Integer getQuantityByProductIdAndWarehouse(Integer productId, Integer warehouseId) {
+        String sql = "SELECT quantity_on_hand FROM inventory WHERE product_id = ? AND warehouse_id = ?";
+        try {
+            conn = getConnection();
+            statement = conn.prepareStatement(sql);
+            statement.setInt(1, productId);
+            statement.setInt(2, warehouseId);
+            resultSet = statement.executeQuery();
+            if (resultSet.next()) {
+                return resultSet.getInt("quantity_on_hand");
+            }
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Error getting quantity for product ID: " + productId + " in warehouse: " + warehouseId, ex);
         } finally {
             close();
         }

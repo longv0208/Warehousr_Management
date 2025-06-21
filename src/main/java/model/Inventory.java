@@ -21,4 +21,5 @@ public class Inventory {
     private Integer productId;
     private Integer quantityOnHand;
     private Timestamp lastUpdated;
+    private Integer warehouseId;
 } 
