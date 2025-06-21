@@ -28,21 +28,25 @@ public class Role {
                 role.setRoleId("admin");
                 role.setRoleName("Administrator");
                 break;
-            case "warehouse_manager":
-                role.setRoleId("warehouse_manager");
-                role.setRoleName("Warehouse Manager");
+            case "warehouse_staff":
+                role.setRoleId("warehouse_staff");
+                role.setRoleName("Warehouse Staff");
                 break;
             case "purchasing_staff":
                 role.setRoleId("purchasing_staff");
                 role.setRoleName("Purchasing Staff");
                 break;
-            case "warehouse_staff":
-                role.setRoleId("warehouse_staff");
-                role.setRoleName("Warehouse Staff");
+            case "sales_staff":
+                role.setRoleId("sales_staff");
+                role.setRoleName("Sales Staff");
                 break;
             case "sale_staff":
-                role.setRoleId("sale_staff");
-                role.setRoleName("Sale Staff");
+                role.setRoleId("sales_staff");
+                role.setRoleName("Sales Staff");
+                break;
+            case "warehouse_manager":
+                role.setRoleId("warehouse_staff");
+                role.setRoleName("Warehouse Staff");
                 break;
             default:
                 throw new IllegalArgumentException("Vai trò không hợp lệ: " + roleId);

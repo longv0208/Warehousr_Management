@@ -197,10 +197,17 @@ ul#sidebarnav li a.nav-link.active {
             </li>
             <% } %>
             
-            <!-- Quản lý đơn mua hàng - Admin only -->
+            <!-- Quản lý yêu cầu nhập hàng - Admin only -->
             <% if ("admin".equals(userRole)) { %>
             <li class="nav-item">
-                <a href="${pageContext.request.contextPath}/admin/manage-purchase-order" class="nav-link"><i class="bi bi-cart-plus"></i><span class="link-text">Đơn mua hàng</span></a>
+                <a href="${pageContext.request.contextPath}/admin/purchase-management/requests" class="nav-link"><i class="bi bi-clipboard-check"></i><span class="link-text">Yêu cầu nhập hàng</span></a>
+            </li>
+            <% } %>
+            
+            <!-- Báo cáo tồn kho - Admin only -->
+            <% if ("admin".equals(userRole)) { %>
+            <li class="nav-item">
+                <a href="${pageContext.request.contextPath}/admin/purchase-management/reports" class="nav-link"><i class="bi bi-chart-bar"></i><span class="link-text">Báo cáo tồn kho</span></a>
             </li>
             <% } %>
             
@@ -211,10 +218,10 @@ ul#sidebarnav li a.nav-link.active {
             </li>
             <% } %>
             
-            <!-- Nhập kho - purchasing_staff only -->
+            <!-- Xem tồn kho - purchasing_staff only -->
             <% if ("purchasing_staff".equals(userRole)) { %>
             <li class="nav-item">
-                <a href="stockin.jsp" class="nav-link"><i class="bi bi-arrow-down-circle"></i><span class="link-text">Nhập kho</span></a>
+                <a href="${pageContext.request.contextPath}/purchase-staff/inventory" class="nav-link"><i class="bi bi-boxes"></i><span class="link-text">Xem tồn kho</span></a>
             </li>
             <% } %>
             
@@ -239,17 +246,17 @@ ul#sidebarnav li a.nav-link.active {
             </li>
             <% } %>
             
-            <!-- Đơn mua hàng - purchasing_staff only -->
+            <!-- Yêu cầu nhập hàng - purchasing_staff only -->
             <% if ("purchasing_staff".equals(userRole)) { %>
             <li class="nav-item">
-                <a href="${pageContext.request.contextPath}/purchasing-staff/purchase-order" class="nav-link"><i class="bi bi-cart-plus"></i><span class="link-text">Đơn mua hàng</span></a>
+                <a href="${pageContext.request.contextPath}/purchase-staff/purchase-request" class="nav-link"><i class="bi bi-plus-circle"></i><span class="link-text">Yêu cầu nhập hàng</span></a>
             </li>
             <% } %>
             
-            <!-- Yêu cầu mua - purchasing_staff only -->
+            <!-- Phiếu nhập hàng - purchasing_staff only -->
             <% if ("purchasing_staff".equals(userRole)) { %>
             <li class="nav-item">
-                <a href="purchaserequest.jsp" class="nav-link"><i class="bi bi-bag-plus"></i><span class="link-text">Yêu cầu mua</span></a>
+                <a href="${pageContext.request.contextPath}/purchase-staff/purchase-order" class="nav-link"><i class="bi bi-cart-plus"></i><span class="link-text">Phiếu nhập hàng</span></a>
             </li>
             <% } %>
             
