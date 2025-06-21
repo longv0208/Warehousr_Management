@@ -39,7 +39,8 @@ public class ManageWarehouseController extends HttpServlet {
 
         // Check permissions for admin-only actions
         if (!action.equals("list") && !"admin".equals(currentUser.getRoleId())) {
-            request.getSession().setAttribute("error", "Bạn không có quyền thực hiện thao tác này!");
+            request.getSession().setAttribute("toastMessage", "Bạn không có quyền thực hiện thao tác này!");
+            request.getSession().setAttribute("toastType", "error");
             response.sendRedirect(request.getContextPath() + "/admin/manage-warehouse?action=list");
             return;
         }
@@ -73,7 +74,8 @@ public class ManageWarehouseController extends HttpServlet {
         }
 
         if (!"admin".equals(currentUser.getRoleId())) {
-            request.getSession().setAttribute("error", "Bạn không có quyền thực hiện thao tác này!");
+            request.getSession().setAttribute("toastMessage", "Bạn không có quyền thực hiện thao tác này!");
+            request.getSession().setAttribute("toastType", "error");
             response.sendRedirect(request.getContextPath() + "/admin/manage-warehouse?action=list");
             return;
         }
@@ -153,7 +155,8 @@ public class ManageWarehouseController extends HttpServlet {
 
         int result = warehouseDAO.insert(warehouse);
         if (result > 0) {
-            request.getSession().setAttribute("success", "Thêm kho hàng thành công!");
+            request.getSession().setAttribute("toastMessage", "Thêm kho hàng thành công!");
+            request.getSession().setAttribute("toastType", "success");
             response.sendRedirect(request.getContextPath() + "/admin/manage-warehouse?action=list");
         } else {
             request.setAttribute("error", "Có lỗi xảy ra khi thêm kho hàng!");
@@ -174,7 +177,8 @@ public class ManageWarehouseController extends HttpServlet {
             int warehouseId = Integer.parseInt(idStr);
             Warehouse warehouse = warehouseDAO.findById(warehouseId);
             if (warehouse == null) {
-                request.getSession().setAttribute("error", "Không tìm thấy kho hàng!");
+                request.getSession().setAttribute("toastMessage", "Không tìm thấy kho hàng!");
+                request.getSession().setAttribute("toastType", "error");
                 response.sendRedirect(request.getContextPath() + "/admin/manage-warehouse?action=list");
                 return;
             }
@@ -201,7 +205,8 @@ public class ManageWarehouseController extends HttpServlet {
             Warehouse currentWarehouse = warehouseDAO.findById(warehouseId);
             
             if (currentWarehouse == null) {
-                request.getSession().setAttribute("error", "Không tìm thấy kho hàng!");
+                request.getSession().setAttribute("toastMessage", "Không tìm thấy kho hàng!");
+                request.getSession().setAttribute("toastType", "error");
                 response.sendRedirect(request.getContextPath() + "/admin/manage-warehouse?action=list");
                 return;
             }
@@ -238,7 +243,8 @@ public class ManageWarehouseController extends HttpServlet {
 
             boolean result = warehouseDAO.update(warehouse);
             if (result) {
-                request.getSession().setAttribute("success", "Cập nhật kho hàng thành công!");
+                request.getSession().setAttribute("toastMessage", "Cập nhật kho hàng thành công!");
+                request.getSession().setAttribute("toastType", "success");
                 response.sendRedirect(request.getContextPath() + "/admin/manage-warehouse?action=list");
             } else {
                 request.setAttribute("error", "Có lỗi xảy ra khi cập nhật kho hàng!");
@@ -262,26 +268,31 @@ public class ManageWarehouseController extends HttpServlet {
             Warehouse warehouse = warehouseDAO.findById(warehouseId);
             
             if (warehouse == null) {
-                request.getSession().setAttribute("error", "Không tìm thấy kho hàng!");
+                request.getSession().setAttribute("toastMessage", "Không tìm thấy kho hàng!");
+                request.getSession().setAttribute("toastType", "error");
                 response.sendRedirect(request.getContextPath() + "/admin/manage-warehouse?action=list");
                 return;
             }
 
             // Check if warehouse is being used in inventory or other relations
             if (warehouseDAO.isWarehouseInUse(warehouseId)) {
-                request.getSession().setAttribute("error", "Không thể xóa kho hàng này vì đang được sử dụng trong hệ thống!");
+                request.getSession().setAttribute("toastMessage", "Không thể xóa kho hàng này vì đang được sử dụng trong hệ thống!");
+                request.getSession().setAttribute("toastType", "error");
                 response.sendRedirect(request.getContextPath() + "/admin/manage-warehouse?action=list");
                 return;
             }
 
             boolean result = warehouseDAO.delete(warehouse);
             if (result) {
-                request.getSession().setAttribute("success", "Xóa kho hàng thành công!");
+                request.getSession().setAttribute("toastMessage", "Xóa kho hàng thành công!");
+                request.getSession().setAttribute("toastType", "success");
             } else {
-                request.getSession().setAttribute("error", "Có lỗi xảy ra khi xóa kho hàng!");
+                request.getSession().setAttribute("toastMessage", "Có lỗi xảy ra khi xóa kho hàng!");
+                request.getSession().setAttribute("toastType", "error");
             }
         } catch (NumberFormatException e) {
-            request.getSession().setAttribute("error", "ID kho hàng không hợp lệ!");
+            request.getSession().setAttribute("toastMessage", "ID kho hàng không hợp lệ!");
+            request.getSession().setAttribute("toastType", "error");
         }
         
         response.sendRedirect(request.getContextPath() + "/admin/manage-warehouse?action=list");

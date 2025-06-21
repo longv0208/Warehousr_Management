@@ -4,242 +4,153 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quản lý Kho hàng</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <style>
-        .card-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
-        
-        .table th {
-            background-color: #f8f9fa;
-            border-top: none;
-        }
-        
-        .btn-group .btn {
-            margin-right: 5px;
-        }
-        
-        .search-box {
-            background-color: #f8f9fa;
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 20px;
-        }
-        
-        .warehouse-count {
-            color: #6c757d;
-            font-size: 0.9em;
-        }
-    </style>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Quản Lý Kho Hàng</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono&display=swap" rel="stylesheet"/>
+    <link href="${pageContext.request.contextPath}/css/index.css" rel="stylesheet"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/izitoast@1.4.0/dist/css/iziToast.min.css">
 </head>
 <body>
-    <div class="container-fluid">
-        <!-- Header -->
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <div>
-                <h2><i class="fas fa-warehouse text-primary"></i> Quản lý Kho hàng</h2>
-                <p class="text-muted mb-0">Quản lý thông tin các kho hàng trong hệ thống</p>
-            </div>
-            <c:if test="${userRole == 'admin'}">
-                <a href="${pageContext.request.contextPath}/admin/manage-warehouse?action=create" 
-                   class="btn btn-primary">
-                    <i class="fas fa-plus"></i> Thêm Kho hàng
-                </a>
-            </c:if>
-        </div>
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <jsp:include page="../../../common/sidebar.jsp"></jsp:include>
 
-        <!-- Alert Messages -->
-        <c:if test="${not empty sessionScope.success}">
-            <div class="alert alert-success alert-dismissible fade show" role="alert">
-                <i class="fas fa-check-circle"></i> ${sessionScope.success}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-            <c:remove var="success" scope="session"/>
-        </c:if>
-
-        <c:if test="${not empty sessionScope.error}">
-            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                <i class="fas fa-exclamation-circle"></i> ${sessionScope.error}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-            <c:remove var="error" scope="session"/>
-        </c:if>
-
-        <!-- Information for non-admin users -->
-        <c:if test="${userRole != 'admin'}">
-            <div class="alert alert-info alert-dismissible fade show" role="alert">
-                <i class="fas fa-info-circle"></i> 
-                Bạn chỉ có quyền xem danh sách kho hàng. Để thêm, sửa hoặc xóa kho hàng, vui lòng liên hệ quản trị viên.
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        </c:if>
-
-        <!-- Search Section -->
-        <div class="search-box">
-            <form method="GET" action="${pageContext.request.contextPath}/admin/manage-warehouse">
-                <input type="hidden" name="action" value="list">
-                <div class="row align-items-end">
-                    <div class="col-md-10">
-                        <label for="search" class="form-label">
-                            <i class="fas fa-search"></i> Tìm kiếm kho hàng
-                        </label>
-                        <input type="text" class="form-control" id="search" name="search" 
-                               value="${searchTerm}" placeholder="Nhập tên kho hoặc địa chỉ...">
+        <!-- Main Content -->
+        <main class="col-md-10 ms-sm-auto col-lg-10 px-md-4 py-4">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h3>Danh sách Kho hàng</h3>
+                <c:if test="${userRole == 'admin'}">
+                    <div>
+                        <a href="${pageContext.request.contextPath}/admin/manage-warehouse?action=create" class="btn btn-success">+ Thêm Kho hàng</a>
                     </div>
-                    <div class="col-md-2">
-                        <button type="submit" class="btn btn-outline-primary w-100">
-                            <i class="fas fa-search"></i> Tìm kiếm
-                        </button>
-                    </div>
+                </c:if>
+            </div>
+
+            <!-- Information for non-admin users -->
+            <c:if test="${userRole != 'admin'}">
+                <div class="alert alert-info alert-dismissible fade show" role="alert">
+                    <i class="fas fa-info-circle"></i> 
+                    Bạn chỉ có quyền xem danh sách kho hàng. Để thêm, sửa hoặc xóa kho hàng, vui lòng liên hệ quản trị viên.
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
-            </form>
-        </div>
+            </c:if>
 
-        <!-- Warehouses Table -->
-        <div class="card shadow">
-            <div class="card-header text-white">
-                <h5 class="mb-0">
-                    <i class="fas fa-list"></i> Danh sách Kho hàng
-                    <span class="warehouse-count float-end">
-                        (${warehouses.size()} kho hàng)
-                    </span>
-                </h5>
-            </div>
-            <div class="card-body p-0">
-                <c:choose>
-                    <c:when test="${empty warehouses}">
-                        <div class="text-center py-5">
-                            <i class="fas fa-warehouse fa-3x text-muted mb-3"></i>
-                            <h5 class="text-muted">Không có kho hàng nào</h5>
-                            <p class="text-muted">
-                                <c:choose>
-                                    <c:when test="${not empty searchTerm}">
-                                        Không tìm thấy kho hàng nào phù hợp với từ khóa "<strong>${searchTerm}</strong>"
-                                        <br>
-                                        <a href="${pageContext.request.contextPath}/admin/manage-warehouse?action=list" 
-                                           class="btn btn-link">Xem tất cả kho hàng</a>
-                                    </c:when>
-                                    <c:otherwise>
-                                        Hãy thêm kho hàng đầu tiên để bắt đầu quản lý
-                                    </c:otherwise>
-                                </c:choose>
-                            </p>
-                        </div>
-                    </c:when>
-                    <c:otherwise>
-                        <div class="table-responsive">
-                            <table class="table table-hover mb-0">
-                                <thead>
+            <!-- Filter Form -->
+            <form action="${pageContext.request.contextPath}/admin/manage-warehouse" method="GET" class="row g-3 mb-4">
+                <input type="hidden" name="action" value="list">
+                <div class="col-md-4">
+                    <input type="text" id="searchInput" name="search" class="form-control" placeholder="Tìm theo tên kho hoặc địa chỉ..." value="${searchTerm}"/>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">Tìm kiếm</button>
+                </div>
+                <div class="col-md-6"></div>
+            </form>
+
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>#</th>
+                            <th>ID</th>
+                            <th>Tên Kho hàng</th>
+                            <th>Địa chỉ</th>
+                            <th>Ngày tạo</th>
+                            <c:if test="${userRole == 'admin'}">
+                                <th>Hành động</th>
+                            </c:if>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <c:choose>
+                            <c:when test="${not empty warehouses}">
+                                <c:forEach var="warehouse" items="${warehouses}" varStatus="loop">
                                     <tr>
-                                        <th width="8%">ID</th>
-                                        <th width="25%">Tên Kho hàng</th>
-                                        <th width="40%">Địa chỉ</th>
-                                        <th width="15%">Ngày tạo</th>
+                                        <td>${loop.count}</td>
+                                        <td><c:out value="${warehouse.warehouseId}"/></td>
+                                        <td><c:out value="${warehouse.warehouseName}"/></td>
+                                        <td><c:out value="${warehouse.address}"/></td>
+                                        <td>
+                                            <c:if test="${not empty warehouse.createdAt}">
+                                                <fmt:formatDate value="${warehouse.createdAt}" pattern="dd/MM/yyyy HH:mm"/>
+                                            </c:if>
+                                        </td>
                                         <c:if test="${userRole == 'admin'}">
-                                            <th width="12%" class="text-center">Thao tác</th>
+                                            <td>
+                                                <a href="${pageContext.request.contextPath}/admin/manage-warehouse?action=edit&id=${warehouse.warehouseId}" class="btn btn-sm btn-info">Sửa</a>
+                                                <button class="btn btn-sm btn-danger" onclick="confirmDelete('${warehouse.warehouseId}', '${warehouse.warehouseName}')">Xóa</button>
+                                            </td>
                                         </c:if>
                                     </tr>
-                                </thead>
-                                <tbody>
-                                    <c:forEach var="warehouse" items="${warehouses}">
-                                        <tr>
-                                            <td>
-                                                <span class="badge bg-secondary">#${warehouse.warehouseId}</span>
-                                            </td>
-                                            <td>
-                                                <strong>${warehouse.warehouseName}</strong>
-                                            </td>
-                                            <td>
-                                                <i class="fas fa-map-marker-alt text-muted"></i>
-                                                ${warehouse.address}
-                                            </td>
-                                            <td>
-                                                <c:if test="${not empty warehouse.createdAt}">
-                                                    <fmt:formatDate value="${warehouse.createdAt}" 
-                                                                    pattern="dd/MM/yyyy HH:mm"/>
-                                                </c:if>
-                                            </td>
-                                            <c:if test="${userRole == 'admin'}">
-                                                <td class="text-center">
-                                                    <div class="btn-group btn-group-sm" role="group">
-                                                        <a href="${pageContext.request.contextPath}/admin/manage-warehouse?action=edit&id=${warehouse.warehouseId}" 
-                                                           class="btn btn-outline-primary" title="Chỉnh sửa">
-                                                            <i class="fas fa-edit"></i>
-                                                        </a>
-                                                        <button type="button" class="btn btn-outline-danger" 
-                                                                data-warehouse-id="${warehouse.warehouseId}" 
-                                                                data-warehouse-name="${warehouse.warehouseName}"
-                                                                onclick="confirmDelete(this)" 
-                                                                title="Xóa">
-                                                            <i class="fas fa-trash"></i>
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </c:if>
-                                        </tr>
-                                    </c:forEach>
-                                </tbody>
-                            </table>
-                        </div>
-                    </c:otherwise>
-                </c:choose>
+                                </c:forEach>
+                            </c:when>
+                            <c:otherwise>
+                                <tr>
+                                    <td colspan="${userRole == 'admin' ? '6' : '5'}" class="text-center">
+                                        <c:choose>
+                                            <c:when test="${not empty searchTerm}">
+                                                Không tìm thấy kho hàng nào phù hợp với từ khóa "<c:out value="${searchTerm}"/>".
+                                            </c:when>
+                                            <c:otherwise>
+                                                Không tìm thấy kho hàng nào.
+                                            </c:otherwise>
+                                        </c:choose>
+                                    </td>
+                                </tr>
+                            </c:otherwise>
+                        </c:choose>
+                    </tbody>
+                </table>
             </div>
-        </div>
+
+            <!-- Total Count -->
+            <div class="mt-3">
+                <small class="text-muted">Tổng cộng: ${warehouses.size()} kho hàng</small>
+            </div>
+        </main>
     </div>
+</div>
 
-    <!-- Delete Confirmation Modal - Only for Admin -->
-    <c:if test="${userRole == 'admin'}">
-        <div class="modal fade" id="deleteModal" tabindex="-1">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header bg-danger text-white">
-                        <h5 class="modal-title">
-                            <i class="fas fa-exclamation-triangle"></i> Xác nhận xóa
-                        </h5>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body">
-                        <p>Bạn có chắc chắn muốn xóa kho hàng <strong id="warehouseName"></strong>?</p>
-                        <div class="alert alert-warning">
-                            <i class="fas fa-info-circle"></i>
-                            Hành động này không thể hoàn tác. Kho hàng sẽ bị xóa vĩnh viễn khỏi hệ thống.
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-                        <a href="#" id="deleteLink" class="btn btn-danger">
-                            <i class="fas fa-trash"></i> Xóa
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </c:if>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/izitoast@1.4.0/dist/js/iziToast.min.js"></script>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        function confirmDelete(button) {
-            var warehouseId = button.getAttribute('data-warehouse-id');
-            var warehouseName = button.getAttribute('data-warehouse-name');
-            
-            document.getElementById('warehouseName').textContent = warehouseName;
-            document.getElementById('deleteLink').href = 
-                '${pageContext.request.contextPath}/admin/manage-warehouse?action=delete&id=' + warehouseId;
-            new bootstrap.Modal(document.getElementById('deleteModal')).show();
+<script>
+    function confirmDelete(warehouseId, warehouseName) {
+        if (confirm('Bạn có chắc chắn muốn xóa kho hàng "' + warehouseName + '"? Hành động này không thể hoàn tác.')) {
+            window.location.href = '${pageContext.request.contextPath}/admin/manage-warehouse?action=delete&id=' + warehouseId;
         }
+    }
 
-        // Auto-hide alerts
-        setTimeout(function() {
-            var alerts = document.querySelectorAll('.alert');
-            alerts.forEach(function(alert) {
-                var bsAlert = new bootstrap.Alert(alert);
-                bsAlert.close();
-            });
-        }, 5000);
-    </script>
+    // Toast message display
+    var toastMessage = "${sessionScope.toastMessage}";
+    var toastType = "${sessionScope.toastType}";
+    if (toastMessage) {
+        iziToast.show({
+            title: toastType === 'success' ? 'Thành công' : 'Lỗi',
+            message: toastMessage,
+            position: 'topRight',
+            color: toastType === 'success' ? 'green' : 'red',
+            timeout: 5000,
+            onClosing: function () {
+                // Remove toast attributes from the session after displaying
+                fetch('${pageContext.request.contextPath}/remove-toast', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                }).then(response => {
+                    if (!response.ok) {
+                        console.error('Failed to remove toast attributes');
+                    }
+                }).catch(error => {
+                    console.error('Error:', error);
+                });
+            }
+        });
+    }
+</script>
 </body>
 </html> 
