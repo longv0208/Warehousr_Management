@@ -60,7 +60,11 @@
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
                     <h3>Thực Hiện Kiểm Kê</h3>
-                    <p class="text-muted mb-0">Phiếu: ${stockTake.stockTakeCode} - Ngày: <fmt:formatDate value="${stockTake.stockTakeDate}" pattern="dd/MM/yyyy" /></p>
+                    <p class="text-muted mb-0">
+                        Phiếu: ${stockTake.stockTakeCode} - 
+                        Ngày: <fmt:formatDate value="${stockTake.stockTakeDate}" pattern="dd/MM/yyyy" /> - 
+                        Kho: <span class="badge bg-info">${stockTake.warehouseName != null ? stockTake.warehouseName : 'N/A'}</span>
+                    </p>
                 </div>
                 <a href="${pageContext.request.contextPath}/stock-take" class="btn btn-secondary">Quay lại</a>
             </div>

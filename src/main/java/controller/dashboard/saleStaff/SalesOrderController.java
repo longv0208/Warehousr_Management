@@ -131,19 +131,13 @@ public class SalesOrderController extends HttpServlet {
         try {
             // Get all active products for selection with detailed information
             List<Product> products = productDAO.findActiveProducts();
-            System.out.println("DEBUG: Found " + (products != null ? products.size() : 0) + " active products");
             
             // Create a list of maps containing product and inventory information
             List<Map<String, Object>> productsWithInventory = new ArrayList<>();
             
-            if (products != null && !products.isEmpty()) {
+                            if (products != null && !products.isEmpty()) {
                 for (Product p : products) {
                     Integer quantity = inventoryDAO.getQuantityByProductId(p.getProductId());
-                    System.out.println("DEBUG: Product ID: " + p.getProductId() + 
-                                     ", Name: " + p.getProductName() + 
-                                     ", Code: " + p.getProductCode() +
-                                     ", Price: " + p.getSalePrice() +
-                                     ", Quantity: " + quantity);
                     
                     // Create a map with product and inventory info
                     Map<String, Object> productWithInventory = new HashMap<>();
@@ -167,14 +161,12 @@ public class SalesOrderController extends HttpServlet {
             
             // Generate new order code
             String orderCode = salesOrderDAO.generateOrderCode();
-            System.out.println("DEBUG: Generated order code: " + orderCode);
             
             request.setAttribute("products", productsWithInventory);
             request.setAttribute("orderCode", orderCode);
             
-            // Add debug attribute and product count for JSP
+            // Set product count for JSP
             int productCount = productsWithInventory != null ? productsWithInventory.size() : 0;
-            request.setAttribute("debugProductCount", productCount);
             request.setAttribute("productCount", productCount);
             
             request.getRequestDispatcher("/view/dashboard/saleStaff/salesOrder/createSalesOrder.jsp").forward(request, response);

@@ -11,11 +11,12 @@ public class StockTakeDAO extends DBContext implements I_DAO<StockTake> {
     @Override
     public List<StockTake> findAll() {
         List<StockTake> list = new ArrayList<>();
-        String sql = "SELECT st.*, u.full_name as user_full_name, "
+        String sql = "SELECT st.*, u.full_name as user_full_name, w.warehouse_name, "
                 + "(SELECT COUNT(*) FROM stocktakedetails std WHERE std.stock_take_id = st.stock_take_id) as total_products, "
                 + "(SELECT COUNT(*) FROM stocktakedetails std WHERE std.stock_take_id = st.stock_take_id AND std.counted_quantity IS NOT NULL) as completed_products "
                 + "FROM stocktakes st "
                 + "LEFT JOIN users u ON st.user_id = u.user_id "
+                + "LEFT JOIN warehouses w ON st.warehouse_id = w.warehouse_id "
                 + "ORDER BY st.created_at DESC";
         try {
             conn = getConnection();
@@ -34,16 +35,21 @@ public class StockTakeDAO extends DBContext implements I_DAO<StockTake> {
 
     @Override
     public boolean update(StockTake stockTake) {
-        String sql = "UPDATE stocktakes SET stock_take_code = ?, user_id = ?, stock_take_date = ?, status = ?, notes = ? WHERE stock_take_id = ?";
+        String sql = "UPDATE stocktakes SET stock_take_code = ?, user_id = ?, warehouse_id = ?, stock_take_date = ?, status = ?, notes = ? WHERE stock_take_id = ?";
         try {
             conn = getConnection();
             statement = conn.prepareStatement(sql);
             statement.setString(1, stockTake.getStockTakeCode());
             statement.setInt(2, stockTake.getUserId());
-            statement.setDate(3, stockTake.getStockTakeDate());
-            statement.setString(4, stockTake.getStatus());
-            statement.setString(5, stockTake.getNotes());
-            statement.setInt(6, stockTake.getStockTakeId());
+            if (stockTake.getWarehouseId() != null) {
+                statement.setInt(3, stockTake.getWarehouseId());
+            } else {
+                statement.setNull(3, Types.INTEGER);
+            }
+            statement.setDate(4, stockTake.getStockTakeDate());
+            statement.setString(5, stockTake.getStatus());
+            statement.setString(6, stockTake.getNotes());
+            statement.setInt(7, stockTake.getStockTakeId());
             return statement.executeUpdate() > 0;
         } catch (SQLException e) {
             e.printStackTrace();
@@ -71,15 +77,20 @@ public class StockTakeDAO extends DBContext implements I_DAO<StockTake> {
 
     @Override
     public int insert(StockTake stockTake) {
-        String sql = "INSERT INTO stocktakes (stock_take_code, user_id, stock_take_date, status, notes) VALUES (?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO stocktakes (stock_take_code, user_id, warehouse_id, stock_take_date, status, notes) VALUES (?, ?, ?, ?, ?, ?)";
         try {
             conn = getConnection();
             statement = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
             statement.setString(1, stockTake.getStockTakeCode());
             statement.setInt(2, stockTake.getUserId());
-            statement.setDate(3, stockTake.getStockTakeDate());
-            statement.setString(4, stockTake.getStatus());
-            statement.setString(5, stockTake.getNotes());
+            if (stockTake.getWarehouseId() != null) {
+                statement.setInt(3, stockTake.getWarehouseId());
+            } else {
+                statement.setNull(3, Types.INTEGER);
+            }
+            statement.setDate(4, stockTake.getStockTakeDate());
+            statement.setString(5, stockTake.getStatus());
+            statement.setString(6, stockTake.getNotes());
 
             int affectedRows = statement.executeUpdate();
             if (affectedRows == 0) {
@@ -124,6 +135,12 @@ public class StockTakeDAO extends DBContext implements I_DAO<StockTake> {
         if (columns.contains("user_id")) {
             stockTake.setUserId(rs.getInt("user_id"));
         }
+        if (columns.contains("warehouse_id")) {
+            int warehouseId = rs.getInt("warehouse_id");
+            if (!rs.wasNull()) {
+                stockTake.setWarehouseId(warehouseId);
+            }
+        }
         if (columns.contains("stock_take_date")) {
             stockTake.setStockTakeDate(rs.getDate("stock_take_date"));
         }
@@ -140,6 +157,9 @@ public class StockTakeDAO extends DBContext implements I_DAO<StockTake> {
         if (columns.contains("user_full_name")) {
             stockTake.setUserFullName(rs.getString("user_full_name"));
         }
+        if (columns.contains("warehouse_name")) {
+            stockTake.setWarehouseName(rs.getString("warehouse_name"));
+        }
         if (columns.contains("total_products")) {
             stockTake.setTotalProducts(rs.getInt("total_products"));
         }
@@ -152,7 +172,10 @@ public class StockTakeDAO extends DBContext implements I_DAO<StockTake> {
 
     @Override
     public StockTake findById(Integer id) {
-        String sql = "SELECT st.*, u.full_name as user_full_name FROM stocktakes st LEFT JOIN users u ON st.user_id = u.user_id WHERE st.stock_take_id = ?";
+        String sql = "SELECT st.*, u.full_name as user_full_name, w.warehouse_name FROM stocktakes st " +
+                    "LEFT JOIN users u ON st.user_id = u.user_id " +
+                    "LEFT JOIN warehouses w ON st.warehouse_id = w.warehouse_id " +
+                    "WHERE st.stock_take_id = ?";
         try {
             conn = getConnection();
             statement = conn.prepareStatement(sql);
@@ -172,12 +195,12 @@ public class StockTakeDAO extends DBContext implements I_DAO<StockTake> {
     // Phương thức tìm stock takes theo userId
    public List<StockTake> findByUserId(Integer userId) {
     List<StockTake> list = new ArrayList<>();
-    String sql = "SELECT st.stock_take_id, st.stock_take_code, st.user_id, st.stock_take_date, st.status, st.notes, st.created_at, " +
-                 "u.full_name AS user_full_name, " +
+    String sql = "SELECT st.*, u.full_name AS user_full_name, w.warehouse_name, " +
                  "(SELECT COUNT(*) FROM stocktakedetails std WHERE std.stock_take_id = st.stock_take_id) AS total_products, " +
                  "(SELECT COUNT(*) FROM stocktakedetails std WHERE std.stock_take_id = st.stock_take_id AND std.counted_quantity IS NOT NULL) AS completed_products " +
                  "FROM stocktakes st " +
                  "LEFT JOIN users u ON st.user_id = u.user_id " +
+                 "LEFT JOIN warehouses w ON st.warehouse_id = w.warehouse_id " +
                  "WHERE st.user_id = ? " +
                  "ORDER BY st.created_at DESC";
     try {
@@ -200,17 +223,45 @@ public class StockTakeDAO extends DBContext implements I_DAO<StockTake> {
     // Phương thức tìm stock takes theo status
     public List<StockTake> findByStatus(String status) {
         List<StockTake> list = new ArrayList<>();
-        String sql = "SELECT st.*, u.full_name as user_full_name, "
-                + "(SELECT COUNT(*) FROM stocktakedetails std WHERE std.stock_take_id = st.stock_take_id) as total_products, "
-                + "(SELECT COUNT(*) FROM stocktakedetails std WHERE std.stock_take_id = st.stock_take_id AND std.counted_quantity IS NOT NULL) as completed_products "
-                + "FROM stocktakes st "
-                + "LEFT JOIN users u ON st.user_id = u.user_id "
-                + "WHERE st.status = ? "
-                + "ORDER BY st.created_at DESC";
+        String sql = "SELECT st.*, u.full_name AS user_full_name, w.warehouse_name, " +
+                     "(SELECT COUNT(*) FROM stocktakedetails std WHERE std.stock_take_id = st.stock_take_id) AS total_products, " +
+                     "(SELECT COUNT(*) FROM stocktakedetails std WHERE std.stock_take_id = st.stock_take_id AND std.counted_quantity IS NOT NULL) AS completed_products " +
+                     "FROM stocktakes st " +
+                     "LEFT JOIN users u ON st.user_id = u.user_id " +
+                     "LEFT JOIN warehouses w ON st.warehouse_id = w.warehouse_id " +
+                     "WHERE st.status = ? " +
+                     "ORDER BY st.created_at DESC";
         try {
             conn = getConnection();
             statement = conn.prepareStatement(sql);
             statement.setString(1, status);
+            resultSet = statement.executeQuery();
+            while (resultSet.next()) {
+                list.add(getFromResultSet(resultSet));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            close();
+        }
+        return list;
+    }
+
+    // Phương thức tìm stock takes theo warehouse_id
+    public List<StockTake> findByWarehouseId(Integer warehouseId) {
+        List<StockTake> list = new ArrayList<>();
+        String sql = "SELECT st.*, u.full_name AS user_full_name, w.warehouse_name, " +
+                     "(SELECT COUNT(*) FROM stocktakedetails std WHERE std.stock_take_id = st.stock_take_id) AS total_products, " +
+                     "(SELECT COUNT(*) FROM stocktakedetails std WHERE std.stock_take_id = st.stock_take_id AND std.counted_quantity IS NOT NULL) AS completed_products " +
+                     "FROM stocktakes st " +
+                     "LEFT JOIN users u ON st.user_id = u.user_id " +
+                     "LEFT JOIN warehouses w ON st.warehouse_id = w.warehouse_id " +
+                     "WHERE st.warehouse_id = ? " +
+                     "ORDER BY st.created_at DESC";
+        try {
+            conn = getConnection();
+            statement = conn.prepareStatement(sql);
+            statement.setInt(1, warehouseId);
             resultSet = statement.executeQuery();
             while (resultSet.next()) {
                 list.add(getFromResultSet(resultSet));

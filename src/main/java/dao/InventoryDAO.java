@@ -169,25 +169,35 @@ public class InventoryDAO extends DBContext implements I_DAO<Inventory> {
      * Update quantity for a specific product
      */
     public boolean updateQuantityByProductId(Integer productId, Integer quantity) {
-        String sql = "UPDATE inventory SET quantity_on_hand = ? WHERE product_id = ?";
+        // Mặc định cập nhật warehouse_id = 1 (kho mặc định)
+        return updateQuantityByProductId(productId, quantity, 1);
+    }
+
+    /**
+     * Update quantity for a specific product in a specific warehouse
+     */
+    public boolean updateQuantityByProductId(Integer productId, Integer quantity, Integer warehouseId) {
+        String sql = "UPDATE inventory SET quantity_on_hand = ? WHERE product_id = ? AND warehouse_id = ?";
         try {
             conn = getConnection();
             statement = conn.prepareStatement(sql);
             statement.setInt(1, quantity);
             statement.setInt(2, productId);
+            statement.setInt(3, warehouseId);
             int rowsAffected = statement.executeUpdate();
             
             // If no rows were affected, create a new inventory record
             if (rowsAffected == 0) {
-                Inventory inventory = Inventory.builder()
-                    .productId(productId)
-                    .quantityOnHand(quantity)
-                    .build();
-                return insert(inventory) > 0;
+                String insertSql = "INSERT INTO inventory (product_id, quantity_on_hand, warehouse_id) VALUES (?, ?, ?)";
+                statement = conn.prepareStatement(insertSql);
+                statement.setInt(1, productId);
+                statement.setInt(2, quantity);
+                statement.setInt(3, warehouseId);
+                return statement.executeUpdate() > 0;
             }
             return true;
         } catch (SQLException ex) {
-            LOGGER.log(Level.SEVERE, "Error updating quantity for product ID: " + productId, ex);
+            LOGGER.log(Level.SEVERE, "Error updating quantity for product ID: " + productId + " in warehouse: " + warehouseId, ex);
             return false;
         } finally {
             close();
@@ -241,5 +251,36 @@ public class InventoryDAO extends DBContext implements I_DAO<Inventory> {
         } finally {
             close();
         }
+    }
+
+    /**
+     * Count products with inventory in a specific warehouse
+     */
+    public int countProductsInWarehouse(Integer warehouseId) {
+        String sql = "SELECT COUNT(DISTINCT i.product_id) as product_count " +
+                    "FROM inventory i " +
+                    "JOIN products p ON i.product_id = p.product_id " +
+                    "WHERE i.warehouse_id = ? AND i.quantity_on_hand > 0 AND p.is_active = 1";
+        try {
+            conn = getConnection();
+            statement = conn.prepareStatement(sql);
+            statement.setInt(1, warehouseId);
+            resultSet = statement.executeQuery();
+            if (resultSet.next()) {
+                return resultSet.getInt("product_count");
+            }
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Error counting products in warehouse ID: " + warehouseId, ex);
+        } finally {
+            close();
+        }
+        return 0;
+    }
+
+    /**
+     * Check if warehouse has any products with inventory
+     */
+    public boolean hasProductsInWarehouse(Integer warehouseId) {
+        return countProductsInWarehouse(warehouseId) > 0;
     }
 } 

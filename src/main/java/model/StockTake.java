@@ -7,6 +7,7 @@ public class StockTake {
     private Integer stockTakeId;
     private String stockTakeCode;
     private Integer userId;
+    private Integer warehouseId;
     private Date stockTakeDate;
     private String status; // 'pending','in_progress','completed','reconciled'
     private String notes;
@@ -14,17 +15,19 @@ public class StockTake {
     
     // Additional fields for display purposes
     private String userFullName;
+    private String warehouseName;
     private Integer totalProducts;
     private Integer completedProducts;
 
     // Constructors
     public StockTake() {}
 
-    public StockTake(Integer stockTakeId, String stockTakeCode, Integer userId, Date stockTakeDate, 
-                    String status, String notes, Timestamp createdAt) {
+    public StockTake(Integer stockTakeId, String stockTakeCode, Integer userId, Integer warehouseId,
+                    Date stockTakeDate, String status, String notes, Timestamp createdAt) {
         this.stockTakeId = stockTakeId;
         this.stockTakeCode = stockTakeCode;
         this.userId = userId;
+        this.warehouseId = warehouseId;
         this.stockTakeDate = stockTakeDate;
         this.status = status;
         this.notes = notes;
@@ -41,6 +44,9 @@ public class StockTake {
     public Integer getUserId() { return userId; }
     public void setUserId(Integer userId) { this.userId = userId; }
 
+    public Integer getWarehouseId() { return warehouseId; }
+    public void setWarehouseId(Integer warehouseId) { this.warehouseId = warehouseId; }
+
     public Date getStockTakeDate() { return stockTakeDate; }
     public void setStockTakeDate(Date stockTakeDate) { this.stockTakeDate = stockTakeDate; }
 
@@ -55,6 +61,9 @@ public class StockTake {
 
     public String getUserFullName() { return userFullName; }
     public void setUserFullName(String userFullName) { this.userFullName = userFullName; }
+
+    public String getWarehouseName() { return warehouseName; }
+    public void setWarehouseName(String warehouseName) { this.warehouseName = warehouseName; }
 
     public Integer getTotalProducts() { return totalProducts; }
     public void setTotalProducts(Integer totalProducts) { this.totalProducts = totalProducts; }

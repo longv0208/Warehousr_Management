@@ -27,13 +27,7 @@
         <a href="${pageContext.request.contextPath}/sale-staff/sales-order?action=list" class="btn btn-secondary">← Quay lại</a>
       </div>
       
-      <!-- Debug information -->
-      <c:if test="${debugProductCount != null && debugProductCount > 0}">
-        <div class="alert alert-info alert-dismissible fade show" role="alert">
-          <strong>Debug:</strong> Tìm thấy ${debugProductCount} sản phẩm active.
-          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-      </c:if>
+
       
       <c:if test="${empty products}">
         <div class="alert alert-warning alert-dismissible fade show" role="alert">

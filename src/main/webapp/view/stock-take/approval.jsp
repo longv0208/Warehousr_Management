@@ -85,7 +85,11 @@
                                     <h6 class="text-light">Người kiểm kê:</h6>
                                     <h5>${stockTake.userFullName}</h5>
                                 </div>
-                                <div class="col-md-3">
+                                <div class="col-md-2">
+                                    <h6 class="text-light">Kho hàng:</h6>
+                                    <h5><span class="badge bg-info fs-6">${stockTake.warehouseName != null ? stockTake.warehouseName : 'N/A'}</span></h5>
+                                </div>
+                                <div class="col-md-2">
                                     <h6 class="text-light">Trạng thái:</h6>
                                     <h5>
                                         <span class="badge bg-success fs-6">
@@ -97,7 +101,7 @@
                                         </span>
                                     </h5>
                                 </div>
-                                <div class="col-md-3">
+                                <div class="col-md-2">
                                     <h6 class="text-light">Ghi chú:</h6>
                                     <h5>${stockTake.notes != null ? stockTake.notes : 'Không có'}</h5>
                                 </div>

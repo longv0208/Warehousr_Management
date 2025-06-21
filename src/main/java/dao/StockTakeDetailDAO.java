@@ -160,13 +160,16 @@ public class StockTakeDetailDAO extends DBContext implements I_DAO<StockTakeDeta
         return null;
     }
 
-    // Tìm chi tiết theo stock_take_id
+    // Tìm chi tiết theo stock_take_id  
     public List<StockTakeDetail> findByStockTakeId(Integer stockTakeId) {
         List<StockTakeDetail> list = new ArrayList<>();
-        String sql = "SELECT std.*, p.product_code, p.product_name, p.unit, COALESCE(i.quantity_on_hand, 0) as current_quantity " +
+        String sql = "SELECT std.*, p.product_code, p.product_name, p.unit, " +
+                    "COALESCE(i.quantity_on_hand, 0) as current_quantity " +
                     "FROM stocktakedetails std " +
                     "LEFT JOIN products p ON std.product_id = p.product_id " +
-                    "LEFT JOIN inventory i ON p.product_id = i.product_id " +
+                    "LEFT JOIN stocktakes st ON std.stock_take_id = st.stock_take_id " +
+                    "LEFT JOIN inventory i ON (p.product_id = i.product_id AND " +
+                    "    i.warehouse_id = COALESCE(st.warehouse_id, 1)) " +
                     "WHERE std.stock_take_id = ? " +
                     "ORDER BY p.product_code";
         try {
@@ -180,7 +183,7 @@ public class StockTakeDetailDAO extends DBContext implements I_DAO<StockTakeDeta
                 detail.setStockTakeId(resultSet.getInt("stock_take_id"));
                 detail.setProductId(resultSet.getInt("product_id"));
                 
-                // Lấy quantity hiện tại từ products thay vì system_quantity cũ
+                // Lấy quantity hiện tại từ inventory theo warehouse
                 detail.setSystemQuantity(resultSet.getInt("current_quantity"));
                 
                 int countedQty = resultSet.getInt("counted_quantity");
@@ -208,12 +211,17 @@ public class StockTakeDetailDAO extends DBContext implements I_DAO<StockTakeDeta
     // Cập nhật counted_quantity và system_quantity
     public boolean updateCountedQuantity(Integer stockTakeDetailId, Integer countedQuantity) {
         String updateSystemQtySql = "UPDATE stocktakedetails std " +
-                                   "SET std.system_quantity = (SELECT COALESCE(i.quantity_on_hand, 0) FROM inventory i WHERE i.product_id = std.product_id) " +
+                                   "JOIN stocktakes st ON std.stock_take_id = st.stock_take_id " +
+                                   "SET std.system_quantity = (" +
+                                   "    SELECT COALESCE(i.quantity_on_hand, 0) " +
+                                   "    FROM inventory i " +
+                                   "    WHERE i.product_id = std.product_id " +
+                                   "    AND i.warehouse_id = COALESCE(st.warehouse_id, 1)" +
+                                   "    LIMIT 1" +
+                                   ") " +
                                    "WHERE std.stock_take_detail_id = ?";
 
         String updateCountedQtySql = "UPDATE stocktakedetails SET counted_quantity = ? WHERE stock_take_detail_id = ?";
-
-        // Không update cột discrepancy vì đây là generated column trong DB
 
         // Sử dụng kết nối cục bộ để tránh xung đột kết nối chia sẻ giữa các luồng
         try (Connection localConn = getConnection()) {
@@ -238,7 +246,6 @@ public class StockTakeDetailDAO extends DBContext implements I_DAO<StockTakeDeta
             return true;
         } catch (SQLException e) {
             e.printStackTrace();
-            // rollback nếu cần
             return false;
         }
     }
@@ -246,14 +253,44 @@ public class StockTakeDetailDAO extends DBContext implements I_DAO<StockTakeDeta
     // Tạo chi tiết kiểm kê cho tất cả sản phẩm có tồn kho
     public boolean createStockTakeDetailsForAllProducts(Integer stockTakeId) {
         String sql = "INSERT INTO stocktakedetails (stock_take_id, product_id, system_quantity) " +
-                    "SELECT ?, p.product_id, COALESCE(i.quantity_on_hand, 0) " +
+                    "SELECT ?, p.product_id, " +
+                    "COALESCE((" +
+                    "    SELECT i.quantity_on_hand " +
+                    "    FROM inventory i " +
+                    "    JOIN stocktakes st ON st.stock_take_id = ? " +
+                    "    WHERE i.product_id = p.product_id " +
+                    "    AND (st.warehouse_id IS NULL OR i.warehouse_id = st.warehouse_id OR i.warehouse_id = 1)" +
+                    "    LIMIT 1" +
+                    "), 0) " +
                     "FROM products p " +
-                    "LEFT JOIN inventory i ON p.product_id = i.product_id " +
                     "WHERE p.is_active = 1";
         try {
             conn = getConnection();
             statement = conn.prepareStatement(sql);
             statement.setInt(1, stockTakeId);
+            statement.setInt(2, stockTakeId);
+            return statement.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        } finally {
+            close();
+        }
+    }
+
+    // Tạo chi tiết kiểm kê cho sản phẩm có tồn kho trong warehouse cụ thể
+    public boolean createStockTakeDetailsForWarehouse(Integer stockTakeId, Integer warehouseId) {
+        String sql = "INSERT INTO stocktakedetails (stock_take_id, product_id, system_quantity) " +
+                    "SELECT ?, p.product_id, COALESCE(i.quantity_on_hand, 0) " +
+                    "FROM products p " +
+                    "LEFT JOIN inventory i ON p.product_id = i.product_id AND i.warehouse_id = ? " +
+                    "WHERE p.is_active = 1 " +
+                    "AND (i.quantity_on_hand > 0 OR i.quantity_on_hand IS NULL)";
+        try {
+            conn = getConnection();
+            statement = conn.prepareStatement(sql);
+            statement.setInt(1, stockTakeId);
+            statement.setInt(2, warehouseId);
             return statement.executeUpdate() > 0;
         } catch (SQLException e) {
             e.printStackTrace();

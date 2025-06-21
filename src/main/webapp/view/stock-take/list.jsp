@@ -36,13 +36,30 @@
                                 <option value="pending" ${param.status == 'pending' ? 'selected' : ''}>Chờ xử lý</option>
                                 <option value="in_progress" ${param.status == 'in_progress' ? 'selected' : ''}>Đang kiểm kê</option>
                                 <option value="completed" ${param.status == 'completed' ? 'selected' : ''}>Hoàn thành</option>
-
                                 <option value="reconciled" ${param.status == 'reconciled' ? 'selected' : ''}>Đã đối soát</option>
                             </select>
                             <button type="submit" class="btn btn-outline-secondary">Lọc</button>
                         </div>
                     </form>
                 </div>
+                <c:if test="${currentUser.roleId == 'admin'}">
+                    <div class="col-md-4">
+                        <form method="GET" action="${pageContext.request.contextPath}/stock-take">
+                            <div class="input-group">
+                                <select name="warehouseId" class="form-select">
+                                    <option value="">-- Tất cả kho hàng --</option>
+                                    <c:forEach var="warehouse" items="${warehouses}">
+                                        <option value="${warehouse.warehouseId}" 
+                                                ${selectedWarehouseId == warehouse.warehouseId.toString() ? 'selected' : ''}>
+                                            ${warehouse.warehouseName}
+                                        </option>
+                                    </c:forEach>
+                                </select>
+                                <button type="submit" class="btn btn-outline-primary">Lọc theo kho</button>
+                            </div>
+                        </form>
+                    </div>
+                </c:if>
             </div>
 
             <!-- Hiển thị thông báo -->
@@ -69,6 +86,7 @@
                             <th>Mã phiếu</th>
                             <th>Ngày kiểm kê</th>
                             <th>Người tạo</th>
+                            <th>Kho hàng</th>
                             <th>Trạng thái</th>
                             <th>Tổng sản phẩm</th>
                             <th>Đã kiểm</th>
@@ -83,6 +101,9 @@
                                 <td><fmt:formatDate value="${stockTake.stockTakeDate}" pattern="dd/MM/yyyy" /></td>
                                 <td>${stockTake.userFullName}</td>
                                 <td>
+                                    <span class="badge bg-info">${stockTake.warehouseName != null ? stockTake.warehouseName : 'N/A'}</span>
+                                </td>
+                                <td>
                                     <c:choose>
                                         <c:when test="${stockTake.status == 'pending'}">
                                             <span class="badge bg-warning">Chờ xử lý</span>
@@ -93,7 +114,6 @@
                                         <c:when test="${stockTake.status == 'completed'}">
                                             <span class="badge bg-success">Hoàn thành</span>
                                         </c:when>
-
                                         <c:when test="${stockTake.status == 'reconciled'}">
                                             <span class="badge bg-dark">Đã đối soát</span>
                                         </c:when>
