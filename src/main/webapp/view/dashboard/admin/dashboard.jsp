@@ -11,6 +11,7 @@
         <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
         <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono&display=swap" rel="stylesheet"/>
         <link href="${pageContext.request.contextPath}/styles/index.css" rel="stylesheet"/>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
         
         <style>
             .sidebar {
@@ -130,6 +131,16 @@
             .sidebar::-webkit-scrollbar-thumb:hover {
                 background: rgba(255,255,255,0.5);
             }
+            
+            .chart-container {
+                position: relative;
+                height: 400px;
+                margin: 20px 0;
+            }
+            
+            .chart-card {
+                height: 500px;
+            }
         </style>
     </head>
     <body>
@@ -154,45 +165,59 @@
                         <c:remove var="successMessage" scope="session"/>
                     </c:if>
 
+                    <h2 class="mb-4">📊 Dashboard - Tổng quan hệ thống</h2>
+
+                    <!-- Statistics Cards -->
                     <div class="row">
                         <div class="col-md-3 mb-3">
                             <div class="card text-bg-primary">
                                 <div class="card-body">
-                                    <h5 class="card-title">Tổng Sản Phẩm</h5>
-                                    <p class="card-text fs-4">${totalProducts}</p>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h5 class="card-title">Tổng Sản Phẩm</h5>
+                                            <p class="card-text fs-4">${totalProducts}</p>
+                                        </div>
+                                        <i class="fas fa-boxes fa-2x opacity-75"></i>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-3 mb-3">
                             <div class="card text-bg-success">
                                 <div class="card-body">
-                                    <h5 class="card-title">Đã Nhập Hôm Nay</h5>
-                                    <p class="card-text fs-4">${totalReceivedToday}</p>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h5 class="card-title">Đã Nhập Hôm Nay</h5>
+                                            <p class="card-text fs-4">${totalReceivedToday}</p>
+                                        </div>
+                                        <i class="fas fa-plus-circle fa-2x opacity-75"></i>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-3 mb-3">
                             <div class="card text-bg-warning">
                                 <div class="card-body">
-                                    <h5 class="card-title">Sắp Hết Hàng</h5>
-                                    <p class="card-text fs-4">
-                                        0
-                                    </p>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h5 class="card-title">Sắp Hết Hàng</h5>
+                                            <p class="card-text fs-4">${totalLowStock}</p>
+                                        </div>
+                                        <i class="fas fa-exclamation-triangle fa-2x opacity-75"></i>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-3 mb-3">
                             <div class="card text-bg-danger">
                                 <div class="card-body">
-                                    <h5 class="card-title">Hết Hàng</h5>
-                                    <p class="card-text fs-4">
-                                        <c:choose>
-                                            <c:when test="${not empty totalOutOfStock}">
-                                                ${totalOutOfStock}
-                                            </c:when>
-                                            <c:otherwise>0</c:otherwise>
-                                        </c:choose>
-                                    </p>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h5 class="card-title">Hết Hàng</h5>
+                                            <p class="card-text fs-4">${totalOutOfStock}</p>
+                                        </div>
+                                        <i class="fas fa-times-circle fa-2x opacity-75"></i>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -202,80 +227,203 @@
                         <div class="col-md-3 mb-3">
                             <div class="card text-bg-info">
                                 <div class="card-body">
-                                    <h5 class="card-title">Tổng User</h5>
-                                    <p class="card-text fs-4">${totalUsers}</p>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h5 class="card-title">Tổng User</h5>
+                                            <p class="card-text fs-4">${totalUsers}</p>
+                                        </div>
+                                        <i class="fas fa-users fa-2x opacity-75"></i>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-
-                    <div class="card mt-4">
-                        <div class="card-header bg-light">
-                            <h5>📋 Danh sách sản phẩm gần đây</h5>
-                        </div>
-                        <div class="card-body">
-                            <c:if test="${empty recentProducts}">
-                                <div class="alert alert-info">Không có sản phẩm nào gần đây.</div>
-                            </c:if>
-
-                            <c:if test="${not empty recentProducts}">
-                                <table class="table table-hover table-bordered">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th>#</th>
-                                            <th>Mã SP</th>
-                                            <th>Tên sản phẩm</th>
-                                            <th>Danh mục</th>
-                                            <th>Nhà cung cấp</th>
-                                            <th>Giá bán</th>
-                                            <th>Trạng thái</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <c:forEach var="entry" items="${recentProducts}" varStatus="status">
-                                            <c:set var="product" value="${entry.product}"/>
-                                            <c:set var="category" value="${entry.category}"/>
-                                            <c:set var="supplier" value="${entry.supplier}"/>
-                                            <tr>
-                                                <td>${status.index + 1}</td>
-                                                <td>${product.productCode}</td>
-                                                <td>${product.productName}</td>
-                                                <td>${category.categoryName}</td>
-                                                <td>${supplier.supplierName}</td>
-                                                <td><fmt:formatNumber value="${product.salePrice}" type="currency" currencySymbol="đ"/></td>
-                                                <td>
-                                                    <c:choose>
-                                                        <c:when test="${product.lowStockThreshold == 0}">
-                                                            <span class="badge bg-danger">Hết hàng</span>
-                                                        </c:when>
-                                                        <c:when test="${product.lowStockThreshold <= 10}">
-                                                            <span class="badge bg-warning">Sắp hết</span>
-                                                        </c:when>
-                                                        <c:otherwise>
-                                                            <span class="badge bg-success">Còn hàng</span>
-                                                        </c:otherwise>
-                                                    </c:choose>
-                                                </td>
-                                            </tr>
-                                        </c:forEach>
-                                    </tbody>
-                                </table>
-                                <div class="text-center mt-3">
-                                    <a href="${pageContext.request.contextPath}/product" class="btn btn-primary">
-                                        📦 Xem tất cả sản phẩm
-                                    </a>
+                    <!-- Charts Section -->
+                    <div class="row mt-4">
+                        <!-- Monthly Orders Chart -->
+                        <div class="col-md-6 mb-4">
+                            <div class="card chart-card">
+                                <div class="card-header bg-light">
+                                    <h5><i class="fas fa-chart-line me-2"></i>Đơn hàng theo tháng (6 tháng gần đây)</h5>
                                 </div>
-                            </c:if>
+                                <div class="card-body">
+                                    <div class="chart-container">
+                                        <canvas id="monthlyOrdersChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Category Distribution Chart -->
+                        <div class="col-md-6 mb-4">
+                            <div class="card chart-card">
+                                <div class="card-header bg-light">
+                                    <h5><i class="fas fa-chart-bar me-2"></i>Phân bổ sản phẩm theo danh mục</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="chart-container">
+                                        <canvas id="categoryChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </main>
             </div>
         </div>
 
+        <!-- Data for Charts -->
+        <div id="chartData" style="display: none;"
+             data-monthly-orders='<c:out value="${monthlyOrdersJson}" escapeXml="false"/>'
+             data-category-data='<c:out value="${categoryDataJson}" escapeXml="false"/>'>
+        </div>
+
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
         <script>
-           
+            // Get chart data
+            const chartDataElement = document.getElementById('chartData');
+            
+            // Monthly Orders Chart
+            let monthlyOrdersData = [];
+            try {
+                const monthlyDataAttr = chartDataElement.getAttribute('data-monthly-orders');
+                if (monthlyDataAttr && monthlyDataAttr !== 'null') {
+                    monthlyOrdersData = JSON.parse(monthlyDataAttr);
+                }
+            } catch (e) {
+                console.log('No monthly orders data available');
+            }
+
+            const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+            const monthlyLabels = monthlyOrdersData.length > 0 ? monthlyOrdersData.map(data => monthNames[data.month - 1] + ' ' + data.year) : [];
+            const orderCounts = monthlyOrdersData.length > 0 ? monthlyOrdersData.map(data => data.orderCount) : [];
+            const totalAmounts = monthlyOrdersData.length > 0 ? monthlyOrdersData.map(data => data.totalAmount) : [];
+
+            const monthlyOrdersCtx = document.getElementById('monthlyOrdersChart').getContext('2d');
+            new Chart(monthlyOrdersCtx, {
+                type: 'line',
+                data: {
+                    labels: monthlyLabels,
+                    datasets: [{
+                        label: 'Số đơn hàng',
+                        data: orderCounts,
+                        borderColor: 'rgb(75, 192, 192)',
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        tension: 0.1,
+                        yAxisID: 'y'
+                    }, {
+                        label: 'Doanh thu (VNĐ)',
+                        data: totalAmounts,
+                        borderColor: 'rgb(255, 99, 132)',
+                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                        tension: 0.1,
+                        yAxisID: 'y1'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    scales: {
+                        x: {
+                            display: true,
+                            title: {
+                                display: true,
+                                text: 'Tháng'
+                            }
+                        },
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: 'Số đơn hàng'
+                            }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            title: {
+                                display: true,
+                                text: 'Doanh thu (VNĐ)'
+                            },
+                            grid: {
+                                drawOnChartArea: false,
+                            },
+                        }
+                    }
+                }
+            });
+
+            // Category Distribution Chart
+            let categoryData = [];
+            try {
+                const categoryDataAttr = chartDataElement.getAttribute('data-category-data');
+                if (categoryDataAttr && categoryDataAttr !== 'null') {
+                    categoryData = JSON.parse(categoryDataAttr);
+                }
+            } catch (e) {
+                console.log('No category data available');
+            }
+
+            const categoryLabels = categoryData.map(data => data.categoryName || '');
+            const productCounts = categoryData.map(data => data.productCount || 0);
+
+            const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+            new Chart(categoryCtx, {
+                type: 'bar',
+                data: {
+                    labels: categoryLabels,
+                    datasets: [{
+                        label: 'Số sản phẩm',
+                        data: productCounts,
+                        backgroundColor: [
+                            'rgba(255, 99, 132, 0.8)',
+                            'rgba(54, 162, 235, 0.8)',
+                            'rgba(255, 205, 86, 0.8)',
+                            'rgba(75, 192, 192, 0.8)',
+                            'rgba(153, 102, 255, 0.8)',
+                            'rgba(255, 159, 64, 0.8)'
+                        ],
+                        borderColor: [
+                            'rgba(255, 99, 132, 1)',
+                            'rgba(54, 162, 235, 1)',
+                            'rgba(255, 205, 86, 1)',
+                            'rgba(75, 192, 192, 1)',
+                            'rgba(153, 102, 255, 1)',
+                            'rgba(255, 159, 64, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Số sản phẩm'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Danh mục'
+                            }
+                        }
+                    }
+                }
+            });
         </script>
     </body>
 </html>
