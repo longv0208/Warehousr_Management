@@ -22,8 +22,8 @@ public class PurchaseRequestDetailDAO extends DBContext implements I_DAO<Purchas
                 .requestId(rs.getInt("request_id"))
                 .productId(rs.getInt("product_id"))
                 .requestedQuantity(rs.getInt("requested_quantity"))
-                .suggestedSupplierId(rs.getObject("suggested_supplier_id") != null ? rs.getInt("suggested_supplier_id") : null)
-                .notes(rs.getString("notes"))
+                .suggestedSupplierId(rs.getObject("supplier_id_suggested") != null ? rs.getInt("supplier_id_suggested") : null)
+                .notes("") // Database không có cột notes, set empty string
                 // Thông tin join
                 .productName(rs.getString("product_name"))
                 .productCode(rs.getString("product_code"))
@@ -39,7 +39,7 @@ public class PurchaseRequestDetailDAO extends DBContext implements I_DAO<Purchas
         String sql = "SELECT prd.*, p.product_name, p.product_code, p.unit, p.purchase_price, s.supplier_name " +
                     "FROM purchaserequestdetails prd " +
                     "LEFT JOIN products p ON prd.product_id = p.product_id " +
-                    "LEFT JOIN suppliers s ON prd.suggested_supplier_id = s.supplier_id";
+                    "LEFT JOIN suppliers s ON prd.supplier_id_suggested = s.supplier_id";
         try {
             conn = getConnection();
             statement = conn.prepareStatement(sql);
@@ -57,8 +57,8 @@ public class PurchaseRequestDetailDAO extends DBContext implements I_DAO<Purchas
 
     @Override
     public int insert(PurchaseRequestDetail detail) {
-        String sql = "INSERT INTO purchaserequestdetails (request_id, product_id, requested_quantity, suggested_supplier_id, notes) " +
-                    "VALUES (?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO purchaserequestdetails (request_id, product_id, requested_quantity, supplier_id_suggested) " +
+                    "VALUES (?, ?, ?, ?)";
         try {
             conn = getConnection();
             statement = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
@@ -70,7 +70,6 @@ public class PurchaseRequestDetailDAO extends DBContext implements I_DAO<Purchas
             } else {
                 statement.setNull(4, Types.INTEGER);
             }
-            statement.setString(5, detail.getNotes());
 
             int affectedRows = statement.executeUpdate();
             if (affectedRows == 0) {
@@ -93,7 +92,7 @@ public class PurchaseRequestDetailDAO extends DBContext implements I_DAO<Purchas
 
     @Override
     public boolean update(PurchaseRequestDetail detail) {
-        String sql = "UPDATE purchaserequestdetails SET requested_quantity = ?, suggested_supplier_id = ?, notes = ? " +
+        String sql = "UPDATE purchaserequestdetails SET requested_quantity = ?, supplier_id_suggested = ? " +
                     "WHERE request_detail_id = ?";
         try {
             conn = getConnection();
@@ -104,8 +103,7 @@ public class PurchaseRequestDetailDAO extends DBContext implements I_DAO<Purchas
             } else {
                 statement.setNull(2, Types.INTEGER);
             }
-            statement.setString(3, detail.getNotes());
-            statement.setInt(4, detail.getRequestDetailId());
+            statement.setInt(3, detail.getRequestDetailId());
 
             return statement.executeUpdate() > 0;
         } catch (SQLException ex) {
@@ -137,7 +135,7 @@ public class PurchaseRequestDetailDAO extends DBContext implements I_DAO<Purchas
         String sql = "SELECT prd.*, p.product_name, p.product_code, p.unit, p.purchase_price, s.supplier_name " +
                     "FROM purchaserequestdetails prd " +
                     "LEFT JOIN products p ON prd.product_id = p.product_id " +
-                    "LEFT JOIN suppliers s ON prd.suggested_supplier_id = s.supplier_id " +
+                    "LEFT JOIN suppliers s ON prd.supplier_id_suggested = s.supplier_id " +
                     "WHERE prd.request_detail_id = ?";
         try {
             conn = getConnection();
@@ -161,7 +159,7 @@ public class PurchaseRequestDetailDAO extends DBContext implements I_DAO<Purchas
         String sql = "SELECT prd.*, p.product_name, p.product_code, p.unit, p.purchase_price, s.supplier_name " +
                     "FROM purchaserequestdetails prd " +
                     "LEFT JOIN products p ON prd.product_id = p.product_id " +
-                    "LEFT JOIN suppliers s ON prd.suggested_supplier_id = s.supplier_id " +
+                    "LEFT JOIN suppliers s ON prd.supplier_id_suggested = s.supplier_id " +
                     "WHERE prd.request_id = ?";
         try {
             conn = getConnection();

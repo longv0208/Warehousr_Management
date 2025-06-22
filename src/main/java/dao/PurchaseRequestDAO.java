@@ -28,6 +28,10 @@ public class PurchaseRequestDAO extends DBContext implements I_DAO<PurchaseReque
                 .createdAt(rs.getTimestamp("created_at"))
                 // Thông tin join
                 .requestedByName(rs.getString("requested_by_name"))
+                // Set default values for fields not in database
+                .approvedByName(null) // Database chưa có trường này
+                .approvedDate(null)   // Database chưa có trường này
+                .warehouseName(null)  // Database chưa có trường này
                 .build();
     }
 

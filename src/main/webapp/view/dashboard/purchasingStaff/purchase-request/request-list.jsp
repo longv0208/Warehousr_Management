@@ -154,13 +154,19 @@
                                                     </td>
                                                     <td>
                                                         <c:choose>
-                                                            <c:when test="${not empty request.approvedByName}">
-                                                                ${request.approvedByName}
+                                                            <c:when test="${request.status == 'approved'}">
+                                                                <span class="text-success">Đã duyệt</span>
+                                                                <c:if test="${not empty request.approvedByName}">
+                                                                    <br><small class="text-muted">${request.approvedByName}</small>
+                                                                </c:if>
                                                                 <c:if test="${not empty request.approvedDate}">
                                                                     <br><small class="text-muted">
                                                                         <fmt:formatDate value="${request.approvedDate}" pattern="dd/MM/yyyy"/>
                                                                     </small>
                                                                 </c:if>
+                                                            </c:when>
+                                                            <c:when test="${request.status == 'rejected'}">
+                                                                <span class="text-danger">Đã từ chối</span>
                                                             </c:when>
                                                             <c:otherwise>
                                                                 <span class="text-muted">Chưa duyệt</span>

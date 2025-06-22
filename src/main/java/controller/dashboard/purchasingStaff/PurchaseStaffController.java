@@ -180,9 +180,11 @@ public class PurchaseStaffController extends HttpServlet {
             throws ServletException, IOException {
         List<Product> products = productDAO.findAll();
         List<Supplier> suppliers = supplierDAO.findAll();
+        List<Warehouse> warehouses = warehouseDAO.findAll();
         
         request.setAttribute("products", products);
         request.setAttribute("suppliers", suppliers);
+        request.setAttribute("warehouses", warehouses);
         
         request.getRequestDispatcher("/view/dashboard/purchasingStaff/create-purchase-request.jsp").forward(request, response);
     }
@@ -218,7 +220,7 @@ public class PurchaseStaffController extends HttpServlet {
                             .requestedQuantity(Integer.parseInt(quantities[i]))
                             .suggestedSupplierId(supplierIds[i] != null && !supplierIds[i].isEmpty() ? 
                                 Integer.parseInt(supplierIds[i]) : null)
-                            .notes(productNotes[i])
+                            .notes(productNotes != null && i < productNotes.length ? productNotes[i] : "")
                             .build();
                         
                         purchaseRequestDetailDAO.insert(detail);

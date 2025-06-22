@@ -29,4 +29,6 @@ public class PurchaseRequest {
     // Thông tin chi tiết (để hiển thị - không có trong DB)
     private String requestedByName;
     private String warehouseName;
+    private String approvedByName; // Tên người duyệt
+    private Timestamp approvedDate; // Ngày duyệt
 } 

@@ -46,14 +46,14 @@
 
                 <!-- Purchase Request Form -->
                 <form method="POST" action="${pageContext.request.contextPath}/purchase-staff/purchase-request?action=create">
-                    <div class="row">
-                        <!-- Request Information -->
-                        <div class="col-md-6">
-                            <div class="card mb-4">
-                                <div class="card-header">
-                                    <h5 class="card-title mb-0">Thông tin yêu cầu</h5>
-                                </div>
-                                <div class="card-body">
+                    <!-- Request Information -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Thông tin yêu cầu</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="warehouseId" class="form-label">Kho nhập hàng <span class="text-danger">*</span></label>
                                         <select class="form-select" id="warehouseId" name="warehouseId" required>
@@ -65,45 +65,12 @@
                                             </c:forEach>
                                         </select>
                                     </div>
+                                </div>
+                                <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="notes" class="form-label">Ghi chú lý do</label>
                                         <textarea class="form-control" id="notes" name="notes" rows="4" 
                                                   placeholder="Nhập lý do yêu cầu nhập hàng..."></textarea>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Quick Add Product -->
-                        <div class="col-md-6">
-                            <div class="card mb-4">
-                                <div class="card-header">
-                                    <h5 class="card-title mb-0">Thêm sản phẩm nhanh</h5>
-                                </div>
-                                <div class="card-body">
-                                    <div class="row g-2">
-                                        <div class="col-6">
-                                            <select class="form-select" id="quickProductSelect">
-                                                <option value="">Chọn sản phẩm...</option>
-                                                <c:forEach var="product" items="${products}">
-                                                    <option value="${product.productId}" 
-                                                            data-name="${product.productName}"
-                                                            data-code="${product.productCode}"
-                                                            data-unit="${product.unit}">
-                                                        ${product.productCode} - ${product.productName}
-                                                    </option>
-                                                </c:forEach>
-                                            </select>
-                                        </div>
-                                        <div class="col-3">
-                                            <input type="number" class="form-control" id="quickQuantity" 
-                                                   placeholder="Số lượng" min="1">
-                                        </div>
-                                        <div class="col-3">
-                                            <button type="button" class="btn btn-primary w-100" onclick="addProduct()">
-                                                <i class="fas fa-plus"></i> Thêm
-                                            </button>
-                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -200,40 +167,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-    let productRowIndex = 1;
-
-    function addProduct() {
-        const productSelect = document.getElementById('quickProductSelect');
-        const quantityInput = document.getElementById('quickQuantity');
-        
-        if (productSelect.value && quantityInput.value) {
-            const selectedOption = productSelect.options[productSelect.selectedIndex];
-            const productId = selectedOption.value;
-            const productName = selectedOption.dataset.name;
-            const productCode = selectedOption.dataset.code;
-            
-            // Check if product already exists
-            const existingSelects = document.querySelectorAll('select[name="productId"]');
-            let productExists = false;
-            for (let select of existingSelects) {
-                if (select.value === productId) {
-                    alert('Sản phẩm này đã được thêm vào danh sách!');
-                    productExists = true;
-                    break;
-                }
-            }
-            
-            if (!productExists) {
-                addProductRow(productId, productName + ' (' + productCode + ')', quantityInput.value);
-                productSelect.value = '';
-                quantityInput.value = '';
-            }
-        } else {
-            alert('Vui lòng chọn sản phẩm và nhập số lượng!');
-        }
-    }
-
-    function addProductRow(productId = '', productDisplay = '', quantity = '') {
+    function addEmptyProduct() {
         const tbody = document.getElementById('productTableBody');
         const newRow = document.createElement('tr');
         
@@ -242,7 +176,7 @@
                 <select class="form-select" name="productId" required>
                     <option value="">Chọn sản phẩm...</option>
                     <c:forEach var="product" items="${products}">
-                        <option value="${product.productId}" ${productId == '${product.productId}' ? 'selected' : ''}>
+                        <option value="${product.productId}">
                             ${product.productCode} - ${product.productName}
                         </option>
                     </c:forEach>
@@ -250,7 +184,7 @@
             </td>
             <td>
                 <input type="number" class="form-control" name="quantity" 
-                       min="1" required placeholder="0" value="${quantity}">
+                       min="1" required placeholder="0">
             </td>
             <td>
                 <select class="form-select" name="supplierId">
@@ -275,11 +209,6 @@
         `;
         
         tbody.appendChild(newRow);
-        productRowIndex++;
-    }
-
-    function addEmptyProduct() {
-        addProductRow();
     }
 
     function removeProduct(button) {
