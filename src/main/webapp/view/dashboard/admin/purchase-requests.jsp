@@ -171,7 +171,7 @@
                                         <th>Kho</th>
                                         <th>Ngày tạo</th>
                                         <th>Trạng thái</th>
-                                        <th>Người duyệt</th>
+                                        <th>Tình trạng duyệt</th>
                                         <th>Thao tác</th>
                                     </tr>
                                 </thead>
@@ -214,9 +214,9 @@
                                                             <c:when test="${request.status == 'pending_approval'}">
                                                                 <span class="badge bg-warning">Chờ duyệt</span>
                                                             </c:when>
-                                                            <c:when test="${request.status == 'approved'}">
-                                                                <span class="badge bg-success">Đã duyệt</span>
-                                                            </c:when>
+                                                                                                                    <c:when test="${request.status == 'approved'}">
+                                                            <span class="badge bg-success">Đã duyệt (chờ nhập hàng)</span>
+                                                        </c:when>
                                                             <c:when test="${request.status == 'rejected'}">
                                                                 <span class="badge bg-danger">Đã từ chối</span>
                                                             </c:when>
@@ -227,16 +227,20 @@
                                                     </td>
                                                     <td>
                                                         <c:choose>
-                                                            <c:when test="${not empty request.approvedByName}">
-                                                                ${request.approvedByName}
-                                                                <c:if test="${not empty request.approvedDate}">
-                                                                    <br><small class="text-muted">
-                                                                        <fmt:formatDate value="${request.approvedDate}" pattern="dd/MM/yyyy HH:mm"/>
-                                                                    </small>
-                                                                </c:if>
+                                                            <c:when test="${request.status == 'approved'}">
+                                                                <span class="text-success">
+                                                                    <i class="fas fa-check-circle"></i> Đã duyệt
+                                                                </span>
+                                                            </c:when>
+                                                            <c:when test="${request.status == 'rejected'}">
+                                                                <span class="text-danger">
+                                                                    <i class="fas fa-times-circle"></i> Đã từ chối
+                                                                </span>
                                                             </c:when>
                                                             <c:otherwise>
-                                                                <span class="text-muted">Chưa duyệt</span>
+                                                                <span class="text-muted">
+                                                                    <i class="fas fa-clock"></i> Chờ duyệt
+                                                                </span>
                                                             </c:otherwise>
                                                         </c:choose>
                                                     </td>

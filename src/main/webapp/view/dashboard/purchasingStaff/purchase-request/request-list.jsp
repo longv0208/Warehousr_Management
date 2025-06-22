@@ -141,9 +141,9 @@
                                                             <c:when test="${request.status == 'pending_approval'}">
                                                                 <span class="badge bg-warning">Chờ duyệt</span>
                                                             </c:when>
-                                                            <c:when test="${request.status == 'approved'}">
-                                                                <span class="badge bg-success">Đã duyệt</span>
-                                                            </c:when>
+                                                                                                                    <c:when test="${request.status == 'approved'}">
+                                                            <span class="badge bg-success">Đã duyệt (chờ nhập hàng)</span>
+                                                        </c:when>
                                                             <c:when test="${request.status == 'rejected'}">
                                                                 <span class="badge bg-danger">Đã từ chối</span>
                                                             </c:when>

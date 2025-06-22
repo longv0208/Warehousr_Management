@@ -197,7 +197,7 @@ public class PurchaseManagementController extends HttpServlet {
             
             PurchaseRequest purchaseRequest = purchaseRequestDAO.findById(requestId);
             if (purchaseRequest != null && "pending_approval".equals(purchaseRequest.getStatus())) {
-                // Lấy chi tiết yêu cầu để cập nhật inventory
+                // Lấy chi tiết yêu cầu (để có thể sử dụng sau này nếu cần)
                 List<PurchaseRequestDetail> details = purchaseRequestDetailDAO.findByRequestId(requestId);
                 
                 // Cập nhật status của purchase request
@@ -210,6 +210,11 @@ public class PurchaseManagementController extends HttpServlet {
                 boolean updateSuccess = purchaseRequestDAO.update(purchaseRequest);
                 
                 if (updateSuccess) {
+                    /* 
+                    * REMOVED: Cập nhật inventory tự động khi duyệt yêu cầu
+                    * Theo yêu cầu mới: Khi duyệt yêu cầu nhập hàng chỉ dừng ở việc duyệt
+                    * mà không cập nhật số lượng trong kho ngay lập tức
+                    
                     // Cập nhật inventory cho từng sản phẩm trong yêu cầu
                     boolean inventoryUpdateSuccess = true;
                     StringBuilder updateResults = new StringBuilder();
@@ -242,6 +247,13 @@ public class PurchaseManagementController extends HttpServlet {
                         request.getSession().setAttribute("warningMessage", 
                             "Phê duyệt yêu cầu thành công nhưng có lỗi khi cập nhật kho: " + updateResults.toString());
                     }
+                    */
+                    
+                    // Chỉ thông báo phê duyệt thành công mà không cập nhật kho
+                    request.getSession().setAttribute("successMessage", 
+                        "Phê duyệt yêu cầu nhập hàng thành công! " +
+                        "Số lượng trong kho sẽ được cập nhật khi thực hiện nhập hàng thực tế.");
+                        
                 } else {
                     request.getSession().setAttribute("errorMessage", "Có lỗi xảy ra khi phê duyệt!");
                 }

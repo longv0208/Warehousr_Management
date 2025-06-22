@@ -99,9 +99,9 @@
                                                         <c:when test="${purchaseRequest.status == 'pending_approval'}">
                                                             <span class="badge bg-warning fs-6">Chờ duyệt</span>
                                                         </c:when>
-                                                        <c:when test="${purchaseRequest.status == 'approved'}">
-                                                            <span class="badge bg-success fs-6">Đã duyệt</span>
-                                                        </c:when>
+                                                                                                <c:when test="${purchaseRequest.status == 'approved'}">
+                                            <span class="badge bg-success fs-6">Đã duyệt (chờ nhập hàng)</span>
+                                        </c:when>
                                                         <c:when test="${purchaseRequest.status == 'rejected'}">
                                                             <span class="badge bg-danger fs-6">Đã từ chối</span>
                                                         </c:when>
