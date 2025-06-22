@@ -267,6 +267,20 @@ ul#sidebarnav li a.nav-link.active {
             </li>
             <% } %>
             
+            <!-- Quản lý thông báo - Admin only -->
+            <% if ("admin".equals(userRole)) { %>
+            <li class="nav-item">
+                <a href="${pageContext.request.contextPath}/admin/notifications" class="nav-link"><i class="bi bi-bell"></i><span class="link-text">Quản lý thông báo</span></a>
+            </li>
+            <% } %>
+            
+            <!-- Thông báo của tôi - All non-admin users -->
+            <% if (!"admin".equals(userRole) && currentUser != null) { %>
+            <li class="nav-item">
+                <a href="${pageContext.request.contextPath}/notifications" class="nav-link"><i class="bi bi-envelope"></i><span class="link-text">Thông báo của tôi</span></a>
+            </li>
+            <% } %>
+            
             <!-- Cài đặt - Admin only -->
             <% if ("admin".equals(userRole)) { %>
             <li class="nav-item">

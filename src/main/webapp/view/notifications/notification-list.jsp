@@ -10,6 +10,14 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .main-content {
+            margin-left: 250px;
+            padding: 20px;
+            min-height: 100vh;
+        }
         .notification-item {
             transition: all 0.3s ease;
             border-left: 4px solid transparent;
@@ -44,13 +52,11 @@
     </style>
 </head>
 <body>
-    <div class="container-fluid">
-        <div class="row">
-            <!-- Sidebar -->
-            <jsp:include page="/view/common/sidebar.jsp"/>
-            
-            <!-- Main Content -->
-            <div class="col-md-9 col-lg-10 px-md-4">
+    <!-- Sidebar -->
+    <jsp:include page="/view/common/sidebar.jsp"/>
+    
+    <!-- Main Content -->
+    <div class="main-content">
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                     <h1 class="h2">
                         <i class="fas fa-bell"></i> Thông báo của tôi
@@ -178,8 +184,6 @@
                         </c:choose>
                     </div>
                 </div>
-            </div>
-        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
