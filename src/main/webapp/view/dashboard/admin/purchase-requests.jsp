@@ -171,7 +171,6 @@
                                         <th>Kho</th>
                                         <th>Ngày tạo</th>
                                         <th>Trạng thái</th>
-                                        <th>Tình trạng duyệt</th>
                                         <th>Thao tác</th>
                                     </tr>
                                 </thead>
@@ -225,25 +224,7 @@
                                                             </c:otherwise>
                                                         </c:choose>
                                                     </td>
-                                                    <td>
-                                                        <c:choose>
-                                                            <c:when test="${request.status == 'approved'}">
-                                                                <span class="text-success">
-                                                                    <i class="fas fa-check-circle"></i> Đã duyệt
-                                                                </span>
-                                                            </c:when>
-                                                            <c:when test="${request.status == 'rejected'}">
-                                                                <span class="text-danger">
-                                                                    <i class="fas fa-times-circle"></i> Đã từ chối
-                                                                </span>
-                                                            </c:when>
-                                                            <c:otherwise>
-                                                                <span class="text-muted">
-                                                                    <i class="fas fa-clock"></i> Chờ duyệt
-                                                                </span>
-                                                            </c:otherwise>
-                                                        </c:choose>
-                                                    </td>
+
                                                     <td>
                                                         <div class="btn-group-vertical btn-group-sm" role="group">
                                                             <a href="${pageContext.request.contextPath}/admin/purchase-management/requests?action=view&id=${request.requestId}" 
@@ -261,9 +242,9 @@
                                                 </tr>
                                             </c:forEach>
                                         </c:when>
-                                        <c:otherwise>
-                                            <tr>
-                                                <td colspan="8" class="text-center py-4">
+                                                                                                <c:otherwise>
+                                                            <tr>
+                                                                <td colspan="7" class="text-center py-4">
                                                     <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
                                                     <p class="text-muted">Không có yêu cầu nhập hàng nào</p>
                                                 </td>
