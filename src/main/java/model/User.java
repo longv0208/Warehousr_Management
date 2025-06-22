@@ -21,4 +21,6 @@ public class User {
     private Timestamp createdAt;
     private Timestamp updatedAt;
     private boolean isActive;
+    private Timestamp lastLogin;
+    private Timestamp lastLogout;
 }

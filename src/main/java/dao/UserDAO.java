@@ -123,7 +123,7 @@ public class UserDAO extends DBContext implements I_DAO<User> {
 
     // Tìm user theo username
     public User findByUsername(String username) {
-        String sql = "SELECT user_id, username, password_hash, full_name, role, email, is_active, created_at, updated_at, phone FROM users WHERE username = ?";
+        String sql = "SELECT user_id, username, password_hash, full_name, role, email, is_active, created_at, updated_at, phone, last_login, last_logout FROM users WHERE username = ?";
         try {
             
             conn = getConnection();
@@ -143,7 +143,7 @@ public class UserDAO extends DBContext implements I_DAO<User> {
 
     // Tìm user theo email
     public User findByEmail(String email) {
-        String sql = "SELECT user_id, username, password_hash, full_name, role, email, is_active, created_at, updated_at, phone FROM users WHERE email = ?";
+        String sql = "SELECT user_id, username, password_hash, full_name, role, email, is_active, created_at, updated_at, phone, last_login, last_logout FROM users WHERE email = ?";
         try {
             conn = getConnection();
             statement = conn.prepareStatement(sql);
@@ -196,7 +196,7 @@ public class UserDAO extends DBContext implements I_DAO<User> {
     @Override
     public List<User> findAll() {
         List<User> list = new ArrayList<>();
-        String sql = "SELECT user_id, username, password_hash, full_name, email, role, is_active, created_at, updated_at,phone FROM users";
+        String sql = "SELECT user_id, username, password_hash, full_name, email, role, is_active, created_at, updated_at, phone, last_login, last_logout FROM users";
         try {
             conn = getConnection();
             statement = conn.prepareStatement(sql);
@@ -275,12 +275,14 @@ public class UserDAO extends DBContext implements I_DAO<User> {
         u.setCreatedAt(rs.getTimestamp("created_at"));
         u.setUpdatedAt(rs.getTimestamp("updated_at"));
         u.setPhone(rs.getString("phone"));
+        u.setLastLogin(rs.getTimestamp("last_login"));
+        u.setLastLogout(rs.getTimestamp("last_logout"));
         return u;
     }
 
     @Override
     public User findById(Integer id) {
-        String sql = "SELECT user_id, username, password_hash, full_name, role, email, is_active, created_at, updated_at,phone FROM users WHERE user_id = ?";
+        String sql = "SELECT user_id, username, password_hash, full_name, role, email, is_active, created_at, updated_at, phone, last_login, last_logout FROM users WHERE user_id = ?";
         try {
             conn = getConnection();
             statement = conn.prepareStatement(sql);
@@ -334,10 +336,12 @@ public class UserDAO extends DBContext implements I_DAO<User> {
                 user.setFullName(rs.getString("full_name"));
                 user.setEmail(rs.getString("email"));
                 user.setPhone(rs.getString("phone"));
-                user.setRoleId(rs.getString("role_id"));
+                user.setRoleId(rs.getString("role"));
                 user.setActive(rs.getBoolean("is_active"));
                 user.setCreatedAt(rs.getTimestamp("created_at"));
                 user.setUpdatedAt(rs.getTimestamp("updated_at"));
+                user.setLastLogin(rs.getTimestamp("last_login"));
+                user.setLastLogout(rs.getTimestamp("last_logout"));
                 result.add(user);
             }
         } catch (SQLException e) {
@@ -354,6 +358,38 @@ public class UserDAO extends DBContext implements I_DAO<User> {
             statement.setInt(2, userId);
             int rows = statement.executeUpdate();
             return rows > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        } finally {
+            close();
+        }
+    }
+
+    // Cập nhật thời gian đăng nhập cuối cùng
+    public boolean updateLastLogin(int userId) {
+        String sql = "UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE user_id = ?";
+        try {
+            conn = getConnection();
+            statement = conn.prepareStatement(sql);
+            statement.setInt(1, userId);
+            return statement.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        } finally {
+            close();
+        }
+    }
+
+    // Cập nhật thời gian đăng xuất cuối cùng
+    public boolean updateLastLogout(int userId) {
+        String sql = "UPDATE users SET last_logout = CURRENT_TIMESTAMP WHERE user_id = ?";
+        try {
+            conn = getConnection();
+            statement = conn.prepareStatement(sql);
+            statement.setInt(1, userId);
+            return statement.executeUpdate() > 0;
         } catch (SQLException e) {
             e.printStackTrace();
             return false;

@@ -1,6 +1,8 @@
 package controller.authen;
 
 import utils.SessionUtil;
+import dao.UserDAO;
+import model.User;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -12,6 +14,13 @@ import java.io.IOException;
 
 @WebServlet(name = "LogoutServlet", urlPatterns = {"/logout"})
 public class LogoutServlet extends HttpServlet {
+    
+    private UserDAO userDAO;
+
+    @Override
+    public void init() throws ServletException {
+        userDAO = new UserDAO();
+    }
     
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -88,6 +97,14 @@ public class LogoutServlet extends HttpServlet {
     }
 
     private void performLogout(HttpServletRequest request) {
+        // Lấy thông tin user trước khi xóa session
+        User currentUser = SessionUtil.getUserFromSession(request);
+        
+        // Cập nhật thời gian đăng xuất cuối cùng
+        if (currentUser != null) {
+            userDAO.updateLastLogout(currentUser.getUserId());
+        }
+        
         // Remove user from session
         SessionUtil.removeUserFromSession(request);
         

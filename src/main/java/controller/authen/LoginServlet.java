@@ -86,6 +86,9 @@ public class LoginServlet extends HttpServlet {
                 return;
             }
 
+            // Cập nhật thời gian đăng nhập cuối cùng
+            userDAO.updateLastLogin(user.getUserId());
+            
             SessionUtil.setUserInSession(request, user);
             SessionUtil.setSuccessMessage(request, "Đăng nhập thành công! Chào mừng " + user.getFullName());
             

@@ -43,64 +43,63 @@
                         <button type="submit" class="btn btn-primary">Lọc</button>
                     </form>
 
-                    <table id="userTable" class="table table-bordered table-hover">
-                        <thead class="table-light">
-                            <tr>
-                                <th>ID</th>
-                                <th>Tên tài khoản</th>
-                                <th>Họ và tên</th>
-                                <th>Email</th>
-                                <th>Vai trò</th>
-                                <th>Trạng thái</th>
-                                <th>Ngày tạo</th>
-                                <th>Ngày cập nhật</th>
-                                <th>Hành động</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <%
-                                List<User> userList = (List<User>) request.getAttribute("userList");
-                                List<Role> roleList = (List<Role>) request.getAttribute("roleList");
-                                if (userList == null) {
-                                    userList = new java.util.ArrayList<>();
-                                }
-                                if (roleList == null) {
-                                    roleList = new java.util.ArrayList<>();
-                                }
-
-                                for (User u : userList) {
-                                    String roleName = "Không xác định";
-                                    for (Role r : roleList) {
-                                        if (r.getRoleId() == u.getRoleId()) {
-                                            roleName = r.getRoleName();
-                                            break;
-                                        }
+                    <div class="table-responsive">
+                        <table id="userTable" class="table table-bordered table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Tên tài khoản</th>
+                                    <th>Họ và tên</th>
+                                    <th>Email</th>
+                                    <th>Vai trò</th>
+                                    <th>Trạng thái</th>
+                                    <th>Lần cuối đăng nhập</th>
+                                    <th>Lần cuối đăng xuất</th>
+                                    <th>Ngày tạo</th>
+                                    <th>Ngày cập nhật</th>
+                                    <th>Hành động</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <%
+                                    List<User> userList = (List<User>) request.getAttribute("userList");
+                                    List<Role> roleList = (List<Role>) request.getAttribute("roleList");
+                                    if (userList == null) {
+                                        userList = new java.util.ArrayList<>();
                                     }
-                            %>
-                            <tr class="<%= u.isActive() ? "" : "inactive"%>">
-                                <td><%= u.getUserId()%></td>
-                                <td><%= u.getUsername()%></td>
-                                <td><%= u.getFullName()%></td>
-                                <td><%= u.getEmail()%></td>
-                                <td><%= roleName%></td>
-                                <td><%= u.isActive() ? "Hoạt động" : "Không hoạt động"%></td>
-                                <td><%= u.getCreatedAt()%></td>
-                                <td><%= u.getUpdatedAt()%></td>
-                                <td>
-                                    <button class="btn btn-sm btn-info"
-                                            onclick="openEditModal(
-                                                        '<%= u.getUserId()%>',
-                                                        '<%= u.getFullName().replace("'", "\\'")%>',
-                                                        '<%= u.getEmail()%>',
-                                                        '<%= u.getRoleId()%>',
-                                                        '<%= u.isActive()%>')">Sửa
-                                    </button>
-                                    <button class="btn btn-sm btn-danger" onclick="openInactiveModal(this)">Vô Hiệu Hóa</button>
-                                </td>
-                            </tr>
-                            <% } %>
-                        </tbody>
-                    </table>
+                                    if (roleList == null) {
+                                        roleList = new java.util.ArrayList<>();
+                                    }
+
+                                    for (User u : userList) {
+                                        String roleName = "Không xác định";
+                                        for (Role r : roleList) {
+                                            if (r.getRoleId().equals(u.getRoleId())) {
+                                                roleName = r.getRoleName();
+                                                break;
+                                            }
+                                        }
+                                %>
+                                <tr class="<%= u.isActive() ? "" : "inactive"%>">
+                                    <td><%= u.getUserId()%></td>
+                                    <td><%= u.getUsername()%></td>
+                                    <td><%= u.getFullName()%></td>
+                                    <td><%= u.getEmail()%></td>
+                                    <td><%= roleName%></td>
+                                    <td><%= u.isActive() ? "Hoạt động" : "Không hoạt động"%></td>
+                                    <td><%= u.getLastLogin() != null ? u.getLastLogin() : "Chưa đăng nhập"%></td>
+                                    <td><%= u.getLastLogout() != null ? u.getLastLogout() : "Chưa đăng xuất"%></td>
+                                    <td><%= u.getCreatedAt()%></td>
+                                    <td><%= u.getUpdatedAt()%></td>
+                                    <td>
+                                        <button class="btn btn-sm btn-info" onclick="openEditModal('<%= u.getUserId()%>', '<%= u.getFullName()%>', '<%= u.getEmail()%>', '<%= u.getRoleId()%>', '<%= u.isActive()%>')">Sửa</button>
+                                        <button class="btn btn-sm btn-danger" onclick="openInactiveModal('<%= u.getUserId()%>')">Vô Hiệu Hóa</button>
+                                    </td>
+                                </tr>
+                                <% } %>
+                            </tbody>
+                        </table>
+                    </div>
 
                     <!-- Phân trang -->
                     <nav aria-label="Page navigation example">
@@ -241,46 +240,33 @@
         </div>
 
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+        
         <script>
-                            function openEditModal(userId, fullName, email, roleId, isActive) {
-                                const modal = new bootstrap.Modal(document.getElementById('editUserModal'));
-                                document.getElementById('editUserId').value = userId;
-                                document.getElementById('editFullName').value = fullName;
-                                document.getElementById('editEmail').value = email;
-                                document.getElementById('editRole').value = roleId;
-                                document.getElementById('editIsActive').value = isActive.toString();
-                                removeResetPasswordInput();
-                                modal.show();
-                            }
-
-                            function openInactiveModal(button) {
-                                const row = button.closest('tr');
-                                const userId = row.cells[0].innerText;
-                                document.getElementById('inactiveUserId').value = userId;
-                                const modal = new bootstrap.Modal(document.getElementById('inactiveUserModal'));
-                                modal.show();
-                            }
-
-                            function removeResetPasswordInput() {
-                                const form = document.querySelector('#editUserModal form');
-                                const input = form.querySelector('input[name="resetPassword"]');
-                                if (input)
-                                    input.remove();
-                            }
-
-                            function resetPassword() {
-                                const form = document.querySelector('#editUserModal form');
-                                removeResetPasswordInput();
-
-                                const input = document.createElement('input');
-                                input.type = 'hidden';
-                                input.name = 'resetPassword';
-                                input.value = 'true';
-                                form.appendChild(input);
-
-                                alert('Mật khẩu sẽ được đặt lại khi bạn nhấn "Lưu thay đổi".');
-                            }
-
+            function openEditModal(userId, fullName, email, roleId, isActive) {
+                document.getElementById('editUserId').value = userId;
+                document.getElementById('editFullName').value = fullName;
+                document.getElementById('editEmail').value = email;
+                document.getElementById('editRole').value = roleId;
+                document.getElementById('editIsActive').value = isActive;
+                
+                var editModal = new bootstrap.Modal(document.getElementById('editUserModal'));
+                editModal.show();
+            }
+            
+            function openInactiveModal(userId) {
+                document.getElementById('inactiveUserId').value = userId;
+                var inactiveModal = new bootstrap.Modal(document.getElementById('inactiveUserModal'));
+                inactiveModal.show();
+            }
+            
+            function resetPassword() {
+                var form = document.querySelector('#editUserModal form');
+                var resetInput = document.createElement('input');
+                resetInput.type = 'hidden';
+                resetInput.name = 'resetPassword';
+                resetInput.value = 'true';
+                form.appendChild(resetInput);
+            }
         </script>
     </body>
 </html>
