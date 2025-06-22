@@ -21,6 +21,7 @@ public class PurchaseRequest {
     private Integer requestId;
     private String requestCode;
     private Integer userIdRequester; // Khớp với DB: user_id_requester
+    private Integer warehouseId; // Kho nhập hàng
     private Timestamp requestDate;
     private String status; // pending_approval, approved, rejected, ordered, partially_received, received
     private String notes;

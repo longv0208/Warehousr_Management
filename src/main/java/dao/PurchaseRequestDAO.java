@@ -22,16 +22,17 @@ public class PurchaseRequestDAO extends DBContext implements I_DAO<PurchaseReque
                 .requestId(rs.getInt("request_id"))
                 .requestCode(rs.getString("request_code"))
                 .userIdRequester(rs.getInt("user_id_requester"))
+                .warehouseId(rs.getInt("warehouse_id"))
                 .requestDate(rs.getTimestamp("request_date"))
                 .status(rs.getString("status"))
                 .notes(rs.getString("notes"))
                 .createdAt(rs.getTimestamp("created_at"))
                 // Thông tin join
                 .requestedByName(rs.getString("requested_by_name"))
+                .warehouseName(rs.getString("warehouse_name"))
                 // Set default values for fields not in database
                 .approvedByName(null) // Database chưa có trường này
                 .approvedDate(null)   // Database chưa có trường này
-                .warehouseName(null)  // Database chưa có trường này
                 .build();
     }
 
@@ -39,9 +40,11 @@ public class PurchaseRequestDAO extends DBContext implements I_DAO<PurchaseReque
     public List<PurchaseRequest> findAll() {
         List<PurchaseRequest> requests = new ArrayList<>();
         String sql = "SELECT pr.*, " +
-                    "u.full_name as requested_by_name " +
+                    "u.full_name as requested_by_name, " +
+                    "w.warehouse_name " +
                     "FROM purchaserequests pr " +
                     "LEFT JOIN users u ON pr.user_id_requester = u.user_id " +
+                    "LEFT JOIN warehouses w ON pr.warehouse_id = w.warehouse_id " +
                     "ORDER BY pr.created_at DESC";
         try {
             conn = getConnection();
@@ -60,16 +63,17 @@ public class PurchaseRequestDAO extends DBContext implements I_DAO<PurchaseReque
 
     @Override
     public int insert(PurchaseRequest request) {
-        String sql = "INSERT INTO purchaserequests (request_code, user_id_requester, request_date, status, notes) " +
-                    "VALUES (?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO purchaserequests (request_code, user_id_requester, warehouse_id, request_date, status, notes) " +
+                    "VALUES (?, ?, ?, ?, ?, ?)";
         try {
             conn = getConnection();
             statement = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
             statement.setString(1, request.getRequestCode());
             statement.setInt(2, request.getUserIdRequester());
-            statement.setTimestamp(3, request.getRequestDate());
-            statement.setString(4, request.getStatus());
-            statement.setString(5, request.getNotes());
+            statement.setInt(3, request.getWarehouseId());
+            statement.setTimestamp(4, request.getRequestDate());
+            statement.setString(5, request.getStatus());
+            statement.setString(6, request.getNotes());
 
             int affectedRows = statement.executeUpdate();
             if (affectedRows == 0) {
@@ -128,9 +132,11 @@ public class PurchaseRequestDAO extends DBContext implements I_DAO<PurchaseReque
     @Override
     public PurchaseRequest findById(Integer id) {
         String sql = "SELECT pr.*, " +
-                    "u.full_name as requested_by_name " +
+                    "u.full_name as requested_by_name, " +
+                    "w.warehouse_name " +
                     "FROM purchaserequests pr " +
                     "LEFT JOIN users u ON pr.user_id_requester = u.user_id " +
+                    "LEFT JOIN warehouses w ON pr.warehouse_id = w.warehouse_id " +
                     "WHERE pr.request_id = ?";
         try {
             conn = getConnection();
@@ -152,9 +158,11 @@ public class PurchaseRequestDAO extends DBContext implements I_DAO<PurchaseReque
     public List<PurchaseRequest> findByStatus(String status) {
         List<PurchaseRequest> requests = new ArrayList<>();
         String sql = "SELECT pr.*, " +
-                    "u.full_name as requested_by_name " +
+                    "u.full_name as requested_by_name, " +
+                    "w.warehouse_name " +
                     "FROM purchaserequests pr " +
                     "LEFT JOIN users u ON pr.user_id_requester = u.user_id " +
+                    "LEFT JOIN warehouses w ON pr.warehouse_id = w.warehouse_id " +
                     "WHERE pr.status = ? " +
                     "ORDER BY pr.created_at DESC";
         try {
@@ -177,9 +185,11 @@ public class PurchaseRequestDAO extends DBContext implements I_DAO<PurchaseReque
     public List<PurchaseRequest> findByRequestedBy(Integer userId) {
         List<PurchaseRequest> requests = new ArrayList<>();
         String sql = "SELECT pr.*, " +
-                    "u.full_name as requested_by_name " +
+                    "u.full_name as requested_by_name, " +
+                    "w.warehouse_name " +
                     "FROM purchaserequests pr " +
                     "LEFT JOIN users u ON pr.user_id_requester = u.user_id " +
+                    "LEFT JOIN warehouses w ON pr.warehouse_id = w.warehouse_id " +
                     "WHERE pr.user_id_requester = ? " +
                     "ORDER BY pr.created_at DESC";
         try {

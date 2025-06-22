@@ -344,4 +344,41 @@ public class InventoryDAO extends DBContext implements I_DAO<Inventory> {
         }
         return inventories;
     }
+
+    /**
+     * Update inventory quantity after purchase request approval
+     * This method adds the requested quantity to existing inventory
+     */
+    public boolean updateQuantityAfterApproval(Integer productId, Integer requestedQuantity, Integer warehouseId) {
+        try {
+            // Kiểm tra xem sản phẩm đã tồn tại trong kho chưa
+            Integer currentQuantity = getQuantityByProductIdAndWarehouse(productId, warehouseId);
+            
+            if (currentQuantity == 0) {
+                // Nếu chưa có inventory record, tạo mới
+                String insertSql = "INSERT INTO inventory (product_id, quantity_on_hand, warehouse_id) VALUES (?, ?, ?)";
+                conn = getConnection();
+                statement = conn.prepareStatement(insertSql);
+                statement.setInt(1, productId);
+                statement.setInt(2, requestedQuantity);
+                statement.setInt(3, warehouseId);
+                return statement.executeUpdate() > 0;
+            } else {
+                // Nếu đã có, cộng thêm số lượng
+                String updateSql = "UPDATE inventory SET quantity_on_hand = quantity_on_hand + ? WHERE product_id = ? AND warehouse_id = ?";
+                conn = getConnection();
+                statement = conn.prepareStatement(updateSql);
+                statement.setInt(1, requestedQuantity);
+                statement.setInt(2, productId);
+                statement.setInt(3, warehouseId);
+                return statement.executeUpdate() > 0;
+            }
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Error updating inventory after approval for product ID: " + productId + 
+                      " in warehouse: " + warehouseId + " with quantity: " + requestedQuantity, ex);
+            return false;
+        } finally {
+            close();
+        }
+    }
 } 

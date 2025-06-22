@@ -140,8 +140,7 @@ public class PurchaseManagementController extends HttpServlet {
             requests = purchaseRequestDAO.findAll();
         }
         
-        // Note: Database schema không có warehouse_id trong purchaserequests
-        // Nên không filter theo warehouse
+        // TODO: Có thể thêm filter theo warehouse nếu cần
 
         List<Warehouse> warehouses = warehouseDAO.findAll();
         
@@ -198,14 +197,51 @@ public class PurchaseManagementController extends HttpServlet {
             
             PurchaseRequest purchaseRequest = purchaseRequestDAO.findById(requestId);
             if (purchaseRequest != null && "pending_approval".equals(purchaseRequest.getStatus())) {
+                // Lấy chi tiết yêu cầu để cập nhật inventory
+                List<PurchaseRequestDetail> details = purchaseRequestDetailDAO.findByRequestId(requestId);
+                
+                // Cập nhật status của purchase request
                 purchaseRequest.setStatus("approved");
                 if (approvalNotes != null && !approvalNotes.isEmpty()) {
                     String currentNotes = purchaseRequest.getNotes() != null ? purchaseRequest.getNotes() : "";
                     purchaseRequest.setNotes(currentNotes + "\n[Ghi chú phê duyệt]: " + approvalNotes);
                 }
                 
-                if (purchaseRequestDAO.update(purchaseRequest)) {
-                    request.getSession().setAttribute("successMessage", "Phê duyệt yêu cầu thành công!");
+                boolean updateSuccess = purchaseRequestDAO.update(purchaseRequest);
+                
+                if (updateSuccess) {
+                    // Cập nhật inventory cho từng sản phẩm trong yêu cầu
+                    boolean inventoryUpdateSuccess = true;
+                    StringBuilder updateResults = new StringBuilder();
+                    
+                    for (PurchaseRequestDetail detail : details) {
+                        try {
+                            // Cập nhật số lượng trong kho
+                            boolean updated = inventoryDAO.updateQuantityAfterApproval(
+                                detail.getProductId(), 
+                                detail.getRequestedQuantity(), 
+                                purchaseRequest.getWarehouseId()
+                            );
+                            
+                            if (!updated) {
+                                inventoryUpdateSuccess = false;
+                                updateResults.append("Không thể cập nhật kho cho sản phẩm ID: ")
+                                             .append(detail.getProductId()).append(". ");
+                            }
+                        } catch (Exception e) {
+                            inventoryUpdateSuccess = false;
+                            updateResults.append("Lỗi cập nhật kho cho sản phẩm ID: ")
+                                         .append(detail.getProductId()).append(" - ").append(e.getMessage()).append(". ");
+                        }
+                    }
+                    
+                    if (inventoryUpdateSuccess) {
+                        request.getSession().setAttribute("successMessage", 
+                            "Phê duyệt yêu cầu thành công và đã cập nhật số lượng trong kho!");
+                    } else {
+                        request.getSession().setAttribute("warningMessage", 
+                            "Phê duyệt yêu cầu thành công nhưng có lỗi khi cập nhật kho: " + updateResults.toString());
+                    }
                 } else {
                     request.getSession().setAttribute("errorMessage", "Có lỗi xảy ra khi phê duyệt!");
                 }

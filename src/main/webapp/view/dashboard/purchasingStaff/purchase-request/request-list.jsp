@@ -54,9 +54,9 @@
                                     <label for="status" class="form-label">Trạng thái</label>
                                     <select class="form-select" id="status" name="status">
                                         <option value="">Tất cả trạng thái</option>
-                                        <option value="PENDING" ${status == 'PENDING' ? 'selected' : ''}>Chờ duyệt</option>
-                                        <option value="APPROVED" ${status == 'APPROVED' ? 'selected' : ''}>Đã duyệt</option>
-                                        <option value="REJECTED" ${status == 'REJECTED' ? 'selected' : ''}>Đã từ chối</option>
+                                        <option value="pending_approval" ${status == 'pending_approval' ? 'selected' : ''}>Chờ duyệt</option>
+                                        <option value="approved" ${status == 'approved' ? 'selected' : ''}>Đã duyệt</option>
+                                        <option value="rejected" ${status == 'rejected' ? 'selected' : ''}>Đã từ chối</option>
                                     </select>
                                 </div>
                                 <div class="col-md-3">
@@ -138,13 +138,13 @@
                                                     </td>
                                                     <td>
                                                         <c:choose>
-                                                            <c:when test="${request.status == 'PENDING'}">
+                                                            <c:when test="${request.status == 'pending_approval'}">
                                                                 <span class="badge bg-warning">Chờ duyệt</span>
                                                             </c:when>
-                                                            <c:when test="${request.status == 'APPROVED'}">
+                                                            <c:when test="${request.status == 'approved'}">
                                                                 <span class="badge bg-success">Đã duyệt</span>
                                                             </c:when>
-                                                            <c:when test="${request.status == 'REJECTED'}">
+                                                            <c:when test="${request.status == 'rejected'}">
                                                                 <span class="badge bg-danger">Đã từ chối</span>
                                                             </c:when>
                                                             <c:otherwise>
@@ -179,7 +179,7 @@
                                                                class="btn btn-outline-info btn-sm">
                                                                 <i class="fas fa-eye"></i> Xem
                                                             </a>
-                                                            <c:if test="${request.status == 'PENDING'}">
+                                                            <c:if test="${request.status == 'pending_approval'}">
                                                                 <a href="${pageContext.request.contextPath}/purchase-staff/purchase-request?action=edit&id=${request.requestId}" 
                                                                    class="btn btn-outline-warning btn-sm">
                                                                     <i class="fas fa-edit"></i> Sửa

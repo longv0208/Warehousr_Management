@@ -162,16 +162,37 @@ public class PurchaseStaffController extends HttpServlet {
     private void listPurchaseRequests(HttpServletRequest request, HttpServletResponse response, User currentUser) 
             throws ServletException, IOException {
         String status = request.getParameter("status");
+        String warehouseIdStr = request.getParameter("warehouseId");
         
-        List<PurchaseRequest> requests;
+        // Lấy danh sách yêu cầu của user hiện tại
+        List<PurchaseRequest> requests = purchaseRequestDAO.findByRequestedBy(currentUser.getUserId());
+        
+        // Filter theo status nếu có
         if (status != null && !status.isEmpty()) {
-            requests = purchaseRequestDAO.findByStatus(status);
-        } else {
-            requests = purchaseRequestDAO.findByRequestedBy(currentUser.getUserId());
+            requests = requests.stream()
+                .filter(req -> status.equals(req.getStatus()))
+                .collect(java.util.stream.Collectors.toList());
         }
         
+        // Filter theo warehouse nếu có
+        if (warehouseIdStr != null && !warehouseIdStr.isEmpty()) {
+            try {
+                Integer warehouseId = Integer.parseInt(warehouseIdStr);
+                requests = requests.stream()
+                    .filter(req -> warehouseId.equals(req.getWarehouseId()))
+                    .collect(java.util.stream.Collectors.toList());
+            } catch (NumberFormatException e) {
+                // Ignore invalid warehouse ID
+            }
+        }
+        
+        // Lấy danh sách warehouses để hiển thị dropdown
+        List<Warehouse> warehouses = warehouseDAO.findAll();
+        
         request.setAttribute("purchaseRequests", requests);
+        request.setAttribute("warehouses", warehouses);
         request.setAttribute("status", status);
+        request.setAttribute("warehouseId", warehouseIdStr);
         
         request.getRequestDispatcher("/view/dashboard/purchasingStaff/purchase-request/request-list.jsp").forward(request, response);
     }
@@ -194,15 +215,24 @@ public class PurchaseStaffController extends HttpServlet {
         try {
             // Get request parameters
             String notes = request.getParameter("notes");
+            String warehouseIdStr = request.getParameter("warehouseId");
             String[] productIds = request.getParameterValues("productId");
             String[] quantities = request.getParameterValues("quantity");
             String[] supplierIds = request.getParameterValues("supplierId");
             String[] productNotes = request.getParameterValues("productNotes");
 
+            // Validate warehouse ID
+            if (warehouseIdStr == null || warehouseIdStr.isEmpty()) {
+                request.getSession().setAttribute("errorMessage", "Vui lòng chọn kho nhập hàng!");
+                response.sendRedirect(request.getContextPath() + "/purchase-staff/purchase-request?action=create");
+                return;
+            }
+
             // Create purchase request
             PurchaseRequest purchaseRequest = PurchaseRequest.builder()
                 .requestCode(purchaseRequestDAO.generateRequestCode())
                 .userIdRequester(currentUser.getUserId())
+                .warehouseId(Integer.parseInt(warehouseIdStr))
                 .status("pending_approval")
                 .notes(notes)
                 .requestDate(new Timestamp(System.currentTimeMillis()))
