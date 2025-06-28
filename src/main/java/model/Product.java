@@ -30,4 +30,7 @@ public class Product {
     private Timestamp createdAt;
     private Timestamp updatedAt;
     private Boolean isActive;
+    
+    // Additional property for display (not in database)
+    private Integer stockQuantity; // Current stock quantity from inventory
 }

@@ -9,6 +9,7 @@ import lombok.Setter;
 import lombok.ToString;
 
 import java.sql.Timestamp;
+import java.util.List;
 
 @ToString
 @Builder
@@ -32,4 +33,10 @@ public class PurchaseRequest {
     private String warehouseName;
     private String approvedByName; // Tên người duyệt
     private Timestamp approvedDate; // Ngày duyệt
+    
+    // Thông tin nhà cung cấp chính (từ detail đầu tiên)
+    private Supplier supplier;
+    
+    // Chi tiết yêu cầu mua hàng
+    private List<PurchaseRequestDetail> details;
 } 

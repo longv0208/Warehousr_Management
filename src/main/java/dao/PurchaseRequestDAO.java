@@ -3,6 +3,7 @@ package dao;
 import context.DBContext;
 import model.PurchaseRequest;
 import model.PurchaseRequestDetail;
+import model.Supplier;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -18,6 +19,19 @@ public class PurchaseRequestDAO extends DBContext implements I_DAO<PurchaseReque
 
     @Override
     public PurchaseRequest getFromResultSet(ResultSet rs) throws SQLException {
+        // Create supplier object if supplier information is available
+        Supplier supplier = null;
+        if (rs.getObject("supplier_id") != null) {
+            supplier = Supplier.builder()
+                    .supplierId(rs.getInt("supplier_id"))
+                    .supplierName(rs.getString("supplier_name"))
+                    .contactPerson(rs.getString("contact_person"))
+                    .phoneNumber(rs.getString("phone_number"))
+                    .email(rs.getString("email"))
+                    .address(rs.getString("address"))
+                    .build();
+        }
+        
         return PurchaseRequest.builder()
                 .requestId(rs.getInt("request_id"))
                 .requestCode(rs.getString("request_code"))
@@ -33,6 +47,8 @@ public class PurchaseRequestDAO extends DBContext implements I_DAO<PurchaseReque
                 // Set default values for fields not in database
                 .approvedByName(null) // Database chưa có trường này
                 .approvedDate(null)   // Database chưa có trường này
+                // Supplier information
+                .supplier(supplier)
                 .build();
     }
 
@@ -41,10 +57,14 @@ public class PurchaseRequestDAO extends DBContext implements I_DAO<PurchaseReque
         List<PurchaseRequest> requests = new ArrayList<>();
         String sql = "SELECT pr.*, " +
                     "u.full_name as requested_by_name, " +
-                    "w.warehouse_name " +
+                    "w.warehouse_name, " +
+                    "s.supplier_id, s.supplier_name, s.contact_person, s.phone_number, s.email, s.address " +
                     "FROM purchaserequests pr " +
                     "LEFT JOIN users u ON pr.user_id_requester = u.user_id " +
                     "LEFT JOIN warehouses w ON pr.warehouse_id = w.warehouse_id " +
+                    "LEFT JOIN purchaserequestdetails prd ON pr.request_id = prd.request_id " +
+                    "LEFT JOIN suppliers s ON prd.supplier_id_suggested = s.supplier_id " +
+                    "GROUP BY pr.request_id " +
                     "ORDER BY pr.created_at DESC";
         try {
             conn = getConnection();
@@ -133,11 +153,15 @@ public class PurchaseRequestDAO extends DBContext implements I_DAO<PurchaseReque
     public PurchaseRequest findById(Integer id) {
         String sql = "SELECT pr.*, " +
                     "u.full_name as requested_by_name, " +
-                    "w.warehouse_name " +
+                    "w.warehouse_name, " +
+                    "s.supplier_id, s.supplier_name, s.contact_person, s.phone_number, s.email, s.address " +
                     "FROM purchaserequests pr " +
                     "LEFT JOIN users u ON pr.user_id_requester = u.user_id " +
                     "LEFT JOIN warehouses w ON pr.warehouse_id = w.warehouse_id " +
-                    "WHERE pr.request_id = ?";
+                    "LEFT JOIN purchaserequestdetails prd ON pr.request_id = prd.request_id " +
+                    "LEFT JOIN suppliers s ON prd.supplier_id_suggested = s.supplier_id " +
+                    "WHERE pr.request_id = ? " +
+                    "GROUP BY pr.request_id";
         try {
             conn = getConnection();
             statement = conn.prepareStatement(sql);
@@ -159,11 +183,15 @@ public class PurchaseRequestDAO extends DBContext implements I_DAO<PurchaseReque
         List<PurchaseRequest> requests = new ArrayList<>();
         String sql = "SELECT pr.*, " +
                     "u.full_name as requested_by_name, " +
-                    "w.warehouse_name " +
+                    "w.warehouse_name, " +
+                    "s.supplier_id, s.supplier_name, s.contact_person, s.phone_number, s.email, s.address " +
                     "FROM purchaserequests pr " +
                     "LEFT JOIN users u ON pr.user_id_requester = u.user_id " +
                     "LEFT JOIN warehouses w ON pr.warehouse_id = w.warehouse_id " +
+                    "LEFT JOIN purchaserequestdetails prd ON pr.request_id = prd.request_id " +
+                    "LEFT JOIN suppliers s ON prd.supplier_id_suggested = s.supplier_id " +
                     "WHERE pr.status = ? " +
+                    "GROUP BY pr.request_id " +
                     "ORDER BY pr.created_at DESC";
         try {
             conn = getConnection();
@@ -186,11 +214,15 @@ public class PurchaseRequestDAO extends DBContext implements I_DAO<PurchaseReque
         List<PurchaseRequest> requests = new ArrayList<>();
         String sql = "SELECT pr.*, " +
                     "u.full_name as requested_by_name, " +
-                    "w.warehouse_name " +
+                    "w.warehouse_name, " +
+                    "s.supplier_id, s.supplier_name, s.contact_person, s.phone_number, s.email, s.address " +
                     "FROM purchaserequests pr " +
                     "LEFT JOIN users u ON pr.user_id_requester = u.user_id " +
                     "LEFT JOIN warehouses w ON pr.warehouse_id = w.warehouse_id " +
+                    "LEFT JOIN purchaserequestdetails prd ON pr.request_id = prd.request_id " +
+                    "LEFT JOIN suppliers s ON prd.supplier_id_suggested = s.supplier_id " +
                     "WHERE pr.user_id_requester = ? " +
+                    "GROUP BY pr.request_id " +
                     "ORDER BY pr.created_at DESC";
         try {
             conn = getConnection();
@@ -207,8 +239,6 @@ public class PurchaseRequestDAO extends DBContext implements I_DAO<PurchaseReque
         }
         return requests;
     }
-
-
 
     // Tạo mã yêu cầu tự động
     public String generateRequestCode() {

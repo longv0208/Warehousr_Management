@@ -190,6 +190,13 @@ ul#sidebarnav li a.nav-link.active {
                 <a href="${pageContext.request.contextPath}/admin/manage-warehouse" class="nav-link"><i class="bi bi-building"></i><span class="link-text">Kho hàng</span></a>
             </li>
             
+            <!-- Dashboard for Warehouse Staff -->
+            <% if ("warehouse_staff".equals(userRole)) { %>
+            <li class="nav-item">
+                <a href="${pageContext.request.contextPath}/warehouse-staff" class="nav-link"><i class="bi bi-speedometer2"></i><span class="link-text">Dashboard Kho</span></a>
+            </li>
+            <% } %>
+            
             <!-- Quản lý đơn bán hàng - Admin only -->
             <% if ("admin".equals(userRole)) { %>
             <li class="nav-item">
@@ -229,6 +236,34 @@ ul#sidebarnav li a.nav-link.active {
             <% if ("sales_staff".equals(userRole)) { %>
             <li class="nav-item">
                 <a href="stockout.jsp" class="nav-link"><i class="bi bi-arrow-up-circle"></i><span class="link-text">Xuất kho</span></a>
+            </li>
+            <% } %>
+            
+            <!-- Warehouse Staff Operations -->
+            <% if ("warehouse_staff".equals(userRole)) { %>
+            <!-- Yêu cầu nhập hàng đã duyệt -->
+            <li class="nav-item">
+                <a href="${pageContext.request.contextPath}/warehouse-staff?action=approved-purchase-requests" class="nav-link"><i class="bi bi-clipboard-check"></i><span class="link-text">YC nhập hàng đã duyệt</span></a>
+            </li>
+            
+            <!-- Quản lý nhập kho -->
+            <li class="nav-item">
+                <a href="${pageContext.request.contextPath}/warehouse-staff?action=stock-inward-list" class="nav-link"><i class="bi bi-arrow-down-circle"></i><span class="link-text">Quản lý nhập kho</span></a>
+            </li>
+            
+            <!-- Đơn hàng chờ xử lý -->
+            <li class="nav-item">
+                <a href="${pageContext.request.contextPath}/warehouse-staff?action=pending-sales-orders" class="nav-link"><i class="bi bi-hourglass-split"></i><span class="link-text">Đơn hàng chờ xử lý</span></a>
+            </li>
+            
+            <!-- Quản lý yêu cầu lấy hàng -->
+            <li class="nav-item">
+                <a href="${pageContext.request.contextPath}/warehouse-staff?action=pick-request-list" class="nav-link"><i class="bi bi-list-check"></i><span class="link-text">Yêu cầu lấy hàng</span></a>
+            </li>
+            
+            <!-- Quản lý xuất kho -->
+            <li class="nav-item">
+                <a href="${pageContext.request.contextPath}/warehouse-staff?action=stock-outward-list" class="nav-link"><i class="bi bi-arrow-up-circle"></i><span class="link-text">Quản lý xuất kho</span></a>
             </li>
             <% } %>
             

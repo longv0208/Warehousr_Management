@@ -1,77 +1,75 @@
 package model;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
+
 import java.math.BigDecimal;
 
+@ToString
+@Builder
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+@Getter
+@Setter
 public class SalesOrderDetail {
     private Integer orderDetailId;
     private Integer salesOrderId;
     private Integer productId;
     private Integer quantityOrdered;
     private BigDecimal unitSalePrice;
-
-    // Default constructor
-    public SalesOrderDetail() {
-    }
-
-    // Constructor with all parameters
-    public SalesOrderDetail(Integer orderDetailId, Integer salesOrderId, Integer productId, 
-                           Integer quantityOrdered, BigDecimal unitSalePrice) {
-        this.orderDetailId = orderDetailId;
-        this.salesOrderId = salesOrderId;
-        this.productId = productId;
-        this.quantityOrdered = quantityOrdered;
-        this.unitSalePrice = unitSalePrice;
-    }
-
-    // Getters and Setters
-    public Integer getOrderDetailId() {
-        return orderDetailId;
-    }
-
-    public void setOrderDetailId(Integer orderDetailId) {
-        this.orderDetailId = orderDetailId;
-    }
-
-    public Integer getSalesOrderId() {
-        return salesOrderId;
-    }
-
-    public void setSalesOrderId(Integer salesOrderId) {
-        this.salesOrderId = salesOrderId;
-    }
-
-    public Integer getProductId() {
-        return productId;
-    }
-
-    public void setProductId(Integer productId) {
-        this.productId = productId;
-    }
-
-    public Integer getQuantityOrdered() {
+    
+    // Additional properties for JSP compatibility
+    private Product product; // Product information for display
+    
+    // Convenience getters for JSP compatibility
+    public Integer getQuantity() {
         return quantityOrdered;
     }
-
-    public void setQuantityOrdered(Integer quantityOrdered) {
-        this.quantityOrdered = quantityOrdered;
-    }
-
-    public BigDecimal getUnitSalePrice() {
+    
+    public BigDecimal getUnitPrice() {
         return unitSalePrice;
     }
-
-    public void setUnitSalePrice(BigDecimal unitSalePrice) {
-        this.unitSalePrice = unitSalePrice;
+    
+    // Direct access to product properties for JSP compatibility
+    public String getProductCode() {
+        return product != null ? product.getProductCode() : null;
     }
-
-    @Override
-    public String toString() {
-        return "SalesOrderDetail{" +
-                "orderDetailId=" + orderDetailId +
-                ", salesOrderId=" + salesOrderId +
-                ", productId=" + productId +
-                ", quantityOrdered=" + quantityOrdered +
-                ", unitSalePrice=" + unitSalePrice +
-                '}';
+    
+    public String getProductName() {
+        return product != null ? product.getProductName() : null;
+    }
+    
+    public String getUnit() {
+        return product != null ? product.getUnit() : null;
+    }
+    
+    public String getDescription() {
+        return product != null ? product.getDescription() : null;
+    }
+    
+    public Float getPurchasePrice() {
+        return product != null ? product.getPurchasePrice() : null;
+    }
+    
+    public Float getSalePrice() {
+        return product != null ? product.getSalePrice() : null;
+    }
+    
+    public Integer getAvailableQuantity() {
+        return product != null ? product.getStockQuantity() : 0;
+    }
+    
+    public Integer getStockQuantity() {
+        return product != null ? product.getStockQuantity() : 0;
+    }
+    
+    public Boolean getIsActive() {
+        return product != null ? product.getIsActive() : true;
     }
 } 

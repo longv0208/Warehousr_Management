@@ -1,6 +1,7 @@
 package dao;
 
 import context.DBContext;
+import model.Product;
 import model.SalesOrderDetail;
 import java.sql.*;
 import java.util.ArrayList;
@@ -12,7 +13,12 @@ public class SalesOrderDetailDAO extends DBContext implements I_DAO<SalesOrderDe
     @Override
     public List<SalesOrderDetail> findAll() {
         List<SalesOrderDetail> list = new ArrayList<>();
-        String sql = "SELECT order_detail_id, sales_order_id, product_id, quantity_ordered, unit_sale_price FROM salesorderdetails";
+        String sql = "SELECT sod.order_detail_id, sod.sales_order_id, sod.product_id, sod.quantity_ordered, sod.unit_sale_price, " +
+                    "p.product_code, p.product_name, p.description, p.unit, p.purchase_price, p.sale_price, p.is_active, " +
+                    "COALESCE(i.quantity_on_hand, 0) as stock_quantity " +
+                    "FROM salesorderdetails sod " +
+                    "LEFT JOIN products p ON sod.product_id = p.product_id " +
+                    "LEFT JOIN inventory i ON p.product_id = i.product_id";
         try {
             conn = getConnection();
             statement = conn.prepareStatement(sql);
@@ -96,13 +102,30 @@ public class SalesOrderDetailDAO extends DBContext implements I_DAO<SalesOrderDe
 
     @Override
     public SalesOrderDetail getFromResultSet(ResultSet rs) throws SQLException {
-        SalesOrderDetail detail = new SalesOrderDetail();
-        detail.setOrderDetailId(rs.getInt("order_detail_id"));
-        detail.setSalesOrderId(rs.getInt("sales_order_id"));
-        detail.setProductId(rs.getInt("product_id"));
-        detail.setQuantityOrdered(rs.getInt("quantity_ordered"));
-        detail.setUnitSalePrice(rs.getBigDecimal("unit_sale_price"));
-        return detail;
+        // Create product object if product information is available
+        Product product = null;
+        if (rs.getObject("product_id") != null) {
+            product = Product.builder()
+                    .productId(rs.getInt("product_id"))
+                    .productCode(rs.getString("product_code"))
+                    .productName(rs.getString("product_name"))
+                    .description(rs.getString("description"))
+                    .unit(rs.getString("unit"))
+                    .purchasePrice(rs.getObject("purchase_price") != null ? rs.getFloat("purchase_price") : null)
+                    .salePrice(rs.getObject("sale_price") != null ? rs.getFloat("sale_price") : null)
+                    .isActive(rs.getObject("is_active") != null ? rs.getBoolean("is_active") : true)
+                    .stockQuantity(rs.getObject("stock_quantity") != null ? rs.getInt("stock_quantity") : 0)
+                    .build();
+        }
+        
+        return SalesOrderDetail.builder()
+                .orderDetailId(rs.getInt("order_detail_id"))
+                .salesOrderId(rs.getInt("sales_order_id"))
+                .productId(rs.getInt("product_id"))
+                .quantityOrdered(rs.getInt("quantity_ordered"))
+                .unitSalePrice(rs.getBigDecimal("unit_sale_price"))
+                .product(product)
+                .build();
     }
 
     @Override
@@ -127,7 +150,13 @@ public class SalesOrderDetailDAO extends DBContext implements I_DAO<SalesOrderDe
     // Find details by sales order ID
     public List<SalesOrderDetail> findBySalesOrderId(Integer salesOrderId) {
         List<SalesOrderDetail> list = new ArrayList<>();
-        String sql = "SELECT order_detail_id, sales_order_id, product_id, quantity_ordered, unit_sale_price FROM salesorderdetails WHERE sales_order_id = ?";
+        String sql = "SELECT sod.order_detail_id, sod.sales_order_id, sod.product_id, sod.quantity_ordered, sod.unit_sale_price, " +
+                    "p.product_code, p.product_name, p.description, p.unit, p.purchase_price, p.sale_price, p.is_active, " +
+                    "COALESCE(i.quantity_on_hand, 0) as stock_quantity " +
+                    "FROM salesorderdetails sod " +
+                    "LEFT JOIN products p ON sod.product_id = p.product_id " +
+                    "LEFT JOIN inventory i ON p.product_id = i.product_id " +
+                    "WHERE sod.sales_order_id = ?";
         try {
             conn = getConnection();
             statement = conn.prepareStatement(sql);

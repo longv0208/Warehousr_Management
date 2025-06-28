@@ -381,4 +381,61 @@ public class InventoryDAO extends DBContext implements I_DAO<Inventory> {
             close();
         }
     }
+
+    /**
+     * Update quantity on hand for a specific product in a specific warehouse
+     * @param productId Product ID
+     * @param warehouseId Warehouse ID  
+     * @param quantity Quantity to add or subtract
+     * @param operation "add" to increase, "subtract" to decrease
+     * @return true if successful, false otherwise
+     */
+    public boolean updateQuantityOnHand(Integer productId, Integer warehouseId, Integer quantity, String operation) {
+        String sql;
+        if ("add".equals(operation)) {
+            sql = "UPDATE inventory SET quantity_on_hand = quantity_on_hand + ? WHERE product_id = ? AND warehouse_id = ?";
+        } else if ("subtract".equals(operation)) {
+            sql = "UPDATE inventory SET quantity_on_hand = quantity_on_hand - ? WHERE product_id = ? AND warehouse_id = ?";
+        } else {
+            LOGGER.log(Level.WARNING, "Invalid operation: " + operation + ". Use 'add' or 'subtract'");
+            return false;
+        }
+
+        try {
+            conn = getConnection();
+            statement = conn.prepareStatement(sql);
+            statement.setInt(1, quantity);
+            statement.setInt(2, productId);
+            statement.setInt(3, warehouseId);
+            
+            int rowsAffected = statement.executeUpdate();
+            
+            // Nếu không có bản ghi nào được cập nhật và operation là "add", tạo bản ghi mới
+            if (rowsAffected == 0 && "add".equals(operation)) {
+                String checkSql = "SELECT COUNT(*) FROM inventory WHERE product_id = ? AND warehouse_id = ?";
+                statement = conn.prepareStatement(checkSql);
+                statement.setInt(1, productId);
+                statement.setInt(2, warehouseId);
+                resultSet = statement.executeQuery();
+                
+                if (resultSet.next() && resultSet.getInt(1) == 0) {
+                    // Tạo bản ghi mới
+                    String insertSql = "INSERT INTO inventory (product_id, quantity_on_hand, warehouse_id) VALUES (?, ?, ?)";
+                    statement = conn.prepareStatement(insertSql);
+                    statement.setInt(1, productId);
+                    statement.setInt(2, quantity);
+                    statement.setInt(3, warehouseId);
+                    return statement.executeUpdate() > 0;
+                }
+            }
+            
+            return rowsAffected > 0;
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Error updating quantity on hand for product: " + productId + 
+                      " in warehouse: " + warehouseId + " with operation: " + operation, ex);
+            return false;
+        } finally {
+            close();
+        }
+    }
 } 

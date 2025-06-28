@@ -2,6 +2,7 @@ package dao;
 
 import context.DBContext;
 import model.SalesOrder;
+import model.User;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -11,7 +12,11 @@ public class SalesOrderDAO extends DBContext implements I_DAO<SalesOrder> {
     @Override
     public List<SalesOrder> findAll() {
         List<SalesOrder> list = new ArrayList<>();
-        String sql = "SELECT sales_order_id, order_code, customer_name, user_id, order_date, status, notes, created_at FROM salesorders ORDER BY created_at DESC";
+        String sql = "SELECT so.sales_order_id, so.order_code, so.customer_name, so.user_id, so.order_date, so.status, so.notes, so.created_at, " +
+                    "u.full_name, u.email " +
+                    "FROM salesorders so " +
+                    "LEFT JOIN users u ON so.user_id = u.user_id " +
+                    "ORDER BY so.created_at DESC";
         try {
             conn = getConnection();
             statement = conn.prepareStatement(sql);
@@ -99,21 +104,39 @@ public class SalesOrderDAO extends DBContext implements I_DAO<SalesOrder> {
 
     @Override
     public SalesOrder getFromResultSet(ResultSet rs) throws SQLException {
-        SalesOrder salesOrder = new SalesOrder();
-        salesOrder.setSalesOrderId(rs.getInt("sales_order_id"));
-        salesOrder.setOrderCode(rs.getString("order_code"));
-        salesOrder.setCustomerName(rs.getString("customer_name"));
-        salesOrder.setUserId(rs.getInt("user_id"));
-        salesOrder.setOrderDate(rs.getDate("order_date"));
-        salesOrder.setStatus(rs.getString("status"));
-        salesOrder.setNotes(rs.getString("notes"));
-        salesOrder.setCreatedAt(rs.getTimestamp("created_at"));
-        return salesOrder;
+        // Create user object if user information is available
+        User user = null;
+        if (rs.getObject("user_id") != null) {
+            user = User.builder()
+                    .userId(rs.getInt("user_id"))
+                    .fullName(rs.getString("full_name"))
+                    .email(rs.getString("email"))
+                    .build();
+        }
+        
+        return SalesOrder.builder()
+                .salesOrderId(rs.getInt("sales_order_id"))
+                .orderCode(rs.getString("order_code"))
+                .customerName(rs.getString("customer_name"))
+                .customerPhone(null) // Database doesn't have this field yet, set to null
+                .userId(rs.getInt("user_id"))
+                .orderDate(rs.getDate("order_date"))
+                .status(rs.getString("status"))
+                .priority("low") // Default priority since database doesn't have this field yet
+                .notes(rs.getString("notes"))
+                .createdAt(rs.getTimestamp("created_at"))
+                .user(user)
+                .details(null) // Will be loaded separately
+                .build();
     }
 
     @Override
     public SalesOrder findById(Integer id) {
-        String sql = "SELECT sales_order_id, order_code, customer_name, user_id, order_date, status, notes, created_at FROM salesorders WHERE sales_order_id = ?";
+        String sql = "SELECT so.sales_order_id, so.order_code, so.customer_name, so.user_id, so.order_date, so.status, so.notes, so.created_at, " +
+                    "u.full_name, u.email " +
+                    "FROM salesorders so " +
+                    "LEFT JOIN users u ON so.user_id = u.user_id " +
+                    "WHERE so.sales_order_id = ?";
         try {
             conn = getConnection();
             statement = conn.prepareStatement(sql);
@@ -153,19 +176,23 @@ public class SalesOrderDAO extends DBContext implements I_DAO<SalesOrder> {
     public List<SalesOrder> findOrdersWithFilters(String statusFilter, String customerFilter, 
                                                   String userIdFilter, Integer page, Integer pageSize) {
         List<SalesOrder> list = new ArrayList<>();
-        StringBuilder sql = new StringBuilder("SELECT sales_order_id, order_code, customer_name, user_id, order_date, status, notes, created_at FROM salesorders WHERE 1=1");
+        StringBuilder sql = new StringBuilder("SELECT so.sales_order_id, so.order_code, so.customer_name, so.user_id, so.order_date, so.status, so.notes, so.created_at, " +
+                                             "u.full_name, u.email " +
+                                             "FROM salesorders so " +
+                                             "LEFT JOIN users u ON so.user_id = u.user_id " +
+                                             "WHERE 1=1");
         
         if (statusFilter != null && !statusFilter.trim().isEmpty()) {
-            sql.append(" AND status = ?");
+            sql.append(" AND so.status = ?");
         }
         if (customerFilter != null && !customerFilter.trim().isEmpty()) {
-            sql.append(" AND customer_name LIKE ?");
+            sql.append(" AND so.customer_name LIKE ?");
         }
         if (userIdFilter != null && !userIdFilter.trim().isEmpty()) {
-            sql.append(" AND user_id = ?");
+            sql.append(" AND so.user_id = ?");
         }
         
-        sql.append(" ORDER BY created_at DESC");
+        sql.append(" ORDER BY so.created_at DESC");
         
         if (page != null && pageSize != null) {
             sql.append(" LIMIT ? OFFSET ?");
@@ -264,11 +291,41 @@ public class SalesOrderDAO extends DBContext implements I_DAO<SalesOrder> {
     // Find orders by user ID
     public List<SalesOrder> findByUserId(Integer userId) {
         List<SalesOrder> list = new ArrayList<>();
-        String sql = "SELECT sales_order_id, order_code, customer_name, user_id, order_date, status, notes, created_at FROM salesorders WHERE user_id = ? ORDER BY created_at DESC";
+        String sql = "SELECT so.sales_order_id, so.order_code, so.customer_name, so.user_id, so.order_date, so.status, so.notes, so.created_at, " +
+                    "u.full_name, u.email " +
+                    "FROM salesorders so " +
+                    "LEFT JOIN users u ON so.user_id = u.user_id " +
+                    "WHERE so.user_id = ? ORDER BY so.created_at DESC";
         try {
             conn = getConnection();
             statement = conn.prepareStatement(sql);
             statement.setInt(1, userId);
+            resultSet = statement.executeQuery();
+            while (resultSet.next()) {
+                list.add(getFromResultSet(resultSet));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            close();
+        }
+        return list;
+    }
+
+    /**
+     * Find sales orders by status
+     */
+    public List<SalesOrder> findByStatus(String status) {
+        List<SalesOrder> list = new ArrayList<>();
+        String sql = "SELECT so.sales_order_id, so.order_code, so.customer_name, so.user_id, so.order_date, so.status, so.notes, so.created_at, " +
+                    "u.full_name, u.email " +
+                    "FROM salesorders so " +
+                    "LEFT JOIN users u ON so.user_id = u.user_id " +
+                    "WHERE so.status = ? ORDER BY so.created_at DESC";
+        try {
+            conn = getConnection();
+            statement = conn.prepareStatement(sql);
+            statement.setString(1, status);
             resultSet = statement.executeQuery();
             while (resultSet.next()) {
                 list.add(getFromResultSet(resultSet));
