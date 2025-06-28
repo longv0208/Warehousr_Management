@@ -3,6 +3,7 @@ package controller.authen;
 import context.DBContext;
 import dao.UserDAO;
 import model.User;
+import utils.ActivityLogger;
 import utils.PasswordUtil;
 import utils.SessionUtil;
 
@@ -88,6 +89,9 @@ public class LoginServlet extends HttpServlet {
 
             // Cập nhật thời gian đăng nhập cuối cùng
             userDAO.updateLastLogin(user.getUserId());
+            
+            // Log login activity
+            ActivityLogger.logLogin(user.getUserId(), "User logged in from IP: " + request.getRemoteAddr());
             
             SessionUtil.setUserInSession(request, user);
             SessionUtil.setSuccessMessage(request, "Đăng nhập thành công! Chào mừng " + user.getFullName());

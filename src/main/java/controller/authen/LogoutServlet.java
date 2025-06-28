@@ -1,5 +1,6 @@
 package controller.authen;
 
+import utils.ActivityLogger;
 import utils.SessionUtil;
 import dao.UserDAO;
 import model.User;
@@ -103,6 +104,9 @@ public class LogoutServlet extends HttpServlet {
         // Cập nhật thời gian đăng xuất cuối cùng
         if (currentUser != null) {
             userDAO.updateLastLogout(currentUser.getUserId());
+            
+            // Log logout activity
+            ActivityLogger.logLogout(currentUser.getUserId(), "User logged out from IP: " + request.getRemoteAddr());
         }
         
         // Remove user from session

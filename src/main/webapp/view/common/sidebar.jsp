@@ -281,6 +281,13 @@ ul#sidebarnav li a.nav-link.active {
             </li>
             <% } %>
             
+            <!-- Activity Logs - Admin only -->
+            <% if ("admin".equals(userRole)) { %>
+            <li class="nav-item">
+                <a href="${pageContext.request.contextPath}/activity-logs" class="nav-link"><i class="bi bi-clock-history"></i><span class="link-text">Nhật ký hoạt động</span></a>
+            </li>
+            <% } %>
+            
             <!-- Cài đặt - Admin only -->
             <% if ("admin".equals(userRole)) { %>
             <li class="nav-item">
