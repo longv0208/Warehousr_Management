@@ -253,13 +253,13 @@ ul#sidebarnav li a.nav-link.active {
             </li>
             <% } %>
             
-            <!-- Phiếu nhập hàng - purchasing_staff only -->
+<!--             Phiếu nhập hàng - purchasing_staff only 
             <% if ("purchasing_staff".equals(userRole)) { %>
             <li class="nav-item">
                 <a href="${pageContext.request.contextPath}/purchase-staff/purchase-order" class="nav-link"><i class="bi bi-cart-plus"></i><span class="link-text">Phiếu nhập hàng</span></a>
             </li>
             <% } %>
-            
+            -->
             <!-- Quản lý người dùng - Admin only -->
             <% if ("admin".equals(userRole)) { %>
             <li class="nav-item">

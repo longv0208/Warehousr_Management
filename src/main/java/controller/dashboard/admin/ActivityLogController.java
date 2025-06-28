@@ -75,38 +75,6 @@ public class ActivityLogController extends HttpServlet {
     private void handleListLogs(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         
-        // Pagination parameters
-        int page = 1;
-        int pageSize = 20;
-        String pageStr = request.getParameter("page");
-        if (pageStr != null && !pageStr.isEmpty()) {
-            try {
-                page = Integer.parseInt(pageStr);
-                if (page < 1) page = 1;
-            } catch (NumberFormatException e) {
-                page = 1;
-            }
-        }
-
-        List<ActivityLog> activityLogs = activityLogDAO.getFilteredLogs(null, null, null, null, null, page, pageSize);
-        int totalLogs = activityLogDAO.getTotalFilteredLogs(null, null, null, null, null);
-        int totalPages = (int) Math.ceil((double) totalLogs / pageSize);
-
-        // Get all users for filter dropdown
-        List<User> users = userDAO.findAll();
-
-        request.setAttribute("activityLogs", activityLogs);
-        request.setAttribute("currentPage", page);
-        request.setAttribute("totalPages", totalPages);
-        request.setAttribute("totalLogs", totalLogs);
-        request.setAttribute("users", users);
-
-        request.getRequestDispatcher("view/dashboard/admin/activity-logs/list.jsp").forward(request, response);
-    }
-
-    private void handleFilterLogs(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        
         // Get filter parameters
         String userIdStr = request.getParameter("userId");
         String actionType = request.getParameter("actionType");
@@ -159,6 +127,12 @@ public class ActivityLogController extends HttpServlet {
         request.getRequestDispatcher("view/dashboard/admin/activity-logs/list.jsp").forward(request, response);
     }
 
+    private void handleFilterLogs(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        // Redirect to list method since it now handles filtering too
+        handleListLogs(request, response);
+    }
+
     private void handleStatistics(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         
@@ -185,15 +159,26 @@ public class ActivityLogController extends HttpServlet {
     private void handleSuspiciousActivities(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         
-        String date = request.getParameter("date");
-        if (date == null || date.isEmpty()) {
-            date = java.time.LocalDate.now().toString();
+        String startDate = request.getParameter("startDate");
+        String endDate = request.getParameter("endDate");
+        
+        // Default to last 7 days if no dates provided
+        if (startDate == null || startDate.isEmpty()) {
+            startDate = java.time.LocalDate.now().minusDays(7).toString();
+        }
+        if (endDate == null || endDate.isEmpty()) {
+            endDate = java.time.LocalDate.now().toString();
         }
 
-        List<Object[]> suspiciousActivities = activityLogDAO.getSuspiciousActivities(date);
+        List<Object[]> suspiciousActivities = activityLogDAO.getSuspiciousActivities(startDate);
+
+        // Get all users for name lookup
+        List<User> users = userDAO.findAll();
 
         request.setAttribute("suspiciousActivities", suspiciousActivities);
-        request.setAttribute("selectedDate", date);
+        request.setAttribute("users", users);
+        request.setAttribute("startDate", startDate);
+        request.setAttribute("endDate", endDate);
 
         request.getRequestDispatcher("view/dashboard/admin/activity-logs/suspicious.jsp").forward(request, response);
     }
@@ -201,15 +186,26 @@ public class ActivityLogController extends HttpServlet {
     private void handleAfterHoursActivities(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         
-        String date = request.getParameter("date");
-        if (date == null || date.isEmpty()) {
-            date = java.time.LocalDate.now().toString();
+        String startDate = request.getParameter("startDate");
+        String endDate = request.getParameter("endDate");
+        
+        // Default to last 7 days if no dates provided
+        if (startDate == null || startDate.isEmpty()) {
+            startDate = java.time.LocalDate.now().minusDays(7).toString();
+        }
+        if (endDate == null || endDate.isEmpty()) {
+            endDate = java.time.LocalDate.now().toString();
         }
 
-        List<Object[]> afterHoursActivities = activityLogDAO.getAfterHoursActivities(date);
+        List<Object[]> afterHoursActivities = activityLogDAO.getAfterHoursActivities(startDate);
+
+        // Get all users for name lookup
+        List<User> users = userDAO.findAll();
 
         request.setAttribute("afterHoursActivities", afterHoursActivities);
-        request.setAttribute("selectedDate", date);
+        request.setAttribute("users", users);
+        request.setAttribute("startDate", startDate);
+        request.setAttribute("endDate", endDate);
 
         request.getRequestDispatcher("view/dashboard/admin/activity-logs/after-hours.jsp").forward(request, response);
     }

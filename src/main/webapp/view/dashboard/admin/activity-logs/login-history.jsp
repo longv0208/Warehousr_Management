@@ -232,7 +232,7 @@
                             <h3 class="mb-0">
                                 <c:set var="uniqueUsers" value="${java.util.LinkedHashSet()}"/>
                                 <c:forEach var="activity" items="${loginHistory}">
-                                    <c:set var="added" value="${uniqueUsers.add(activity.username)}"/>
+                                    <c:set var="added" value="${uniqueUsers.add(activity.userId)}"/>
                                 </c:forEach>
                                 ${uniqueUsers.size()}
                             </h3>
@@ -309,7 +309,13 @@
                                                     </span>
                                                 </c:otherwise>
                                             </c:choose>
-                                            <strong>${activity.username}</strong>
+                                            <strong>
+                                                <c:forEach var="user" items="${users}">
+                                                    <c:if test="${user.userId == activity.userId}">
+                                                        ${user.fullName}
+                                                    </c:if>
+                                                </c:forEach>
+                                            </strong>
                                         </div>
                                         
                                         <div class="row">
@@ -317,24 +323,24 @@
                                                 <div class="mb-1">
                                                     <i class="bi bi-calendar-event text-primary"></i>
                                                     <strong>Thời gian:</strong> 
-                                                    <fmt:formatDate value="${activity.createdAt}" pattern="dd/MM/yyyy"/>
+                                                    <fmt:formatDate value="${activity.timestamp}" pattern="dd/MM/yyyy"/>
                                                 </div>
                                                 <div class="mb-1">
                                                     <i class="bi bi-clock text-success"></i>
                                                     <strong>Giờ:</strong> 
-                                                    <fmt:formatDate value="${activity.createdAt}" pattern="HH:mm:ss"/>
+                                                    <fmt:formatDate value="${activity.timestamp}" pattern="HH:mm:ss"/>
                                                 </div>
                                             </div>
                                             <div class="col-md-6">
-                                                <c:if test="${not empty activity.description}">
+                                                <c:if test="${not empty activity.note}">
                                                     <div class="mb-1">
                                                         <i class="bi bi-info-circle text-info"></i>
-                                                        <strong>Chi tiết:</strong> ${activity.description}
+                                                        <strong>Chi tiết:</strong> ${activity.note}
                                                     </div>
                                                 </c:if>
                                                 <div class="mb-1">
-                                                    <fmt:formatDate value="${activity.createdAt}" pattern="EEEE" var="dayOfWeek"/>
-                                                    <fmt:formatDate value="${activity.createdAt}" pattern="HH" var="hour"/>
+                                                    <fmt:formatDate value="${activity.timestamp}" pattern="EEEE" var="dayOfWeek"/>
+                                                    <fmt:formatDate value="${activity.timestamp}" pattern="HH" var="hour"/>
                                                     <i class="bi bi-calendar text-muted"></i>
                                                     <small class="text-muted">${dayOfWeek}</small>
                                                     <c:if test="${hour < 8 || hour >= 18}">
@@ -346,7 +352,7 @@
                                     </div>
                                     <div class="col-md-4">
                                         <div class="d-grid gap-2">
-                                            <a href="${pageContext.request.contextPath}/activity-logs?action=list&userId=${activity.userId}&actionType=${activity.actionType}&startDate=${activity.createdAt}&endDate=${activity.createdAt}" 
+                                            <a href="${pageContext.request.contextPath}/activity-logs?action=list&userId=${activity.userId}&actionType=${activity.actionType}&startDate=${activity.timestamp}&endDate=${activity.timestamp}" 
                                                class="btn btn-outline-primary btn-sm">
                                                 <i class="bi bi-eye"></i> Xem session
                                             </a>

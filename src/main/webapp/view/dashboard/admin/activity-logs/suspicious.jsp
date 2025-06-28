@@ -261,24 +261,23 @@
                                         </div>
                                         <div class="mb-2">
                                             <i class="bi bi-calendar text-success"></i>
-                                            <strong>Ngày:</strong> 
-                                            <fmt:formatDate value="${activity[1]}" pattern="dd/MM/yyyy"/>
+                                            <strong>Ngày:</strong> ${startDate}
                                         </div>
                                         <div class="mb-2">
                                             <i class="bi bi-gear text-warning"></i>
                                             <strong>Số lần điều chỉnh:</strong> 
-                                            <span class="badge bg-warning text-dark">${activity[2]} lần</span>
+                                            <span class="badge bg-warning text-dark">${activity[1]} lần</span>
                                         </div>
                                     </div>
                                     <div class="col-md-4">
                                         <div class="d-grid gap-2">
-                                            <a href="${pageContext.request.contextPath}/activity-logs?action=list&userId=${activity[0]}&actionType=ADJUST&startDate=${activity[1]}&endDate=${activity[1]}" 
+                                            <a href="${pageContext.request.contextPath}/activity-logs?action=list&actionType=ADJUST&startDate=${startDate}&endDate=${endDate}" 
                                                class="btn btn-outline-primary btn-sm">
                                                 <i class="bi bi-eye"></i> Xem chi tiết
                                             </a>
-                                            <a href="${pageContext.request.contextPath}/users?action=view&id=${activity[0]}" 
+                                            <a href="${pageContext.request.contextPath}/activity-logs?action=list" 
                                                class="btn btn-outline-info btn-sm">
-                                                <i class="bi bi-person"></i> Thông tin nhân viên
+                                                <i class="bi bi-person"></i> Tất cả hoạt động
                                             </a>
                                         </div>
                                     </div>

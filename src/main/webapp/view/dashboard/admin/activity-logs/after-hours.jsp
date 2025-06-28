@@ -180,7 +180,7 @@
                             <h3 class="mb-0">
                                 <c:set var="earlyCount" value="0"/>
                                 <c:forEach var="activity" items="${afterHoursActivities}">
-                                    <fmt:formatDate value="${activity.createdAt}" pattern="HH" var="hour"/>
+                                    <fmt:formatDate value="${activity[2]}" pattern="HH" var="hour"/>
                                     <c:if test="${hour >= 0 && hour < 8}">
                                         <c:set var="earlyCount" value="${earlyCount + 1}"/>
                                     </c:if>
@@ -202,7 +202,7 @@
                             <h3 class="mb-0">
                                 <c:set var="lateCount" value="0"/>
                                 <c:forEach var="activity" items="${afterHoursActivities}">
-                                    <fmt:formatDate value="${activity.createdAt}" pattern="HH" var="hour"/>
+                                    <fmt:formatDate value="${activity[2]}" pattern="HH" var="hour"/>
                                     <c:if test="${hour >= 18 && hour <= 23}">
                                         <c:set var="lateCount" value="${lateCount + 1}"/>
                                     </c:if>
@@ -224,7 +224,7 @@
                             <h3 class="mb-0">
                                 <c:set var="uniqueUsers" value="${java.util.LinkedHashSet()}"/>
                                 <c:forEach var="activity" items="${afterHoursActivities}">
-                                    <c:set var="added" value="${uniqueUsers.add(activity.username)}"/>
+                                    <c:set var="added" value="${uniqueUsers.add(activity[0])}"/>
                                 </c:forEach>
                                 ${uniqueUsers.size()}
                             </h3>
@@ -282,8 +282,8 @@
                 <c:choose>
                     <c:when test="${not empty afterHoursActivities}">
                         <c:forEach var="activity" items="${afterHoursActivities}">
-                            <fmt:formatDate value="${activity.createdAt}" pattern="HH" var="hour"/>
-                            <fmt:formatDate value="${activity.createdAt}" pattern="u" var="dayOfWeek"/>
+                            <fmt:formatDate value="${activity[2]}" pattern="HH" var="hour"/>
+                            <fmt:formatDate value="${activity[2]}" pattern="u" var="dayOfWeek"/>
                             
                             <div class="activity-item 
                                 <c:choose>
@@ -316,43 +316,37 @@
                                                     </span>
                                                 </c:otherwise>
                                             </c:choose>
-                                            <strong>${activity.actionType}</strong>
+                                            <strong>${activity[1]}</strong>
                                         </div>
                                         
-                                        <div class="row">
+                                                                                <div class="row">
                                             <div class="col-md-6">
                                                 <div class="mb-1">
                                                     <i class="bi bi-person-circle text-primary"></i>
-                                                    <strong>Người dùng:</strong> ${activity.username}
+                                                    <strong>Người dùng:</strong> ${activity[0]}
                                                 </div>
                                                 <div class="mb-1">
                                                     <i class="bi bi-calendar text-success"></i>
                                                     <strong>Thời gian:</strong> 
-                                                    <fmt:formatDate value="${activity.createdAt}" pattern="dd/MM/yyyy HH:mm:ss"/>
+                                                    <fmt:formatDate value="${activity[2]}" pattern="dd/MM/yyyy HH:mm:ss"/>
                                                 </div>
                                             </div>
                                             <div class="col-md-6">
                                                 <div class="mb-1">
                                                     <i class="bi bi-tag text-info"></i>
-                                                    <strong>Đối tượng:</strong> ${activity.entityType}
+                                                    <strong>Đối tượng:</strong> ${activity[3]}
                                                 </div>
-                                                <c:if test="${not empty activity.description}">
-                                                    <div class="mb-1">
-                                                        <i class="bi bi-chat-left-text text-muted"></i>
-                                                        <strong>Mô tả:</strong> ${activity.description}
-                                                    </div>
-                                                </c:if>
                                             </div>
                                         </div>
                                     </div>
                                     <div class="col-md-4">
                                         <div class="d-grid gap-2">
-                                            <a href="${pageContext.request.contextPath}/activity-logs?action=list&userId=${activity.userId}&startDate=${activity.createdAt}&endDate=${activity.createdAt}" 
+                                            <a href="${pageContext.request.contextPath}/activity-logs?action=list&actionType=${activity[1]}" 
                                                class="btn btn-outline-primary btn-sm">
                                                 <i class="bi bi-eye"></i> Xem chi tiết
                                             </a>
                                             <small class="text-muted">
-                                                <fmt:formatDate value="${activity.createdAt}" pattern="EEEE"/>
+                                                <fmt:formatDate value="${activity[2]}" pattern="EEEE"/>
                                             </small>
                                         </div>
                                     </div>
