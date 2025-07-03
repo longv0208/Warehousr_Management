@@ -9,6 +9,7 @@ import lombok.Setter;
 import lombok.ToString;
 
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
 
 @ToString
 @Builder
@@ -23,9 +24,11 @@ public class StockInward {
     private Integer supplierId;
     private Integer userId;
     private Integer warehouseId;
-    private Timestamp inwardDate;
+    private Integer purchaseRequestId;
+    private LocalDateTime inwardDate;
     private String notes;
     private Timestamp createdAt;
+    private Integer poId;
     
     // Thông tin chi tiết để hiển thị (không có trong DB)
     private String supplierName;

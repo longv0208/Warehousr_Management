@@ -22,9 +22,11 @@ public class StockInwardDAO extends DBContext implements I_DAO<StockInward> {
                 .supplierId(rs.getInt("supplier_id"))
                 .userId(rs.getInt("user_id"))
                 .warehouseId(rs.getInt("warehouse_id"))
-                .inwardDate(rs.getTimestamp("inward_date"))
+                .purchaseRequestId(rs.getObject("purchase_request_id") != null ? rs.getInt("purchase_request_id") : null)
+                .inwardDate(rs.getTimestamp("inward_date") != null ? rs.getTimestamp("inward_date").toLocalDateTime() : null)
                 .notes(rs.getString("notes"))
                 .createdAt(rs.getTimestamp("created_at"))
+                .poId(rs.getObject("po_id") != null ? rs.getInt("po_id") : null)
                 // Thông tin join
                 .supplierName(rs.getString("supplier_name"))
                 .userFullName(rs.getString("user_full_name"))
@@ -63,7 +65,7 @@ public class StockInwardDAO extends DBContext implements I_DAO<StockInward> {
     @Override
     public int insert(StockInward stockInward) {
         String sql = "INSERT INTO stockinwards (inward_code, supplier_id, user_id, warehouse_id, " +
-                "inward_date, notes) VALUES (?, ?, ?, ?, ?, ?)";
+                "purchase_request_id, inward_date, notes, po_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
 
         try {
             conn = getConnection();
@@ -72,8 +74,11 @@ public class StockInwardDAO extends DBContext implements I_DAO<StockInward> {
             statement.setObject(2, stockInward.getSupplierId());
             statement.setInt(3, stockInward.getUserId());
             statement.setObject(4, stockInward.getWarehouseId());
-            statement.setTimestamp(5, stockInward.getInwardDate());
-            statement.setString(6, stockInward.getNotes());
+            statement.setObject(5, stockInward.getPurchaseRequestId());
+            statement.setTimestamp(6, stockInward.getInwardDate() != null ? 
+                java.sql.Timestamp.valueOf(stockInward.getInwardDate()) : null);
+            statement.setString(7, stockInward.getNotes());
+            statement.setObject(8, stockInward.getPoId());
 
             int affectedRows = statement.executeUpdate();
             if (affectedRows == 0) {
@@ -172,5 +177,32 @@ public class StockInwardDAO extends DBContext implements I_DAO<StockInward> {
             close();
         }
         return prefix + "000001";
+    }
+
+    public StockInward findByPoId(Integer poId) {
+        String sql = "SELECT si.*, " +
+                "s.supplier_name, " +
+                "u.full_name as user_full_name, " +
+                "w.warehouse_name " +
+                "FROM stockinwards si " +
+                "LEFT JOIN suppliers s ON si.supplier_id = s.supplier_id " +
+                "LEFT JOIN users u ON si.user_id = u.user_id " +
+                "LEFT JOIN warehouses w ON si.warehouse_id = w.warehouse_id " +
+                "WHERE si.po_id = ?";
+
+        try {
+            conn = getConnection();
+            statement = conn.prepareStatement(sql);
+            statement.setInt(1, poId);
+            resultSet = statement.executeQuery();
+            if (resultSet.next()) {
+                return getFromResultSet(resultSet);
+            }
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Error finding stock inward by PO ID: " + poId, ex);
+        } finally {
+            close();
+        }
+        return null;
     }
 } 

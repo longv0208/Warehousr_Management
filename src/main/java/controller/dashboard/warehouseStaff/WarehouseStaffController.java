@@ -186,7 +186,7 @@ public class WarehouseStaffController extends HttpServlet {
                     .supplierId(supplierIdStr != null && !supplierIdStr.isEmpty() ? Integer.parseInt(supplierIdStr) : null)
                     .userId(currentUser.getUserId())
                     .warehouseId(warehouseIdStr != null && !warehouseIdStr.isEmpty() ? Integer.parseInt(warehouseIdStr) : null)
-                    .inwardDate(Timestamp.valueOf(LocalDateTime.now()))
+                    .inwardDate(LocalDateTime.now())
                     .notes(notes)
                     .build();
                     

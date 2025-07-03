@@ -220,10 +220,21 @@ ul#sidebarnav li a.nav-link.active {
             </li>
             <% } %>
             
-            <!-- Xem tồn kho - purchasing_staff only -->
+            <!-- Purchasing Staff Menu Group -->
             <% if ("purchasing_staff".equals(userRole)) { %>
+            <!-- Xem tồn kho -->
             <li class="nav-item">
-                <a href="${pageContext.request.contextPath}/purchase-staff/inventory" class="nav-link"><i class="bi bi-boxes"></i><span class="link-text">Xem tồn kho</span></a>
+                <a href="${pageContext.request.contextPath}/purchasing?action=inventory-list" class="nav-link"><i class="bi bi-boxes"></i><span class="link-text">Xem tồn kho</span></a>
+            </li>
+            
+            <!-- RFQ Management -->
+            <li class="nav-item">
+                <a href="${pageContext.request.contextPath}/purchasing?action=list-rfq" class="nav-link"><i class="bi bi-file-text"></i><span class="link-text">Quản lý RFQ</span></a>
+            </li>
+            
+            <!-- Purchase Order Management -->
+            <li class="nav-item">
+                <a href="${pageContext.request.contextPath}/purchasing?action=list-po" class="nav-link"><i class="bi bi-cart-plus"></i><span class="link-text">Đơn đặt hàng</span></a>
             </li>
             <% } %>
             
@@ -241,6 +252,11 @@ ul#sidebarnav li a.nav-link.active {
             <!-- Quản lý nhập kho -->
             <li class="nav-item">
                 <a href="${pageContext.request.contextPath}/warehouse-staff?action=stock-inward-list" class="nav-link"><i class="bi bi-arrow-down-circle"></i><span class="link-text">Quản lý nhập kho</span></a>
+            </li>
+            
+            <!-- Tạo phiếu nhập kho từ PO -->
+            <li class="nav-item">
+                <a href="${pageContext.request.contextPath}/purchasing?action=list-po-for-stock-inward" class="nav-link"><i class="bi bi-plus-square"></i><span class="link-text">Tạo phiếu nhập</span></a>
             </li>
             
             <!-- Đơn hàng chờ xử lý -->
