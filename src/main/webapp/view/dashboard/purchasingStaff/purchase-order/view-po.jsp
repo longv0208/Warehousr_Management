@@ -31,9 +31,9 @@
                             <h4 class="mb-0">Purchase Order Details - ${po.poCode}</h4>
                             <div class="d-flex gap-2">
                                 <c:if test="${po.status == 'pending' && existingStockInward == null}">
-                                    <a href="purchasing?action=create-stock-inward&poId=${po.poId}" class="btn btn-success">
+<!--                                    <a href="purchasing?action=create-stock-inward&poId=${po.poId}" class="btn btn-success">
                                         <i class="fas fa-truck"></i> Create Stock Inward
-                                    </a>
+                                    </a>-->
                                 </c:if>
                                 
                                 <c:if test="${existingStockInward != null}">
@@ -42,7 +42,7 @@
                                     </a>
                                 </c:if>
                                 
-                                <a href="purchasing?action=list-po" class="btn btn-secondary">
+                                <a href="${pageContext.request.contextPath}/purchasing?action=list-rfq" class="btn btn-secondary">
                                     <i class="fas fa-arrow-left"></i> Back to List
                                 </a>
                             </div>
@@ -172,11 +172,11 @@
                             
                             <c:if test="${po.status == 'pending' && existingStockInward == null}">
                                 <hr>
-                                <div class="alert alert-info">
+<!--                                <div class="alert alert-info">
                                     <strong>Next Step:</strong> 
                                     Create a Stock Inward to receive the goods and update inventory.
                                     <a href="purchasing?action=create-stock-inward&poId=${po.poId}" class="alert-link">Create Stock Inward</a>
-                                </div>
+                                </div>-->
                             </c:if>
                         </div>
                     </div>
