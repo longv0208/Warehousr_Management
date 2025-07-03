@@ -9,139 +9,148 @@
     <title>Create Purchase Order</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* Add margin to account for sidebar */
+        .main-content {
+            margin-left: 250px;
+            padding: 20px;
+        }
+    </style>
 </head>
 <body>
     <jsp:include page="../../../common/sidebar.jsp"></jsp:include>
     
-    <div class="container-fluid">
-        <div class="row">
-            <div class="col-md-12">
-                <div class="card">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <h4 class="mb-0">Create Purchase Order from RFQ: ${rfq.rfqCode}</h4>
-                        <a href="purchasing?action=view-rfq&id=${rfq.rfqId}" class="btn btn-secondary">
-                            <i class="fas fa-arrow-left"></i> Back to RFQ
-                        </a>
-                    </div>
-                    <div class="card-body">
-                        <!-- RFQ Information -->
-                        <div class="card mb-4">
-                            <div class="card-header">
-                                <h6 class="mb-0">RFQ Information</h6>
-                            </div>
-                            <div class="card-body">
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <table class="table table-borderless table-sm">
-                                            <tr>
-                                                <th width="120">RFQ Code:</th>
-                                                <td>${rfq.rfqCode}</td>
-                                            </tr>
-                                            <tr>
-                                                <th>Supplier:</th>
-                                                <td>${supplier.supplierName}</td>
-                                            </tr>
-                                            <tr>
-                                                <th>Warehouse:</th>
-                                                <td>${warehouse.warehouseName}</td>
-                                            </tr>
-                                        </table>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <table class="table table-borderless table-sm">
-                                            <tr>
-                                                <th width="140">Expected Delivery:</th>
-                                                <td>
-                                                    <fmt:formatDate value="${rfq.expectedDeliveryDate}" pattern="dd/MM/yyyy"/>
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <th>Note:</th>
-                                                <td>${rfq.note}</td>
-                                            </tr>
-                                        </table>
+    <div class="main-content">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h4 class="mb-0">Create Purchase Order from RFQ: ${rfq.rfqCode}</h4>
+                            <a href="purchasing?action=view-rfq&id=${rfq.rfqId}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Back to RFQ
+                            </a>
+                        </div>
+                        <div class="card-body">
+                            <!-- RFQ Information -->
+                            <div class="card mb-4">
+                                <div class="card-header">
+                                    <h6 class="mb-0">RFQ Information</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <table class="table table-borderless table-sm">
+                                                <tr>
+                                                    <th width="120">RFQ Code:</th>
+                                                    <td>${rfq.rfqCode}</td>
+                                                </tr>
+                                                <tr>
+                                                    <th>Supplier:</th>
+                                                    <td>${supplier.supplierName}</td>
+                                                </tr>
+                                                <tr>
+                                                    <th>Warehouse:</th>
+                                                    <td>${warehouse.warehouseName}</td>
+                                                </tr>
+                                            </table>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <table class="table table-borderless table-sm">
+                                                <tr>
+                                                    <th width="140">Expected Delivery:</th>
+                                                    <td>
+                                                        <fmt:formatDate value="${rfq.expectedDeliveryDate}" pattern="dd/MM/yyyy"/>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <th>Note:</th>
+                                                    <td>${rfq.note}</td>
+                                                </tr>
+                                            </table>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                        
-                        <!-- Purchase Order Form -->
-                        <form action="purchasing" method="post" id="poForm">
-                            <input type="hidden" name="action" value="create-po">
-                            <input type="hidden" name="rfqId" value="${rfq.rfqId}">
                             
-                            <h5>Products & Pricing</h5>
-                            <div class="table-responsive">
-                                <table class="table table-bordered">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th>Product Code</th>
-                                            <th>Product Name</th>
-                                            <th>Unit</th>
-                                            <th>Quantity</th>
-                                            <th>Suggested Price</th>
-                                            <th>Unit Price <span class="text-danger">*</span></th>
-                                            <th>Total Amount</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <c:set var="grandTotal" value="0" />
-                                        <c:forEach var="detail" items="${rfqDetails}">
-                                            <c:forEach var="product" items="${products}">
-                                                <c:if test="${product.productId == detail.productId}">
-                                                    <tr>
-                                                        <input type="hidden" name="productId" value="${product.productId}">
-                                                        <input type="hidden" name="quantity" value="${detail.quantity}">
-                                                        
-                                                        <td>${product.productCode}</td>
-                                                        <td>${product.productName}</td>
-                                                        <td>${product.unit}</td>
-                                                        <td>${detail.quantity}</td>
-                                                        <td>
-                                                            <fmt:formatNumber value="${product.purchasePrice}" type="currency" currencySymbol="₫"/>
-                                                        </td>
-                                                        <td>
-                                                            <input type="number" 
-                                                                   class="form-control unit-price" 
-                                                                   name="unitPrice" 
-                                                                   min="0" 
-                                                                   step="0.01" 
-                                                                   value="${product.purchasePrice}"
-                                                                   data-quantity="${detail.quantity}"
-                                                                   onchange="calculateRowTotal(this)"
-                                                                   required>
-                                                        </td>
-                                                        <td>
-                                                            <span class="row-total fw-bold">
-                                                                <fmt:formatNumber value="${product.purchasePrice * detail.quantity}" type="currency" currencySymbol="₫"/>
-                                                            </span>
-                                                        </td>
-                                                    </tr>
-                                                    <c:set var="grandTotal" value="${grandTotal + (product.purchasePrice * detail.quantity)}" />
-                                                </c:if>
+                            <!-- Purchase Order Form -->
+                            <form action="purchasing" method="post" id="poForm">
+                                <input type="hidden" name="action" value="create-po">
+                                <input type="hidden" name="rfqId" value="${rfq.rfqId}">
+                                
+                                <h5>Products & Pricing</h5>
+                                <div class="table-responsive">
+                                    <table class="table table-bordered">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Product Code</th>
+                                                <th>Product Name</th>
+                                                <th>Unit</th>
+                                                <th>Quantity</th>
+                                                <th>Suggested Price</th>
+                                                <th>Unit Price <span class="text-danger">*</span></th>
+                                                <th>Total Amount</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <c:set var="grandTotal" value="0" />
+                                            <c:forEach var="detail" items="${rfqDetails}">
+                                                <c:forEach var="product" items="${products}">
+                                                    <c:if test="${product.productId == detail.productId}">
+                                                        <tr>
+                                                            <input type="hidden" name="productId" value="${product.productId}">
+                                                            <input type="hidden" name="quantity" value="${detail.quantity}">
+                                                            
+                                                            <td>${product.productCode}</td>
+                                                            <td>${product.productName}</td>
+                                                            <td>${product.unit}</td>
+                                                            <td>${detail.quantity}</td>
+                                                            <td>
+                                                                <fmt:formatNumber value="${product.purchasePrice}" type="currency" currencySymbol="₫"/>
+                                                            </td>
+                                                            <td>
+                                                                <input type="number" 
+                                                                       class="form-control unit-price" 
+                                                                       name="unitPrice" 
+                                                                       min="0" 
+                                                                       step="0.01" 
+                                                                       value="${product.purchasePrice}"
+                                                                       data-quantity="${detail.quantity}"
+                                                                       onchange="calculateRowTotal(this)"
+                                                                       required>
+                                                            </td>
+                                                            <td>
+                                                                <span class="row-total fw-bold">
+                                                                    <fmt:formatNumber value="${product.purchasePrice * detail.quantity}" type="currency" currencySymbol="₫"/>
+                                                                </span>
+                                                            </td>
+                                                        </tr>
+                                                        <c:set var="grandTotal" value="${grandTotal + (product.purchasePrice * detail.quantity)}" />
+                                                    </c:if>
+                                                </c:forEach>
                                             </c:forEach>
-                                        </c:forEach>
-                                    </tbody>
-                                    <tfoot class="table-light">
-                                        <tr>
-                                            <td colspan="6" class="text-end fw-bold">Grand Total:</td>
-                                            <td class="fw-bold">
-                                                <span id="grandTotal">
-                                                    <fmt:formatNumber value="${grandTotal}" type="currency" currencySymbol="₫"/>
-                                                </span>
-                                            </td>
-                                        </tr>
-                                    </tfoot>
-                                </table>
-                            </div>
-                            
-                            <div class="d-flex justify-content-end gap-2 mt-4">
-                                <a href="purchasing?action=view-rfq&id=${rfq.rfqId}" class="btn btn-secondary">Cancel</a>
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="fas fa-save"></i> Create Purchase Order
-                                </button>
-                            </div>
-                        </form>
+                                        </tbody>
+                                        <tfoot class="table-light">
+                                            <tr>
+                                                <td colspan="6" class="text-end fw-bold">Grand Total:</td>
+                                                <td class="fw-bold">
+                                                    <span id="grandTotal">
+                                                        <fmt:formatNumber value="${grandTotal}" type="currency" currencySymbol="₫"/>
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                                
+                                <div class="d-flex justify-content-end gap-2 mt-4">
+                                    <a href="purchasing?action=view-rfq&id=${rfq.rfqId}" class="btn btn-secondary">Cancel</a>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save"></i> Create Purchase Order
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
                 </div>
             </div>

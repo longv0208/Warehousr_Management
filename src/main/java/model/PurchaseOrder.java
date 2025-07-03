@@ -4,6 +4,7 @@ import lombok.*;
 import java.sql.Date;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 @ToString
 @Builder
@@ -22,4 +23,12 @@ public class PurchaseOrder {
     private Date expectedDeliveryDate;
     private String status; // pending, approved, completed, cancelled
     private Timestamp createdAt;
+
+    public String getFormattedOrderDate() {
+        if (orderDate == null) {
+            return "";
+        }
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+        return orderDate.format(formatter);
+    }
 } 

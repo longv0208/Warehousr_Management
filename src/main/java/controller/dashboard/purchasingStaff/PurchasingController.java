@@ -375,7 +375,7 @@ public class PurchasingController extends HttpServlet {
         request.setAttribute("products", products);
         request.setAttribute("existingStockInward", existingStockInward);
         
-        request.getRequestDispatcher("view/dashboard/purchasingStaff/po/view-po.jsp").forward(request, response);
+        request.getRequestDispatcher("view/dashboard/purchasingStaff/purchase-order/view-po.jsp").forward(request, response);
     }
 
     // Stock Inward Management Methods
@@ -586,12 +586,12 @@ public class PurchasingController extends HttpServlet {
 
     private void handleListPOForStockInward(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        // List POs that are completed and ready for stock inward creation
-        List<PurchaseOrder> completedPOs = purchaseOrderDAO.findByStatus("completed");
+        // List POs that are approved and ready for stock inward creation
+        List<PurchaseOrder> approvedPOs = purchaseOrderDAO.findByStatus("approved");
         List<Supplier> suppliers = supplierDAO.findAll();
         List<Warehouse> warehouses = warehouseDAO.findAll();
 
-        request.setAttribute("purchaseOrders", completedPOs);
+        request.setAttribute("purchaseOrders", approvedPOs);
         request.setAttribute("suppliers", suppliers);
         request.setAttribute("warehouses", warehouses);
         request.getRequestDispatcher("view/dashboard/purchasingStaff/purchase-order/po-list-for-stock-inward.jsp").forward(request, response);

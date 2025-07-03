@@ -6,7 +6,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Purchase Orders - Ready for Stock Inward</title>
+    <title>Approved Purchase Orders - Ready for Stock Inward</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/izitoast@1.4.0/dist/css/iziToast.min.css">
@@ -49,9 +49,9 @@
             font-weight: 500;
         }
         
-        .status-completed {
-            background-color: #d4edda;
-            color: #155724;
+        .status-approved {
+            background-color: #d1ecf1;
+            color: #0c5460;
         }
         
         .btn-action {
@@ -74,10 +74,10 @@
             <div class="row align-items-center">
                 <div class="col">
                     <h2 class="mb-2">
-                        <i class="bi bi-truck"></i>
-                        Purchase Orders - Ready for Stock Inward
+                        <i class="bi bi-check2-circle"></i>
+                        Approved Purchase Orders
                     </h2>
-                    <p class="mb-0">Manage completed purchase orders ready for stock inward creation</p>
+                    <p class="mb-0">Manage approved purchase orders ready for stock inward creation</p>
                 </div>
             </div>
         </div>
@@ -88,10 +88,10 @@
                 <div class="stat-card">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <h5 class="text-muted mb-1">Completed POs</h5>
-                            <h3 class="mb-0 text-success">${purchaseOrders.size()}</h3>
+                            <h5 class="text-muted mb-1">Approved POs</h5>
+                            <h3 class="mb-0 text-info">${purchaseOrders.size()}</h3>
                         </div>
-                        <i class="bi bi-check-circle-fill text-success fs-1"></i>
+                        <i class="bi bi-patch-check-fill text-info fs-1"></i>
                     </div>
                 </div>
             </div>
@@ -104,7 +104,7 @@
                     <div class="col">
                         <h5 class="mb-0">
                             <i class="bi bi-list-ul"></i>
-                            Completed Purchase Orders
+                            Approved Purchase Orders
                         </h5>
                     </div>
                 </div>
@@ -150,9 +150,9 @@
                                         <fmt:formatDate value="${po.expectedDeliveryDate}" pattern="dd/MM/yyyy"/>
                                     </td>
                                     <td>
-                                        <span class="status-badge status-completed">
-                                            <i class="bi bi-check-circle"></i>
-                                            Completed
+                                        <span class="status-badge status-approved text-capitalize">
+                                            <i class="bi bi-check2-circle"></i>
+                                            ${po.status}
                                         </span>
                                     </td>
                                     <td>
@@ -173,7 +173,7 @@
                                 <tr>
                                     <td colspan="7" class="text-center py-4 text-muted">
                                         <i class="bi bi-inbox"></i>
-                                        <div class="mt-2">No completed purchase orders available for stock inward creation</div>
+                                        <div class="mt-2">No approved purchase orders available for stock inward creation</div>
                                     </td>
                                 </tr>
                             </c:if>

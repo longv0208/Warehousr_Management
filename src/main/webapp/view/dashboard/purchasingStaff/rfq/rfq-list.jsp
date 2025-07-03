@@ -11,90 +11,99 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/izitoast@1.4.0/dist/js/iziToast.min.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/izitoast@1.4.0/dist/css/iziToast.min.css" rel="stylesheet">
+    <style>
+        /* Add margin to account for sidebar */
+        .main-content {
+            margin-left: 250px;
+            padding: 20px;
+        }
+    </style>
 </head>
 <body>
     <jsp:include page="../../../common/sidebar.jsp"></jsp:include>
     
-    <div class="container-fluid">
-        <div class="row">
-            <div class="col-md-12">
-                <div class="card">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <h4 class="mb-0">Request for Quotation (RFQ)</h4>
-                        <a href="purchasing?action=create-rfq" class="btn btn-primary">
-                            <i class="fas fa-plus"></i> Create New RFQ
-                        </a>
-                    </div>
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-striped">
-                                <thead>
-                                    <tr>
-                                        <th>RFQ Code</th>
-                                        <th>Supplier</th>
-                                        <th>Warehouse</th>
-                                        <th>Expected Delivery</th>
-                                        <th>Status</th>
-                                        <th>Created Date</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <c:forEach var="rfq" items="${rfqs}">
+    <div class="main-content">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h4 class="mb-0">Request for Quotation (RFQ)</h4>
+                            <a href="purchasing?action=create-rfq" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> Create New RFQ
+                            </a>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-striped">
+                                    <thead>
                                         <tr>
-                                            <td>${rfq.rfqCode}</td>
-                                            <td>
-                                                <c:forEach var="supplier" items="${suppliers}">
-                                                    <c:if test="${supplier.supplierId == rfq.providerId}">
-                                                        ${supplier.supplierName}
-                                                    </c:if>
-                                                </c:forEach>
-                                            </td>
-                                            <td>
-                                                <c:forEach var="warehouse" items="${warehouses}">
-                                                    <c:if test="${warehouse.warehouseId == rfq.warehouseId}">
-                                                        ${warehouse.warehouseName}
-                                                    </c:if>
-                                                </c:forEach>
-                                            </td>
-                                            <td>
-                                                <fmt:formatDate value="${rfq.expectedDeliveryDate}" pattern="dd/MM/yyyy"/>
-                                            </td>
-                                            <td>
-                                                <span class="badge 
-                                                    ${rfq.status == 'pending' ? 'bg-warning' : 
-                                                      rfq.status == 'sent' ? 'bg-info' : 
-                                                      rfq.status == 'approved' ? 'bg-success' : 
-                                                      rfq.status == 'completed' ? 'bg-primary' : 'bg-danger'}">
-                                                    ${rfq.status.toUpperCase()}
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <fmt:formatDate value="${rfq.createdAt}" pattern="dd/MM/yyyy HH:mm"/>
-                                            </td>
-                                            <td>
-                                                <div class="btn-group" role="group">
-                                                    <a href="purchasing?action=view-rfq&id=${rfq.rfqId}" 
-                                                       class="btn btn-sm btn-outline-primary" title="View">
-                                                        <i class="fas fa-eye"></i>
-                                                    </a>
-                                                    <c:if test="${rfq.status == 'pending'}">
-                                                        <a href="purchasing?action=edit-rfq&id=${rfq.rfqId}" 
-                                                           class="btn btn-sm btn-outline-secondary" title="Edit">
-                                                            <i class="fas fa-edit"></i>
+                                            <th>RFQ Code</th>
+                                            <th>Supplier</th>
+                                            <th>Warehouse</th>
+                                            <th>Expected Delivery</th>
+                                            <th>Status</th>
+                                            <th>Created Date</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <c:forEach var="rfq" items="${rfqs}">
+                                            <tr>
+                                                <td>${rfq.rfqCode}</td>
+                                                <td>
+                                                    <c:forEach var="supplier" items="${suppliers}">
+                                                        <c:if test="${supplier.supplierId == rfq.providerId}">
+                                                            ${supplier.supplierName}
+                                                        </c:if>
+                                                    </c:forEach>
+                                                </td>
+                                                <td>
+                                                    <c:forEach var="warehouse" items="${warehouses}">
+                                                        <c:if test="${warehouse.warehouseId == rfq.warehouseId}">
+                                                            ${warehouse.warehouseName}
+                                                        </c:if>
+                                                    </c:forEach>
+                                                </td>
+                                                <td>
+                                                    <fmt:formatDate value="${rfq.expectedDeliveryDate}" pattern="dd/MM/yyyy"/>
+                                                </td>
+                                                <td>
+                                                    <span class="badge 
+                                                        ${rfq.status == 'pending' ? 'bg-warning' : 
+                                                          rfq.status == 'sent' ? 'bg-info' : 
+                                                          rfq.status == 'approved' ? 'bg-success' : 
+                                                          rfq.status == 'completed' ? 'bg-primary' : 'bg-danger'}">
+                                                        ${rfq.status.toUpperCase()}
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <fmt:formatDate value="${rfq.createdAt}" pattern="dd/MM/yyyy HH:mm"/>
+                                                </td>
+                                                <td>
+                                                    <div class="btn-group" role="group">
+                                                        <a href="purchasing?action=view-rfq&id=${rfq.rfqId}" 
+                                                           class="btn btn-sm btn-outline-primary" title="View">
+                                                            <i class="fas fa-eye"></i>
                                                         </a>
-                                                    </c:if>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    </c:forEach>
-                                    <c:if test="${empty rfqs}">
-                                        <tr>
-                                            <td colspan="7" class="text-center">No RFQs found</td>
-                                        </tr>
-                                    </c:if>
-                                </tbody>
-                            </table>
+                                                        <c:if test="${rfq.status == 'pending'}">
+                                                            <a href="purchasing?action=edit-rfq&id=${rfq.rfqId}" 
+                                                               class="btn btn-sm btn-outline-secondary" title="Edit">
+                                                                <i class="fas fa-edit"></i>
+                                                            </a>
+                                                        </c:if>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </c:forEach>
+                                        <c:if test="${empty rfqs}">
+                                            <tr>
+                                                <td colspan="7" class="text-center">No RFQs found</td>
+                                            </tr>
+                                        </c:if>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 </div>
