@@ -149,17 +149,35 @@
     </div>
 
     <ul class="nav flex-column" id="sidebarnav">
-        <!-- Dashboard - Admin only -->
+        <!-- ============================================================== -->
+        <!-- Admin-specific items -->
+        <!-- ============================================================== -->
         <% if ("admin".equals(userRole)) { %>
         <li class="nav-item">
-            <a href="${pageContext.request.contextPath}/dashboard" class="nav-link"><i class="bi bi-speedometer2"></i><span class="link-text">Dashboard</span></a>
+            <a href="${pageContext.request.contextPath}/admin/manage-user" class="nav-link"><i class="bi bi-people"></i><span class="link-text">Người dùng</span></a>
+        </li>
+        <li class="nav-item">
+            <a href="${pageContext.request.contextPath}/admin/manage-notification" class="nav-link"><i class="bi bi-bell"></i><span class="link-text">Thông báo</span></a>
+        </li>
+        <li class="nav-item">
+            <a href="${pageContext.request.contextPath}/admin/activity-log" class="nav-link">
+                <i class="bi bi-journal-text"></i><span class="link-text">Lịch sử hoạt động</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="${pageContext.request.contextPath}/admin/manage-setting" class="nav-link">
+                <i class="bi bi-gear"></i><span class="link-text">Cài đặt hệ thống</span>
+            </a>
         </li>
         <% } %>
 
         <!-- ============================================================== -->
-        <!-- Quản lý cho Admin -->
+        <!-- Warehouse Manager items -->
         <!-- ============================================================== -->
-        <% if ("admin".equals(userRole)) { %>
+        <% if ("warehouse_manager".equals(userRole)) { %>
+        <li class="nav-item">
+            <a href="${pageContext.request.contextPath}/dashboard" class="nav-link"><i class="bi bi-speedometer2"></i><span class="link-text">Dashboard</span></a>
+        </li>
         <li class="nav-item">
             <a href="${pageContext.request.contextPath}/admin/manage-category" class="nav-link"><i class="bi bi-tags"></i><span class="link-text">Danh mục</span></a>
         </li>
@@ -176,34 +194,21 @@
             <a href="${pageContext.request.contextPath}/admin/stock-take" class="nav-link"><i class="bi bi-clipboard-check"></i><span class="link-text">Kiểm kê kho</span></a>
         </li>
         <li class="nav-item">
-            <a href="${pageContext.request.contextPath}/admin/manage-user" class="nav-link"><i class="bi bi-people"></i><span class="link-text">Người dùng</span></a>
-        </li>
-        <li class="nav-item">
-            <a href="${pageContext.request.contextPath}/admin/manage-notification" class="nav-link"><i class="bi bi-bell"></i><span class="link-text">Thông báo</span></a>
-        </li>
-         <li class="nav-item">
             <a href="${pageContext.request.contextPath}/admin/low-stock-report" class="nav-link">
                 <i class="bi bi-exclamation-triangle"></i><span class="link-text">Hàng sắp hết</span>
             </a>
         </li>
         <li class="nav-item">
-            <a href="${pageContext.request.contextPath}/admin/activity-log" class="nav-link">
-                <i class="bi bi-journal-text"></i><span class="link-text">Lịch sử hoạt động</span>
-            </a>
+            <a href="${pageContext.request.contextPath}/admin/manage-warehouse" class="nav-link"><i class="bi bi-building"></i><span class="link-text">Kho hàng</span></a>
         </li>
         <li class="nav-item">
-            <a href="${pageContext.request.contextPath}/admin/manage-setting" class="nav-link">
-                <i class="bi bi-gear"></i><span class="link-text">Cài đặt hệ thống</span>
-            </a>
+            <a href="${pageContext.request.contextPath}/warehouse-manager/delivery?action=list" class="nav-link"><i class="bi bi-geo-alt"></i><span class="link-text">Theo dõi giao hàng</span></a>
         </li>
         <% } %>
 
         <!-- ============================================================== -->
         <!-- Chức năng chung -->
         <!-- ============================================================== -->
-        <li class="nav-item">
-            <a href="${pageContext.request.contextPath}/admin/manage-warehouse" class="nav-link"><i class="bi bi-building"></i><span class="link-text">Kho hàng</span></a>
-        </li>
         <li class="nav-item">
             <a href="${pageContext.request.contextPath}/notifications" class="nav-link">
                 <i class="bi bi-bell-fill"></i><span class="link-text">Thông báo của bạn</span>
@@ -247,18 +252,9 @@
         <% } %>
 
         <!-- ============================================================== -->
-        <!-- Warehouse Manager & Admin -->
+        <!-- Warehouse Staff & Manager -->
         <!-- ============================================================== -->
-        <% if ("admin".equals(userRole) || "warehouse_manager".equals(userRole)) { %>
-        <li class="nav-item">
-            <a href="${pageContext.request.contextPath}/warehouse-manager/delivery?action=list" class="nav-link"><i class="bi bi-geo-alt"></i><span class="link-text">Theo dõi giao hàng</span></a>
-        </li>
-        <% } %>
-
-        <!-- ============================================================== -->
-        <!-- Warehouse Staff, Manager & Admin -->
-        <!-- ============================================================== -->
-        <% if ("warehouse_staff".equals(userRole) || "warehouse_manager".equals(userRole) || "admin".equals(userRole)) { %>
+        <% if ("warehouse_staff".equals(userRole) || "warehouse_manager".equals(userRole)) { %>
         <li class="nav-item">
             <a href="${pageContext.request.contextPath}/warehouse?action=list-stock-inward" class="nav-link"><i class="bi bi-card-list"></i><span class="link-text">DS Phiếu Nhập Kho</span></a>
         </li>
