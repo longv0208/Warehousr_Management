@@ -34,7 +34,7 @@ public class LowStockReportServlet extends HttpServlet {
         // Kiểm tra quyền truy cập - chỉ admin và warehouse_staff được xem báo cáo
         User currentUser = SessionUtil.getUserFromSession(request);
         if (currentUser == null || 
-            (!currentUser.getRoleId().equals("admin") && 
+            (!currentUser.getRoleId().equals("warehouse_manager") && 
              !currentUser.getRoleId().equals("warehouse_staff"))) {
             response.sendRedirect(request.getContextPath() + "/login");
             return;
