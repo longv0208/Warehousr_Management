@@ -187,14 +187,14 @@
         <li class="nav-item">
             <a href="${pageContext.request.contextPath}/admin/manage-supplier" class="nav-link"><i class="bi bi-truck"></i><span class="link-text">Nhà cung cấp</span></a>
         </li>
-        <li class="nav-item">
+<!--        <li class="nav-item">
             <a href="${pageContext.request.contextPath}/admin/manage-sales-order" class="nav-link"><i class="bi bi-receipt"></i><span class="link-text">Đơn bán hàng</span></a>
+        </li>-->
+        <li class="nav-item">
+            <a href="${pageContext.request.contextPath}/stock-take" class="nav-link"><i class="bi bi-clipboard-check"></i><span class="link-text">Kiểm kê kho</span></a>
         </li>
         <li class="nav-item">
-            <a href="${pageContext.request.contextPath}/admin/stock-take" class="nav-link"><i class="bi bi-clipboard-check"></i><span class="link-text">Kiểm kê kho</span></a>
-        </li>
-        <li class="nav-item">
-            <a href="${pageContext.request.contextPath}/admin/low-stock-report" class="nav-link">
+            <a href="${pageContext.request.contextPath}/low-stock-report" class="nav-link">
                 <i class="bi bi-exclamation-triangle"></i><span class="link-text">Hàng sắp hết</span>
             </a>
         </li>
@@ -225,9 +225,6 @@
         <li class="nav-item">
             <a href="${pageContext.request.contextPath}/purchasing?action=list-rfq" class="nav-link"><i class="bi bi-file-text"></i><span class="link-text">Quản lý RFQ</span></a>
         </li>
-        <li class="nav-item">
-            <a href="${pageContext.request.contextPath}/purchasing?action=list-po" class="nav-link"><i class="bi bi-cart-plus"></i><span class="link-text">Đơn đặt hàng</span></a>
-        </li>
         <% } %>
 
         <!-- ============================================================== -->
@@ -248,6 +245,9 @@
         </li>
         <li class="nav-item">
             <a href="${pageContext.request.contextPath}/warehouse?action=list-sales-orders" class="nav-link"><i class="bi bi-box-arrow-up"></i><span class="link-text">Xuất kho bán hàng</span></a>
+        </li>
+        <li class="nav-item">
+            <a href="${pageContext.request.contextPath}/stock-take" class="nav-link"><i class="bi bi-clipboard-check"></i><span class="link-text">Kiểm kê kho</span></a>
         </li>
         <% } %>
 
