@@ -12,18 +12,71 @@
 <div class="container mt-4">
   <h3>Chi tiết đơn bán hàng</h3>
   <a href="${pageContext.request.contextPath}/sale-staff/sales-order?action=list" class="btn btn-secondary mb-3">← Quay lại</a>
-  <div class="card mb-4">
-    <div class="card-body">
-      <div class="row mb-2">
-        <div class="col-md-6"><strong>Mã đơn hàng:</strong> ${order.orderCode}</div>
-        <div class="col-md-6"><strong>Khách hàng:</strong> ${order.customerName}</div>
+  <div class="row">
+    <div class="col-md-8">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="card-title mb-0">Thông tin đơn hàng</h5>
+        </div>
+        <div class="card-body">
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <p><strong>Mã đơn hàng:</strong> <span class="badge bg-primary fs-6">${order.orderCode}</span></p>
+              <p><strong>Tên khách hàng:</strong> ${order.customerName}</p>
+            </div>
+            <div class="col-md-6">
+              <p><strong>Ngày đặt:</strong> <fmt:formatDate value="${order.orderDate}" pattern="dd/MM/yyyy"/></p>
+              <p><strong>Trạng thái:</strong> 
+                <span class="badge 
+                  <c:choose>
+                    <c:when test="${order.status == 'pending_stock_check'}">bg-warning</c:when>
+                    <c:when test="${order.status == 'awaiting_shipment'}">bg-info</c:when>
+                    <c:when test="${order.status == 'shipped'}">bg-primary</c:when>
+                    <c:when test="${order.status == 'completed'}">bg-success</c:when>
+                    <c:when test="${order.status == 'cancelled'}">bg-danger</c:when>
+                    <c:otherwise>bg-secondary</c:otherwise>
+                  </c:choose>
+                ">
+                  <c:choose>
+                    <c:when test="${order.status == 'pending_stock_check'}">Chờ kiểm kho</c:when>
+                    <c:when test="${order.status == 'awaiting_shipment'}">Chờ giao hàng</c:when>
+                    <c:when test="${order.status == 'shipped'}">Đã giao</c:when>
+                    <c:when test="${order.status == 'completed'}">Hoàn thành</c:when>
+                    <c:when test="${order.status == 'cancelled'}">Đã hủy</c:when>
+                    <c:otherwise>${order.status}</c:otherwise>
+                  </c:choose>
+                </span>
+              </p>
+            </div>
+          </div>
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <p><strong>Nhân viên tạo:</strong> ${order.user.fullName}</p>
+            </div>
+            <div class="col-md-6">
+              <p><strong>Kho xuất hàng:</strong> 
+                <c:choose>
+                  <c:when test="${not empty warehouse}">
+                    ${warehouse.warehouseName}
+                  </c:when>
+                  <c:otherwise>
+                    <span class="text-muted">Chưa chỉ định</span>
+                  </c:otherwise>
+                </c:choose>
+              </p>
+            </div>
+          </div>
+          <p><strong>Ghi chú:</strong> ${not empty order.notes ? order.notes : 'Không có'}</p>
+        </div>
       </div>
-      <div class="row mb-2">
-        <div class="col-md-6"><strong>Ngày đặt:</strong> <fmt:formatDate value="${order.orderDate}" pattern="dd/MM/yyyy"/></div>
-        <div class="col-md-6"><strong>Trạng thái:</strong> ${order.status}</div>
-      </div>
-      <div class="row mb-2">
-        <div class="col-md-12"><strong>Ghi chú:</strong> ${order.notes}</div>
+    </div>
+    <div class="col-md-4">
+      <div class="card mb-4">
+        <div class="card-body">
+          <div class="row mb-2">
+            <div class="col-md-12"><strong>Tổng cộng:</strong> <fmt:formatNumber value="${totalOrderValue}" type="currency" currencySymbol="đ"/></div>
+          </div>
+        </div>
       </div>
     </div>
   </div>

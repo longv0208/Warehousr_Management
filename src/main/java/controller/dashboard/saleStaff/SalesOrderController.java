@@ -63,6 +63,9 @@ public class SalesOrderController extends HttpServlet {
             case "create":
                 showCreateForm(request, response);
                 break;
+            case "get-inventory":
+                getInventory(request, response);
+                break;
             case "view":
                 viewOrderDetails(request, response);
                 break;
@@ -117,8 +120,8 @@ public class SalesOrderController extends HttpServlet {
         // Only show orders created by this user
         String userIdFilter = String.valueOf(currentUser.getUserId());
         
-        List<SalesOrder> orders = salesOrderDAO.findOrdersWithFilters(statusFilter, customerFilter, userIdFilter, page, pageSize);
-        int totalOrders = salesOrderDAO.getTotalFilteredOrders(statusFilter, customerFilter, userIdFilter);
+        List<SalesOrder> orders = salesOrderDAO.findOrdersWithFilters(statusFilter, customerFilter, userIdFilter, null, page, pageSize);
+        int totalOrders = salesOrderDAO.getTotalFilteredOrders(statusFilter, customerFilter, userIdFilter, null);
         int totalPages = (int) Math.ceil((double) totalOrders / pageSize);
 
         request.setAttribute("orders", orders);
@@ -139,7 +142,7 @@ public class SalesOrderController extends HttpServlet {
             // Create a list of maps containing product and inventory information
             List<Map<String, Object>> productsWithInventory = new ArrayList<>();
             
-                            if (products != null && !products.isEmpty()) {
+            if (products != null && !products.isEmpty()) {
                 for (Product p : products) {
                     Integer quantity = inventoryDAO.getQuantityByProductId(p.getProductId());
                     
@@ -163,15 +166,11 @@ public class SalesOrderController extends HttpServlet {
                 System.err.println("ERROR: No products found or products list is empty!");
             }
             
-            // Generate new order code
-            String orderCode = salesOrderDAO.generateOrderCode();
-            
             // Get all warehouses for selection
             List<Warehouse> warehouses = warehouseDAO.findAll();
             
             request.setAttribute("products", productsWithInventory);
             request.setAttribute("warehouses", warehouses);
-            request.setAttribute("orderCode", orderCode);
             
             // Set product count for JSP
             int productCount = productsWithInventory != null ? productsWithInventory.size() : 0;
@@ -185,6 +184,25 @@ public class SalesOrderController extends HttpServlet {
         }
     }
 
+    private void getInventory(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+        try {
+            int productId = Integer.parseInt(request.getParameter("productId"));
+            int warehouseId = Integer.parseInt(request.getParameter("warehouseId"));
+            
+            model.Inventory inventory = inventoryDAO.getInventoryByProductAndWarehouse(productId, warehouseId);
+            
+            int quantity = (inventory != null) ? inventory.getQuantityOnHand() : 0;
+            
+            response.getWriter().write("{\"quantity\": " + quantity + "}");
+        } catch (Exception e) {
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            response.getWriter().write("{\"error\": \"Invalid request: " + e.getMessage() + "\"}");
+            e.printStackTrace();
+        }
+    }
+
     private void createOrder(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         HttpSession session = request.getSession();
         User currentUser = SessionUtil.getUserFromSession(request);
@@ -195,7 +213,6 @@ public class SalesOrderController extends HttpServlet {
 
         try {
             // Get order information
-            String orderCode = request.getParameter("orderCode");
             String customerName = request.getParameter("customerName");
             String notes = request.getParameter("notes");
             String orderDateStr = request.getParameter("orderDate");
@@ -222,86 +239,81 @@ public class SalesOrderController extends HttpServlet {
             }
             
             // Get product details from form for validation
-            String[] productIds = request.getParameterValues("productId");
-            String[] quantities = request.getParameterValues("quantity");
-            String[] unitPrices = request.getParameterValues("unitPrice");
+            String[] productIds = request.getParameterValues("productId[]");
+            String[] quantities = request.getParameterValues("quantity[]");
+            String[] unitPrices = request.getParameterValues("unitPrice[]");
             
-            // Validate products and calculate total (with warehouse-specific stock check)
-            BigDecimal orderTotal = validateAndCalculateOrderTotal(productIds, quantities, unitPrices, warehouseId, session);
-            
-            if (orderTotal.compareTo(BigDecimal.ZERO) == 0) {
-                session.setAttribute("toastMessage", "Đơn hàng phải có ít nhất một sản phẩm hợp lệ!");
+            // Basic validation: Check if any product was added
+            if (productIds == null || productIds.length == 0) {
+                session.setAttribute("toastMessage", "Vui lòng thêm ít nhất một sản phẩm vào đơn hàng.");
                 session.setAttribute("toastType", "error");
                 response.sendRedirect(request.getContextPath() + "/sale-staff/sales-order?action=create");
                 return;
             }
             
-            // Create sales order
+            // Create sales order object
             SalesOrder salesOrder = new SalesOrder();
-            salesOrder.setOrderCode(orderCode);
             salesOrder.setCustomerName(customerName);
             salesOrder.setUserId(currentUser.getUserId());
             salesOrder.setOrderDate(orderDate);
-            salesOrder.setStatus("pending_stock_check");
+            salesOrder.setStatus("pending_stock_check"); // Set a more appropriate initial status
             salesOrder.setNotes(notes);
-
-            int salesOrderId = salesOrderDAO.insert(salesOrder);
+            salesOrder.setWarehouseId(warehouseId);
             
-            if (salesOrderId > 0) {
-                List<SalesOrderDetail> orderDetails = new ArrayList<>();
-                
-                if (productIds != null && quantities != null && unitPrices != null) {
-                    for (int i = 0; i < productIds.length; i++) {
-                        if (productIds[i] != null && !productIds[i].isEmpty() &&
-                            quantities[i] != null && !quantities[i].isEmpty() &&
-                            unitPrices[i] != null && !unitPrices[i].isEmpty()) {
-                            
-                            // Validate product exists before adding to order
-                            Product product = productDAO.findById(Integer.parseInt(productIds[i]));
-                            if (product != null && product.getIsActive()) {
-                                SalesOrderDetail detail = new SalesOrderDetail();
-                                detail.setSalesOrderId(salesOrderId);
-                                detail.setProductId(Integer.parseInt(productIds[i]));
-                                detail.setQuantityOrdered(Integer.parseInt(quantities[i]));
-                                detail.setUnitSalePrice(new BigDecimal(unitPrices[i]));
-                                
-                                orderDetails.add(detail);
-                            }
-                        }
-                    }
+            List<SalesOrderDetail> details = new ArrayList<>();
+            for (int i = 0; i < productIds.length; i++) {
+                // Skip empty rows that might be submitted
+                if (productIds[i] == null || productIds[i].isEmpty()) {
+                    continue;
                 }
                 
-                if (!orderDetails.isEmpty()) {
-                    boolean detailsInserted = salesOrderDetailDAO.insertDetails(orderDetails);
-                    if (detailsInserted) {
-                        String message = "Đơn bán hàng đã được tạo thành công! Tổng giá trị: " + 
-                                       orderTotal.toString() + " đ";
-                        if (session.getAttribute("hasStockWarning") != null) {
-                            message += " (Có cảnh báo về tồn kho)";
-                            session.removeAttribute("hasStockWarning");
-                        }
-                        session.setAttribute("toastMessage", message);
-                        session.setAttribute("toastType", "success");
-                    } else {
-                        session.setAttribute("toastMessage", "Lỗi khi tạo chi tiết đơn hàng!");
-                        session.setAttribute("toastType", "error");
-                    }
-                } else {
-                    session.setAttribute("toastMessage", "Không có sản phẩm hợp lệ nào để tạo đơn hàng!");
-                    session.setAttribute("toastType", "warning");
-                }
-            } else {
-                session.setAttribute("toastMessage", "Lỗi khi tạo đơn bán hàng!");
-                session.setAttribute("toastType", "error");
+                int productId = Integer.parseInt(productIds[i]);
+                int quantity = Integer.parseInt(quantities[i]);
+                BigDecimal unitPrice = new BigDecimal(unitPrices[i]);
+
+                // Optional: Server-side validation for stock can be added here if needed
+                
+                SalesOrderDetail detail = new SalesOrderDetail();
+                detail.setProductId(productId);
+                detail.setQuantityOrdered(quantity);
+                detail.setUnitSalePrice(unitPrice);
+                details.add(detail);
             }
             
+            if (details.isEmpty()) {
+                session.setAttribute("toastMessage", "Đơn hàng không có sản phẩm nào hợp lệ.");
+                session.setAttribute("toastType", "error");
+                response.sendRedirect(request.getContextPath() + "/sale-staff/sales-order?action=create");
+                return;
+            }
+            
+            salesOrder.setDetails(details);
+
+            // Insert into DB
+            int salesOrderId = salesOrderDAO.insert(salesOrder);
+            
+            if (salesOrderId != -1) {
+                // Insert details
+                for (SalesOrderDetail detail : salesOrder.getDetails()) {
+                    detail.setSalesOrderId(salesOrderId);
+                    salesOrderDetailDAO.insert(detail);
+                }
+                
+                session.setAttribute("toastMessage", "Tạo đơn hàng thành công!");
+                session.setAttribute("toastType", "success");
+                response.sendRedirect(request.getContextPath() + "/sale-staff/sales-order?action=list");
+            } else {
+                session.setAttribute("toastMessage", "Tạo đơn hàng thất bại. Vui lòng thử lại.");
+                session.setAttribute("toastType", "error");
+                response.sendRedirect(request.getContextPath() + "/sale-staff/sales-order?action=create");
+            }
+
         } catch (Exception e) {
             e.printStackTrace();
-            session.setAttribute("toastMessage", "Lỗi hệ thống: " + e.getMessage());
+            session.setAttribute("toastMessage", "Đã xảy ra lỗi hệ thống: " + e.getMessage());
             session.setAttribute("toastType", "error");
+            response.sendRedirect(request.getContextPath() + "/sale-staff/sales-order?action=create");
         }
-        
-        response.sendRedirect(request.getContextPath() + "/sale-staff/sales-order?action=list");
     }
 
     private void viewOrderDetails(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
@@ -327,6 +339,12 @@ public class SalesOrderController extends HttpServlet {
                 List<SalesOrderDetailDAO.SalesOrderDetailWithProduct> orderDetailsWithProduct = 
                     salesOrderDetailDAO.findBySalesOrderIdWithCompleteProductInfo(orderId);
                 
+                // Get warehouse info
+                Warehouse warehouse = null;
+                if (order.getWarehouseId() != null) {
+                    warehouse = warehouseDAO.findById(order.getWarehouseId());
+                }
+
                 // Calculate total order value
                 BigDecimal totalOrderValue = BigDecimal.ZERO;
                 for (SalesOrderDetailDAO.SalesOrderDetailWithProduct detail : orderDetailsWithProduct) {
@@ -336,6 +354,7 @@ public class SalesOrderController extends HttpServlet {
                 request.setAttribute("order", order);
                 request.setAttribute("orderDetailsWithProduct", orderDetailsWithProduct);
                 request.setAttribute("totalOrderValue", totalOrderValue);
+                request.setAttribute("warehouse", warehouse);
                 
                 request.getRequestDispatcher("/view/dashboard/saleStaff/salesOrder/viewSalesOrder.jsp").forward(request, response);
             } else {
@@ -381,6 +400,9 @@ public class SalesOrderController extends HttpServlet {
                 // Get all active products for selection
                 List<Product> products = productDAO.findActiveProducts();
                 
+                // Get all warehouses for selection
+                List<Warehouse> warehouses = warehouseDAO.findAll();
+
                 // Create a list of maps containing product and inventory information
                 List<Map<String, Object>> productsWithInventory = new ArrayList<>();
                 if (products != null && !products.isEmpty()) {
@@ -408,6 +430,7 @@ public class SalesOrderController extends HttpServlet {
                 request.setAttribute("order", order);
                 request.setAttribute("orderDetailsWithProduct", orderDetailsWithProduct);
                 request.setAttribute("products", productsWithInventory);
+                request.setAttribute("warehouses", warehouses);
                 
                 request.getRequestDispatcher("/view/dashboard/saleStaff/salesOrder/editSalesOrder.jsp").forward(request, response);
             } else {
@@ -450,12 +473,16 @@ public class SalesOrderController extends HttpServlet {
             String customerName = request.getParameter("customerName");
             String notes = request.getParameter("notes");
             String orderDateStr = request.getParameter("orderDate");
+            String warehouseIdStr = request.getParameter("warehouseId");
             
             Date orderDate = Date.valueOf(orderDateStr != null ? orderDateStr : LocalDate.now().toString());
             
             existingOrder.setCustomerName(customerName);
             existingOrder.setNotes(notes);
             existingOrder.setOrderDate(orderDate);
+            if (warehouseIdStr != null && !warehouseIdStr.isEmpty()) {
+                existingOrder.setWarehouseId(Integer.parseInt(warehouseIdStr));
+            }
             
             boolean orderUpdated = salesOrderDAO.update(existingOrder);
             
@@ -464,9 +491,9 @@ public class SalesOrderController extends HttpServlet {
                 salesOrderDetailDAO.deleteBySalesOrderId(orderId);
                 
                 // Add new order details
-                String[] productIds = request.getParameterValues("productId");
-                String[] quantities = request.getParameterValues("quantity");
-                String[] unitPrices = request.getParameterValues("unitPrice");
+                String[] productIds = request.getParameterValues("productId[]");
+                String[] quantities = request.getParameterValues("quantity[]");
+                String[] unitPrices = request.getParameterValues("unitPrice[]");
                 
                 List<SalesOrderDetail> orderDetails = new ArrayList<>();
                 

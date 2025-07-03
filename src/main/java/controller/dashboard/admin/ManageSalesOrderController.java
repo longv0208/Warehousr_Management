@@ -102,23 +102,32 @@ public class ManageSalesOrderController extends HttpServlet {
         String statusFilter = request.getParameter("status");
         String customerFilter = request.getParameter("customer");
         String userIdFilter = request.getParameter("userId");
+        String warehouseIdFilterStr = request.getParameter("warehouseId");
+        Integer warehouseIdFilter = null;
+        if (warehouseIdFilterStr != null && !warehouseIdFilterStr.isEmpty()) {
+            warehouseIdFilter = Integer.parseInt(warehouseIdFilterStr);
+        }
+
         String pageStr = request.getParameter("page");
         int page = (pageStr == null || pageStr.isEmpty()) ? 1 : Integer.parseInt(pageStr);
         int pageSize = 10;
 
-        List<SalesOrder> orders = salesOrderDAO.findOrdersWithFilters(statusFilter, customerFilter, userIdFilter, page, pageSize);
-        int totalOrders = salesOrderDAO.getTotalFilteredOrders(statusFilter, customerFilter, userIdFilter);
+        List<SalesOrder> orders = salesOrderDAO.findOrdersWithFilters(statusFilter, customerFilter, userIdFilter, warehouseIdFilter, page, pageSize);
+        int totalOrders = salesOrderDAO.getTotalFilteredOrders(statusFilter, customerFilter, userIdFilter, warehouseIdFilter);
         int totalPages = (int) Math.ceil((double) totalOrders / pageSize);
 
         // Get all users for filter dropdown
         List<User> users = userDAO.findAll();
         List<User> salesStaff = new ArrayList<>();
         for (User user : users) {
-            if ("sales_staff".equals(user.getRoleId())) {
+            if ("sales_staff".equals(user.getRoleId())) { // Assuming getRole() returns the role enum/string
                 salesStaff.add(user);
             }
         }
         
+        // Get all warehouses for filter dropdown
+        List<Warehouse> warehouses = warehouseDAO.findAll();
+
         // Prepare valid statuses for each order
         Map<Integer, List<String>> orderValidStatuses = new HashMap<>();
         Map<String, String> statusDisplayNames = new HashMap<>();
@@ -144,6 +153,8 @@ public class ManageSalesOrderController extends HttpServlet {
         request.setAttribute("statusFilter", statusFilter);
         request.setAttribute("customerFilter", customerFilter);
         request.setAttribute("userIdFilter", userIdFilter);
+        request.setAttribute("warehouseIdFilter", warehouseIdFilter);
+        request.setAttribute("warehouses", warehouses);
         request.setAttribute("orderValidStatuses", orderValidStatuses);
         request.setAttribute("statusDisplayNames", statusDisplayNames);
 
@@ -226,6 +237,7 @@ public class ManageSalesOrderController extends HttpServlet {
                 List<SalesOrderDetail> orderDetails = salesOrderDetailDAO.findBySalesOrderId(orderId);
                 List<Product> products = productDAO.findActiveProducts();
                 User creator = userDAO.findById(order.getUserId());
+                List<Warehouse> warehouses = warehouseDAO.findAll();
                 
                 // Get all users for staff selection
                 List<User> users = userDAO.findAll();
@@ -288,6 +300,7 @@ public class ManageSalesOrderController extends HttpServlet {
                 request.setAttribute("products", productsWithInventory);
                 request.setAttribute("salesStaff", salesStaff);
                 request.setAttribute("creator", creator);
+                request.setAttribute("warehouses", warehouses);
                 
                 request.getRequestDispatcher("/view/dashboard/admin/salesOrder/editSalesOrder.jsp").forward(request, response);
             } else {
@@ -327,6 +340,7 @@ public class ManageSalesOrderController extends HttpServlet {
             String orderDateStr = request.getParameter("orderDate");
             String userIdStr = request.getParameter("userId");
             String status = request.getParameter("status");
+            String warehouseIdStr = request.getParameter("warehouseId");
             
             Date orderDate = Date.valueOf(orderDateStr != null ? orderDateStr : LocalDate.now().toString());
             
@@ -335,6 +349,7 @@ public class ManageSalesOrderController extends HttpServlet {
             existingOrder.setOrderDate(orderDate);
             existingOrder.setUserId(Integer.parseInt(userIdStr));
             existingOrder.setStatus(status);
+            existingOrder.setWarehouseId(Integer.parseInt(warehouseIdStr));
             
             boolean orderUpdated = salesOrderDAO.update(existingOrder);
             

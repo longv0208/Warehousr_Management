@@ -22,6 +22,7 @@ import java.util.List;
 public class SalesOrder {
     private Integer salesOrderId;
     private String orderCode;
+    private Integer warehouseId; // Foreign key to warehouses table
     private String customerName;
     private String customerPhone; // Customer phone number
     private Integer userId;

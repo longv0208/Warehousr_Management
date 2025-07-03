@@ -26,13 +26,11 @@ public class StockOutwardDAO extends DBContext implements I_DAO<StockOutward> {
                 .reason(rs.getString("reason"))
                 .notes(rs.getString("notes"))
                 .createdAt(rs.getTimestamp("created_at"))
-                .pickRequestId(rs.getObject("pick_request_id") != null ? rs.getInt("pick_request_id") : null)
                 // Thông tin join
                 .userFullName(rs.getString("user_full_name"))
                 .warehouseName(rs.getString("warehouse_name"))
                 .salesOrderCode(rs.getString("sales_order_code"))
                 .customerName(rs.getString("customer_name"))
-                .pickRequestCode(rs.getString("pick_request_code"))
                 .build();
     }
 
@@ -43,13 +41,11 @@ public class StockOutwardDAO extends DBContext implements I_DAO<StockOutward> {
                 "u.full_name as user_full_name, " +
                 "w.warehouse_name, " +
                 "sao.order_code as sales_order_code, " +
-                "sao.customer_name, " +
-                "pr.pick_request_code " +
+                "sao.customer_name " +
                 "FROM stockoutwards so " +
                 "LEFT JOIN users u ON so.user_id = u.user_id " +
                 "LEFT JOIN warehouses w ON so.warehouse_id = w.warehouse_id " +
                 "LEFT JOIN salesorders sao ON so.sales_order_id = sao.sales_order_id " +
-                "LEFT JOIN pickrequests pr ON so.pick_request_id = pr.pick_request_id " +
                 "ORDER BY so.created_at DESC";
 
         try {
@@ -70,7 +66,7 @@ public class StockOutwardDAO extends DBContext implements I_DAO<StockOutward> {
     @Override
     public int insert(StockOutward stockOutward) {
         String sql = "INSERT INTO stockoutwards (outward_code, sales_order_id, user_id, warehouse_id, " +
-                "outward_date, reason, notes, pick_request_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+                "outward_date, reason, notes) VALUES (?, ?, ?, ?, ?, ?, ?)";
 
         try {
             conn = getConnection();
@@ -82,7 +78,6 @@ public class StockOutwardDAO extends DBContext implements I_DAO<StockOutward> {
             statement.setTimestamp(5, stockOutward.getOutwardDate());
             statement.setString(6, stockOutward.getReason());
             statement.setString(7, stockOutward.getNotes());
-            statement.setObject(8, stockOutward.getPickRequestId());
 
             int affectedRows = statement.executeUpdate();
             if (affectedRows == 0) {
@@ -142,13 +137,11 @@ public class StockOutwardDAO extends DBContext implements I_DAO<StockOutward> {
                 "u.full_name as user_full_name, " +
                 "w.warehouse_name, " +
                 "sao.order_code as sales_order_code, " +
-                "sao.customer_name, " +
-                "pr.pick_request_code " +
+                "sao.customer_name " +
                 "FROM stockoutwards so " +
                 "LEFT JOIN users u ON so.user_id = u.user_id " +
                 "LEFT JOIN warehouses w ON so.warehouse_id = w.warehouse_id " +
                 "LEFT JOIN salesorders sao ON so.sales_order_id = sao.sales_order_id " +
-                "LEFT JOIN pickrequests pr ON so.pick_request_id = pr.pick_request_id " +
                 "WHERE so.stock_outward_id = ?";
 
         try {
@@ -167,40 +160,8 @@ public class StockOutwardDAO extends DBContext implements I_DAO<StockOutward> {
         return null;
     }
 
-    public List<StockOutward> findByPickRequestId(Integer pickRequestId) {
-        List<StockOutward> stockOutwards = new ArrayList<>();
-        String sql = "SELECT so.*, " +
-                "u.full_name as user_full_name, " +
-                "w.warehouse_name, " +
-                "sao.order_code as sales_order_code, " +
-                "sao.customer_name, " +
-                "pr.pick_request_code " +
-                "FROM stockoutwards so " +
-                "LEFT JOIN users u ON so.user_id = u.user_id " +
-                "LEFT JOIN warehouses w ON so.warehouse_id = w.warehouse_id " +
-                "LEFT JOIN salesorders sao ON so.sales_order_id = sao.sales_order_id " +
-                "LEFT JOIN pickrequests pr ON so.pick_request_id = pr.pick_request_id " +
-                "WHERE so.pick_request_id = ? " +
-                "ORDER BY so.created_at DESC";
-
-        try {
-            conn = getConnection();
-            statement = conn.prepareStatement(sql);
-            statement.setInt(1, pickRequestId);
-            resultSet = statement.executeQuery();
-            while (resultSet.next()) {
-                stockOutwards.add(getFromResultSet(resultSet));
-            }
-        } catch (SQLException ex) {
-            LOGGER.log(Level.SEVERE, "Error finding stock outwards by pick request ID: " + pickRequestId, ex);
-        } finally {
-            close();
-        }
-        return stockOutwards;
-    }
-
     public String generateOutwardCode() {
-        String prefix = "SO";
+        String prefix = "SOW";
         String sql = "SELECT COUNT(*) + 1 as next_num FROM stockoutwards";
         try {
             conn = getConnection();
@@ -216,5 +177,81 @@ public class StockOutwardDAO extends DBContext implements I_DAO<StockOutward> {
             close();
         }
         return prefix + "000001";
+    }
+
+    public List<StockOutward> findWithFilters(Integer userId, Integer warehouseId, int page, int pageSize) {
+        List<StockOutward> stockOutwards = new ArrayList<>();
+        StringBuilder sql = new StringBuilder(
+                "SELECT so.*, u.full_name as user_full_name, w.warehouse_name, sao.order_code as sales_order_code, sao.customer_name " +
+                "FROM stockoutwards so " +
+                "LEFT JOIN users u ON so.user_id = u.user_id " +
+                "LEFT JOIN warehouses w ON so.warehouse_id = w.warehouse_id " +
+                "LEFT JOIN salesorders sao ON so.sales_order_id = sao.sales_order_id " +
+                "WHERE 1=1 ");
+
+        if (userId != null) {
+            sql.append("AND so.user_id = ? ");
+        }
+        if (warehouseId != null) {
+            sql.append("AND so.warehouse_id = ? ");
+        }
+
+        sql.append("ORDER BY so.created_at DESC LIMIT ? OFFSET ?");
+
+        try {
+            conn = getConnection();
+            statement = conn.prepareStatement(sql.toString());
+            int paramIndex = 1;
+            if (userId != null) {
+                statement.setInt(paramIndex++, userId);
+            }
+            if (warehouseId != null) {
+                statement.setInt(paramIndex++, warehouseId);
+            }
+            statement.setInt(paramIndex++, pageSize);
+            statement.setInt(paramIndex++, (page - 1) * pageSize);
+
+            resultSet = statement.executeQuery();
+            while (resultSet.next()) {
+                stockOutwards.add(getFromResultSet(resultSet));
+            }
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Error finding stock outwards with filters", ex);
+        } finally {
+            close();
+        }
+        return stockOutwards;
+    }
+
+    public int countWithFilters(Integer userId, Integer warehouseId) {
+        StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM stockoutwards so WHERE 1=1 ");
+        if (userId != null) {
+            sql.append("AND so.user_id = ? ");
+        }
+        if (warehouseId != null) {
+            sql.append("AND so.warehouse_id = ? ");
+        }
+
+        try {
+            conn = getConnection();
+            statement = conn.prepareStatement(sql.toString());
+            int paramIndex = 1;
+            if (userId != null) {
+                statement.setInt(paramIndex++, userId);
+            }
+            if (warehouseId != null) {
+                statement.setInt(paramIndex++, warehouseId);
+            }
+
+            resultSet = statement.executeQuery();
+            if (resultSet.next()) {
+                return resultSet.getInt(1);
+            }
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Error counting stock outwards with filters", ex);
+        } finally {
+            close();
+        }
+        return 0;
     }
 } 

@@ -438,4 +438,23 @@ public class InventoryDAO extends DBContext implements I_DAO<Inventory> {
             close();
         }
     }
+
+    public Inventory getInventoryByProductAndWarehouse(int productId, int warehouseId) {
+        String sql = "SELECT * FROM inventory WHERE product_id = ? AND warehouse_id = ?";
+        try (
+            java.sql.Connection c = getConnection(); 
+            java.sql.PreparedStatement st = c.prepareStatement(sql)
+        ) {
+            st.setInt(1, productId);
+            st.setInt(2, warehouseId);
+            try (ResultSet rs = st.executeQuery()) {
+                if (rs.next()) {
+                    return getFromResultSet(rs);
+                }
+            }
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Error getting inventory for product " + productId + " in warehouse " + warehouseId, e);
+        }
+        return null; 
+    }
 } 

@@ -27,12 +27,10 @@ public class StockOutward {
     private String reason; // sale, internal_transfer, damage, loss, other
     private String notes;
     private Timestamp createdAt;
-    private Integer pickRequestId; // Liên kết với pick request
     
     // Thông tin chi tiết để hiển thị (không có trong DB)
     private String userFullName;
     private String warehouseName;
     private String salesOrderCode;
     private String customerName;
-    private String pickRequestCode;
 } 

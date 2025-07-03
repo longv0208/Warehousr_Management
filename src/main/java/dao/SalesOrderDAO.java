@@ -12,7 +12,7 @@ public class SalesOrderDAO extends DBContext implements I_DAO<SalesOrder> {
     @Override
     public List<SalesOrder> findAll() {
         List<SalesOrder> list = new ArrayList<>();
-        String sql = "SELECT so.sales_order_id, so.order_code, so.customer_name, so.user_id, so.order_date, so.status, so.notes, so.created_at, " +
+        String sql = "SELECT so.sales_order_id, so.order_code, so.customer_name, so.user_id, so.order_date, so.status, so.notes, so.created_at, so.warehouse_id, " +
                     "u.full_name, u.email " +
                     "FROM salesorders so " +
                     "LEFT JOIN users u ON so.user_id = u.user_id " +
@@ -34,7 +34,7 @@ public class SalesOrderDAO extends DBContext implements I_DAO<SalesOrder> {
 
     @Override
     public boolean update(SalesOrder salesOrder) {
-        String sql = "UPDATE salesorders SET order_code = ?, customer_name = ?, user_id = ?, order_date = ?, status = ?, notes = ? WHERE sales_order_id = ?";
+        String sql = "UPDATE salesorders SET order_code = ?, customer_name = ?, user_id = ?, order_date = ?, status = ?, notes = ?, warehouse_id = ? WHERE sales_order_id = ?";
         try {
             conn = getConnection();
             statement = conn.prepareStatement(sql);
@@ -44,7 +44,12 @@ public class SalesOrderDAO extends DBContext implements I_DAO<SalesOrder> {
             statement.setDate(4, salesOrder.getOrderDate());
             statement.setString(5, salesOrder.getStatus());
             statement.setString(6, salesOrder.getNotes());
-            statement.setInt(7, salesOrder.getSalesOrderId());
+            if (salesOrder.getWarehouseId() != null) {
+                statement.setInt(7, salesOrder.getWarehouseId());
+            } else {
+                statement.setNull(7, java.sql.Types.INTEGER);
+            }
+            statement.setInt(8, salesOrder.getSalesOrderId());
             return statement.executeUpdate() > 0;
         } catch (SQLException e) {
             e.printStackTrace();
@@ -72,32 +77,72 @@ public class SalesOrderDAO extends DBContext implements I_DAO<SalesOrder> {
 
     @Override
     public int insert(SalesOrder salesOrder) {
-        String sql = "INSERT INTO salesorders (order_code, customer_name, user_id, order_date, status, notes) VALUES (?, ?, ?, ?, ?, ?)";
+        String insertSql = "INSERT INTO salesorders (customer_name, user_id, order_date, status, notes, warehouse_id) VALUES (?, ?, ?, ?, ?, ?)";
+        String updateSql = "UPDATE salesorders SET order_code = ? WHERE sales_order_id = ?";
+
         try {
             conn = getConnection();
-            statement = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
-            statement.setString(1, salesOrder.getOrderCode());
-            statement.setString(2, salesOrder.getCustomerName());
-            statement.setInt(3, salesOrder.getUserId());
-            statement.setDate(4, salesOrder.getOrderDate());
-            statement.setString(5, salesOrder.getStatus());
-            statement.setString(6, salesOrder.getNotes());
-            
-            int affectedRows = statement.executeUpdate();
-            if (affectedRows == 0) {
-                throw new SQLException("Creating sales order failed, no rows affected.");
-            }
-            
-            resultSet = statement.getGeneratedKeys();
-            if (resultSet.next()) {
-                return resultSet.getInt(1);
-            } else {
-                throw new SQLException("Creating sales order failed, no ID obtained.");
+            conn.setAutoCommit(false); // Start transaction
+
+            // Step 1: Insert the sales order without the order code to get the ID
+            try (PreparedStatement insertStmt = conn.prepareStatement(insertSql, Statement.RETURN_GENERATED_KEYS)) {
+                insertStmt.setString(1, salesOrder.getCustomerName());
+                insertStmt.setInt(2, salesOrder.getUserId());
+                insertStmt.setDate(3, salesOrder.getOrderDate());
+                insertStmt.setString(4, salesOrder.getStatus());
+                insertStmt.setString(5, salesOrder.getNotes());
+                if (salesOrder.getWarehouseId() != null) {
+                    insertStmt.setInt(6, salesOrder.getWarehouseId());
+                } else {
+                    insertStmt.setNull(6, java.sql.Types.INTEGER);
+                }
+
+                int affectedRows = insertStmt.executeUpdate();
+                if (affectedRows == 0) {
+                    conn.rollback();
+                    throw new SQLException("Creating sales order failed, no rows affected.");
+                }
+
+                // Step 2: Get the generated sales_order_id
+                try (ResultSet generatedKeys = insertStmt.getGeneratedKeys()) {
+                    int salesOrderId;
+                    if (generatedKeys.next()) {
+                        salesOrderId = generatedKeys.getInt(1);
+                    } else {
+                        conn.rollback();
+                        throw new SQLException("Creating sales order failed, no ID obtained.");
+                    }
+
+                    // Step 3: Generate the order code and update the record
+                    String orderCode = String.format("SO%06d", salesOrderId);
+                    try (PreparedStatement updateStmt = conn.prepareStatement(updateSql)) {
+                        updateStmt.setString(1, orderCode);
+                        updateStmt.setInt(2, salesOrderId);
+                        updateStmt.executeUpdate();
+                    }
+
+                    conn.commit(); // Commit transaction
+                    return salesOrderId;
+                }
             }
         } catch (SQLException e) {
             e.printStackTrace();
+            if (conn != null) {
+                try {
+                    conn.rollback(); // Rollback on error
+                } catch (SQLException ex) {
+                    ex.printStackTrace();
+                }
+            }
             return -1;
         } finally {
+            if (conn != null) {
+                try {
+                    conn.setAutoCommit(true);
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+            }
             close();
         }
     }
@@ -125,6 +170,7 @@ public class SalesOrderDAO extends DBContext implements I_DAO<SalesOrder> {
                 .priority("low") // Default priority since database doesn't have this field yet
                 .notes(rs.getString("notes"))
                 .createdAt(rs.getTimestamp("created_at"))
+                .warehouseId(rs.getInt("warehouse_id"))
                 .user(user)
                 .details(null) // Will be loaded separately
                 .build();
@@ -132,7 +178,7 @@ public class SalesOrderDAO extends DBContext implements I_DAO<SalesOrder> {
 
     @Override
     public SalesOrder findById(Integer id) {
-        String sql = "SELECT so.sales_order_id, so.order_code, so.customer_name, so.user_id, so.order_date, so.status, so.notes, so.created_at, " +
+        String sql = "SELECT so.sales_order_id, so.order_code, so.customer_name, so.user_id, so.order_date, so.status, so.notes, so.created_at, so.warehouse_id, " +
                     "u.full_name, u.email " +
                     "FROM salesorders so " +
                     "LEFT JOIN users u ON so.user_id = u.user_id " +
@@ -153,30 +199,11 @@ public class SalesOrderDAO extends DBContext implements I_DAO<SalesOrder> {
         return null;
     }
 
-    // Generate order code
-    public String generateOrderCode() {
-        String sql = "SELECT COUNT(*) + 1 as next_id FROM salesorders";
-        try {
-            conn = getConnection();
-            statement = conn.prepareStatement(sql);
-            resultSet = statement.executeQuery();
-            if (resultSet.next()) {
-                int nextId = resultSet.getInt("next_id");
-                return String.format("SO%06d", nextId);
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        } finally {
-            close();
-        }
-        return "SO000001";
-    }
-
     // Find orders with filters and pagination
     public List<SalesOrder> findOrdersWithFilters(String statusFilter, String customerFilter, 
-                                                  String userIdFilter, Integer page, Integer pageSize) {
+                                                  String userIdFilter, Integer warehouseIdFilter, Integer page, Integer pageSize) {
         List<SalesOrder> list = new ArrayList<>();
-        StringBuilder sql = new StringBuilder("SELECT so.sales_order_id, so.order_code, so.customer_name, so.user_id, so.order_date, so.status, so.notes, so.created_at, " +
+        StringBuilder sql = new StringBuilder("SELECT so.sales_order_id, so.order_code, so.customer_name, so.user_id, so.order_date, so.status, so.notes, so.created_at, so.warehouse_id, " +
                                              "u.full_name, u.email " +
                                              "FROM salesorders so " +
                                              "LEFT JOIN users u ON so.user_id = u.user_id " +
@@ -190,6 +217,9 @@ public class SalesOrderDAO extends DBContext implements I_DAO<SalesOrder> {
         }
         if (userIdFilter != null && !userIdFilter.trim().isEmpty()) {
             sql.append(" AND so.user_id = ?");
+        }
+        if (warehouseIdFilter != null) {
+            sql.append(" AND so.warehouse_id = ?");
         }
         
         sql.append(" ORDER BY so.created_at DESC");
@@ -212,6 +242,9 @@ public class SalesOrderDAO extends DBContext implements I_DAO<SalesOrder> {
             if (userIdFilter != null && !userIdFilter.trim().isEmpty()) {
                 statement.setInt(paramIndex++, Integer.parseInt(userIdFilter));
             }
+            if (warehouseIdFilter != null) {
+                statement.setInt(paramIndex++, warehouseIdFilter);
+            }
             
             if (page != null && pageSize != null) {
                 statement.setInt(paramIndex++, pageSize);
@@ -231,7 +264,7 @@ public class SalesOrderDAO extends DBContext implements I_DAO<SalesOrder> {
     }
 
     // Get total count for pagination
-    public Integer getTotalFilteredOrders(String statusFilter, String customerFilter, String userIdFilter) {
+    public Integer getTotalFilteredOrders(String statusFilter, String customerFilter, String userIdFilter,  Integer warehouseIdFilter) {
         StringBuilder sql = new StringBuilder("SELECT COUNT(*) as total FROM salesorders WHERE 1=1");
         
         if (statusFilter != null && !statusFilter.trim().isEmpty()) {
@@ -242,6 +275,9 @@ public class SalesOrderDAO extends DBContext implements I_DAO<SalesOrder> {
         }
         if (userIdFilter != null && !userIdFilter.trim().isEmpty()) {
             sql.append(" AND user_id = ?");
+        }
+        if (warehouseIdFilter != null) {
+            sql.append(" AND warehouse_id = ?");
         }
         
         try {
@@ -257,6 +293,9 @@ public class SalesOrderDAO extends DBContext implements I_DAO<SalesOrder> {
             }
             if (userIdFilter != null && !userIdFilter.trim().isEmpty()) {
                 statement.setInt(paramIndex++, Integer.parseInt(userIdFilter));
+            }
+            if (warehouseIdFilter != null) {
+                statement.setInt(paramIndex++, warehouseIdFilter);
             }
             
             resultSet = statement.executeQuery();
@@ -291,7 +330,7 @@ public class SalesOrderDAO extends DBContext implements I_DAO<SalesOrder> {
     // Find orders by user ID
     public List<SalesOrder> findByUserId(Integer userId) {
         List<SalesOrder> list = new ArrayList<>();
-        String sql = "SELECT so.sales_order_id, so.order_code, so.customer_name, so.user_id, so.order_date, so.status, so.notes, so.created_at, " +
+        String sql = "SELECT so.sales_order_id, so.order_code, so.customer_name, so.user_id, so.order_date, so.status, so.notes, so.created_at, so.warehouse_id, " +
                     "u.full_name, u.email " +
                     "FROM salesorders so " +
                     "LEFT JOIN users u ON so.user_id = u.user_id " +
@@ -317,7 +356,7 @@ public class SalesOrderDAO extends DBContext implements I_DAO<SalesOrder> {
      */
     public List<SalesOrder> findByStatus(String status) {
         List<SalesOrder> list = new ArrayList<>();
-        String sql = "SELECT so.sales_order_id, so.order_code, so.customer_name, so.user_id, so.order_date, so.status, so.notes, so.created_at, " +
+        String sql = "SELECT so.sales_order_id, so.order_code, so.customer_name, so.user_id, so.order_date, so.status, so.notes, so.created_at, so.warehouse_id, " +
                     "u.full_name, u.email " +
                     "FROM salesorders so " +
                     "LEFT JOIN users u ON so.user_id = u.user_id " +

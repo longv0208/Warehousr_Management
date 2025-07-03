@@ -1,4 +1,76 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
+<%-- 
+  =============================================================================
+  ==                           BACKEND NOTICE                                ==
+  =============================================================================
+  Để chức năng hiển thị tồn kho chính xác hoạt động, bạn cần thực hiện 
+  một số thay đổi ở phía backend:
+
+  1. Trong `InventoryDAO.java`, thêm phương thức sau để lấy tồn kho
+     theo sản phẩm và nhà kho:
+
+    public Inventory getInventoryByProductAndWarehouse(int productId, int warehouseId) {
+        String sql = "SELECT * FROM Inventory WHERE product_id = ? AND warehouse_id = ?";
+        try (PreparedStatement st = connection.prepareStatement(sql)) {
+            st.setInt(1, productId);
+            st.setInt(2, warehouseId);
+            try (ResultSet rs = st.executeQuery()) {
+                if (rs.next()) {
+                    return new Inventory(
+                        rs.getInt("inventory_id"),
+                        rs.getInt("product_id"),
+                        rs.getInt("warehouse_id"),
+                        rs.getInt("quantity"),
+                        rs.getTimestamp("last_updated")
+                    );
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace(); // Log error
+        }
+        return null; // Return null if not found
+    }
+
+  2. Trong `SalesOrderController.java`, cập nhật phương thức `doGet` 
+     để xử lý action "get-inventory":
+
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        String action = request.getParameter("action") == null ? "list" : request.getParameter("action");
+        switch(action) {
+            // ... các case khác
+            case "get-inventory":
+                getInventory(request, response);
+                break;
+            // ...
+        }
+    }
+
+    private void getInventory(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+        try {
+            int productId = Integer.parseInt(request.getParameter("productId"));
+            int warehouseId = Integer.parseInt(request.getParameter("warehouseId"));
+            InventoryDAO inventoryDAO = new InventoryDAO();
+            Inventory inventory = inventoryDAO.getInventoryByProductAndWarehouse(productId, warehouseId);
+            int quantity = (inventory != null) ? inventory.getQuantity() : 0;
+            response.getWriter().write("{\"quantity\": " + quantity + "}");
+        } catch (Exception e) {
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            response.getWriter().write("{\"error\": \"Invalid request\"}");
+        }
+    }
+
+  3. Trong `doPost` của `SalesOrderController.java` (khi xử lý action "create"), 
+     bạn cần đọc các tham số dưới dạng mảng vì giờ đây chúng có tên `productId[]`, `quantity[]`, v.v...
+     Ví dụ:
+     String[] productIds = request.getParameterValues("productId[]");
+     String[] quantities = request.getParameterValues("quantity[]");
+  
+  =============================================================================
+--%>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
@@ -46,43 +118,31 @@
                 <h5 class="card-title mb-0">Thông tin đơn hàng</h5>
               </div>
               <div class="card-body">
-                <div class="mb-3">
-                  <label for="orderCode" class="form-label">Mã đơn hàng</label>
-                  <input type="text" class="form-control" id="orderCode" name="orderCode" value="${orderCode}" readonly>
-                </div>
-                
-                <div class="mb-3">
-                  <label for="customerName" class="form-label">Tên khách hàng <span class="text-danger">*</span></label>
-                  <input type="text" class="form-control" id="customerName" name="customerName" required>
-                  <div class="invalid-feedback">
-                    Vui lòng nhập tên khách hàng.
+                <div class="row mb-3">
+                  <div class="col-md-6">
+                    <label for="customerName" class="form-label">Tên khách hàng</label>
+                    <input type="text" class="form-control" id="customerName" name="customerName" required>
+                  </div>
+                  <div class="col-md-6">
+                    <label for="orderDate" class="form-label">Ngày đặt hàng</label>
+                    <input type="date" class="form-control" id="orderDate" name="orderDate" value="<%= java.time.LocalDate.now() %>" required>
                   </div>
                 </div>
                 
-                <div class="mb-3">
-                  <label for="orderDate" class="form-label">Ngày đặt hàng <span class="text-danger">*</span></label>
-                  <input type="date" class="form-control" id="orderDate" name="orderDate" value="<fmt:formatDate value='<%=new java.util.Date()%>' pattern='yyyy-MM-dd'/>" required>
-                  <div class="invalid-feedback">
-                    Vui lòng chọn ngày đặt hàng.
+                <div class="row mb-3">
+                  <div class="col-md-6">
+                    <label for="warehouseId" class="form-label">Kho xuất hàng</label>
+                    <select class="form-select" id="warehouseId" name="warehouseId" required>
+                      <option value="" selected disabled>-- Chọn kho --</option>
+                      <c:forEach var="warehouse" items="${warehouses}">
+                        <option value="${warehouse.warehouseId}">${warehouse.warehouseName}</option>
+                      </c:forEach>
+                    </select>
                   </div>
-                </div>
-                
-                <div class="mb-3">
-                  <label for="warehouseId" class="form-label">Kho xuất hàng <span class="text-danger">*</span></label>
-                  <select class="form-select" id="warehouseId" name="warehouseId" required>
-                    <option value="">-- Chọn kho xuất hàng --</option>
-                    <c:forEach var="warehouse" items="${warehouses}">
-                      <option value="${warehouse.warehouseId}">${warehouse.warehouseName} - ${warehouse.address}</option>
-                    </c:forEach>
-                  </select>
-                  <div class="invalid-feedback">
-                    Vui lòng chọn kho xuất hàng.
+                  <div class="col-md-6">
+                    <label for="notes" class="form-label">Ghi chú</label>
+                    <textarea class="form-control" id="notes" name="notes" rows="1"></textarea>
                   </div>
-                </div>
-                
-                <div class="mb-3">
-                  <label for="notes" class="form-label">Ghi chú</label>
-                  <textarea class="form-control" id="notes" name="notes" rows="3" placeholder="Ghi chú về đơn hàng..."></textarea>
                 </div>
               </div>
             </div>
@@ -95,6 +155,15 @@
                 <button type="button" class="btn btn-sm btn-success" onclick="addProductRow()">+ Thêm sản phẩm</button>
               </div>
               <div class="card-body">
+                <!-- Product Table Header -->
+                <div class="row fw-bold border-bottom mb-2 pb-2 d-none d-md-flex">
+                  <div class="col-md-4">Sản phẩm</div>
+                  <div class="col-md-2">Số lượng</div>
+                  <div class="col-md-2">Đơn giá</div>
+                  <div class="col-md-2">Thành tiền</div>
+                  <div class="col-md-2">Thao tác</div>
+                </div>
+
                 <div id="productContainer">
                   <!-- Product rows will be added here -->
                 </div>
@@ -133,7 +202,6 @@
     <c:forEach var="p" items="${products}">
         <option value="${p['productId']}"
                 data-price="${p['salePrice']}"
-                data-quantity="${p['quantity']}"
                 data-unit="${p['unit']}">
             ${p['productCode']} - ${p['productName']} (${p['unit']})
         </option>
@@ -145,17 +213,10 @@
   const hasProducts = <c:out value="${not empty products}" default="false"/>;
   const productCount = <c:out value="${fn:length(products)}" default="0"/>;
   
-  // Check if products are available
   document.addEventListener('DOMContentLoaded', function() {
     if (hasProducts) {
-      console.log('Found ' + productCount + ' products available');
-      addProductRow(); // Add first product row automatically
-      iziToast.success({
-        title: 'Thành công',
-        message: 'Đã tải ' + productCount + ' sản phẩm có sẵn.'
-      });
+      addProductRow();
     } else {
-      console.error('No products available');
       iziToast.error({
         title: 'Lỗi',
         message: 'Không có sản phẩm nào có sẵn để tạo đơn hàng.'
@@ -167,57 +228,46 @@
     const tpl = document.getElementById('productOptionsTemplate');
     if (!tpl) return;
 
-    const container   = document.getElementById('productContainer');
-    const rowIndex    = productRowIndex++;
-    const rowWrapper  = document.createElement('div');
-    rowWrapper.className = 'product-row mb-3 p-3 border rounded';
-    rowWrapper.id       = 'productRow' + rowIndex;
+    const container = document.getElementById('productContainer');
+    const rowIndex = productRowIndex++;
+    const rowWrapper = document.createElement('div');
+    rowWrapper.className = 'product-row row mb-3 align-items-center';
+    rowWrapper.id = 'productRow' + rowIndex;
 
-    // Build basic row structure (without options yet)
     rowWrapper.innerHTML = `
-        <div class="row">
-          <div class="col-md-4">
-            <label class="form-label">Sản phẩm <span class="text-danger">*</span></label>
-            <select class="form-select"
-                    name="productId"
-                    onchange="updateProductInfo(this, ${rowIndex})"
-                    required>
-            </select>
-          </div>
-          <div class="col-md-2">
-            <label class="form-label">Số lượng <span class="text-danger">*</span></label>
-            <input type="number" class="form-control" name="quantity" min="1" 
-                   onchange="calculateRowTotal(${rowIndex})" 
-                   oninput="calculateRowTotal(${rowIndex})" required>
-            <small class="text-muted">Tồn: <span id="stockQuantity${rowIndex}">0</span> <span id="unit${rowIndex}"></span></small>
-          </div>
-          <div class="col-md-2">
-            <label class="form-label">Đơn giá <span class="text-danger">*</span></label>
-            <input type="number" class="form-control" name="unitPrice" step="0.01" min="0" 
-                   onchange="calculateRowTotal(${rowIndex})" 
-                   oninput="calculateRowTotal(${rowIndex})" required>
-          </div>
-          <div class="col-md-2">
-            <label class="form-label">Thành tiền</label>
+        <div class="col-md-4">
+            <label class="form-label d-md-none">Sản phẩm</label>
+            <select class="form-select" name="productId[]" onchange="updateProductInfo(this, ${rowIndex})" required></select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label d-md-none">Số lượng</label>
+            <input type="number" class="form-control" name="quantity[]" min="1" oninput="calculateRowTotal(${rowIndex})" required>
+            <small class="text-muted">Tồn: <span id="stockQuantity${rowIndex}">0</span></small>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label d-md-none">Đơn giá</label>
+            <input type="number" class="form-control" name="unitPrice[]" step="any" min="0" oninput="calculateRowTotal(${rowIndex})" required>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label d-md-none">Thành tiền</label>
             <div class="form-control-plaintext fw-bold" id="rowTotal${rowIndex}">0 đ</div>
-          </div>
-          <div class="col-md-2">
-            <label class="form-label">&nbsp;</label>
-            <button type="button" class="btn btn-danger btn-sm d-block w-100" onclick="removeProductRow(${rowIndex})">
-              <i class="fas fa-trash"></i> Xóa
-            </button>
-          </div>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label d-md-none">&nbsp;</label>
+            <button type="button" class="btn btn-danger btn-sm d-block w-100" onclick="removeProductRow(${rowIndex})">Xóa</button>
         </div>
     `;
 
     container.appendChild(rowWrapper);
 
-    // Append options from template AFTER row is in DOM
-    const selectElement = rowWrapper.querySelector('select[name="productId"]');
-    if (selectElement) {
-      // Use importNode to clone <template> content properly
-      const optionsFragment = document.importNode(tpl.content, true);
-      selectElement.appendChild(optionsFragment);
+    const selectElement = rowWrapper.querySelector('select[name="productId[]"]');
+    const optionsFragment = document.importNode(tpl.content, true);
+    selectElement.appendChild(optionsFragment);
+    
+    // Trigger warehouse check for the new row if a warehouse is already selected
+    const warehouseId = document.getElementById('warehouseId').value;
+    if (warehouseId) {
+        updateProductInfo(selectElement, rowIndex);
     }
   }
 
@@ -228,117 +278,130 @@
       calculateTotal();
     }
   }
+  
+  function updateAllStockQuantities() {
+    const productRows = document.querySelectorAll('.product-row');
+    productRows.forEach(row => {
+        const select = row.querySelector('select[name^="productId"]');
+        if (select.value) {
+            const index = parseInt(row.id.replace('productRow', ''));
+            fetchInventory(select.value, index);
+        }
+    });
+  }
 
   function updateProductInfo(selectElement, index) {
     const selectedOption = selectElement.options[selectElement.selectedIndex];
-    const price = selectedOption.getAttribute('data-price');
-    const quantity = selectedOption.getAttribute('data-quantity');
-    const unit = selectedOption.getAttribute('data-unit');
-    
     const row = selectElement.closest('.product-row');
-    const priceInput = row.querySelector('input[name="unitPrice"]');
-    const stockSpan = row.querySelector('#stockQuantity' + index);
-    const unitSpan = row.querySelector('#unit' + index);
-    const warehouseSelect = document.getElementById('warehouseId');
-    
-    if (price && quantity) {
-      priceInput.value = price;
-      
-      // Show warning about warehouse-specific stock
-      if (warehouseSelect && warehouseSelect.value) {
-        stockSpan.textContent = quantity + ' (tổng tất cả kho)';
-        stockSpan.parentElement.className = 'text-warning';
-        stockSpan.title = 'Đây là tổng tồn kho từ tất cả kho. Tồn kho tại kho đã chọn có thể khác.';
-      } else {
-        stockSpan.textContent = quantity;
-        stockSpan.parentElement.className = 'text-muted';
-        stockSpan.title = '';
-      }
-      
-      unitSpan.textContent = unit || '';
-      calculateRowTotal(index);
-      
-      // Highlight low stock
-      if (parseInt(quantity) < 10) {
-        stockSpan.parentElement.className = 'text-warning';
-      }
+    const priceInput = row.querySelector('input[name^="unitPrice"]');
+    const quantityInput = row.querySelector('input[name^="quantity"]');
+    const rowTotalDiv = row.querySelector('#rowTotal' + index);
+
+    if (!selectedOption || !selectedOption.value) {
+        priceInput.value = '';
+        quantityInput.value = '';
+        rowTotalDiv.textContent = '0 đ';
+        document.getElementById('stockQuantity' + index).textContent = '0';
+        calculateTotal();
+        return;
     }
+    
+    const price = selectedOption.getAttribute('data-price');
+    priceInput.value = price || '0';
+    
+    fetchInventory(selectElement.value, index);
+    calculateRowTotal(index);
   }
   
-  // Update all product info when warehouse changes
-  function onWarehouseChange() {
-    document.querySelectorAll('.product-row').forEach((row, index) => {
-      const productSelect = row.querySelector('select[name="productId"]');
-      if (productSelect && productSelect.value) {
-        updateProductInfo(productSelect, index);
+  function fetchInventory(productId, index) {
+      const warehouseId = document.getElementById('warehouseId').value;
+      const stockSpan = document.getElementById('stockQuantity' + index);
+      const quantityInput = document.getElementById('productRow' + index).querySelector('input[name^="quantity"]');
+
+      if (!warehouseId) {
+          stockSpan.textContent = 'Chọn kho';
+          stockSpan.className = 'text-danger';
+          quantityInput.max = null;
+          return;
       }
-    });
+      if (!productId) {
+          stockSpan.textContent = '0';
+          quantityInput.max = null;
+          return;
+      }
+
+      stockSpan.textContent = '...';
+      stockSpan.className = 'text-muted';
+
+      const url = `${pageContext.request.contextPath}/sale-staff/sales-order?action=get-inventory&productId=${productId}&warehouseId=${warehouseId}`;
+
+      fetch(url)
+          .then(response => {
+              if (!response.ok) throw new Error('Network response was not ok');
+              return response.json();
+          })
+          .then(data => {
+              if (data.error) throw new Error(data.error);
+              
+              const stock = data.quantity || 0;
+              stockSpan.textContent = stock;
+              quantityInput.max = stock; // Set max attribute for validation
+
+              quantityInput.addEventListener('input', () => {
+                  if (parseInt(quantityInput.value, 10) > stock) {
+                      stockSpan.classList.add('text-danger', 'fw-bold');
+                  } else {
+                      stockSpan.classList.remove('text-danger', 'fw-bold');
+                  }
+              });
+          })
+          .catch(error => {
+              console.error('Error fetching inventory:', error);
+              stockSpan.textContent = 'Lỗi';
+              stockSpan.className = 'text-danger';
+          });
   }
 
   function calculateRowTotal(index) {
     const row = document.getElementById('productRow' + index);
-    const quantity = parseFloat(row.querySelector('input[name="quantity"]').value) || 0;
-    const unitPrice = parseFloat(row.querySelector('input[name="unitPrice"]').value) || 0;
+    const quantity = parseFloat(row.querySelector('input[name^="quantity"]').value) || 0;
+    const unitPrice = parseFloat(row.querySelector('input[name^="unitPrice"]').value) || 0;
     const total = quantity * unitPrice;
     
-    document.getElementById('rowTotal' + index).textContent = formatCurrency(total);
+    const rowTotalEl = document.getElementById('rowTotal' + index);
+    rowTotalEl.textContent = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(total);
+    
     calculateTotal();
   }
 
   function calculateTotal() {
-    let total = 0;
-    document.querySelectorAll('.product-row').forEach(row => {
-      const quantity = parseFloat(row.querySelector('input[name="quantity"]').value) || 0;
-      const unitPrice = parseFloat(row.querySelector('input[name="unitPrice"]').value) || 0;
-      total += quantity * unitPrice;
+    let totalAmount = 0;
+    const rows = document.querySelectorAll('.product-row');
+    rows.forEach(row => {
+      const quantity = parseFloat(row.querySelector('input[name^="quantity"]').value) || 0;
+      const unitPrice = parseFloat(row.querySelector('input[name^="unitPrice"]').value) || 0;
+      totalAmount += quantity * unitPrice;
     });
-    
-    document.getElementById('totalAmount').textContent = formatCurrency(total);
+
+    const totalAmountEl = document.getElementById('totalAmount');
+    totalAmountEl.textContent = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(totalAmount);
   }
 
-  function formatCurrency(amount) {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND'
-    }).format(amount);
-  }
-
-  // Add event listener for warehouse selection
-  document.addEventListener('DOMContentLoaded', function() {
-    const warehouseSelect = document.getElementById('warehouseId');
-    if (warehouseSelect) {
-      warehouseSelect.addEventListener('change', onWarehouseChange);
-    }
-  });
-
-  // Form validation
-  (function() {
-    'use strict';
-    window.addEventListener('load', function() {
-      var forms = document.getElementsByClassName('needs-validation');
-      var validation = Array.prototype.filter.call(forms, function(form) {
-        form.addEventListener('submit', function(event) {
-          // Check if there's at least one product
-          const productRows = document.querySelectorAll('.product-row');
-          if (productRows.length === 0) {
-            event.preventDefault();
-            event.stopPropagation();
-            iziToast.warning({
-              title: 'Cảnh báo',
-              message: 'Vui lòng thêm ít nhất một sản phẩm vào đơn hàng.'
-            });
-            return;
+  // Bootstrap form validation
+  (function () {
+    'use strict'
+    var forms = document.querySelectorAll('.needs-validation')
+    Array.prototype.slice.call(forms)
+      .forEach(function (form) {
+        form.addEventListener('submit', function (event) {
+          if (!form.checkValidity()) {
+            event.preventDefault()
+            event.stopPropagation()
           }
-          
-          if (form.checkValidity() === false) {
-            event.preventDefault();
-            event.stopPropagation();
-          }
-          form.classList.add('was-validated');
-        }, false);
-      });
-    }, false);
-  })();
+          form.classList.add('was-validated')
+        }, false)
+      })
+  })()
 </script>
 
   </body>

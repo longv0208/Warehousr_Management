@@ -28,6 +28,11 @@
         width: 250px;
     }
 
+    .main {
+        margin-left: 250px; /* Same as sidebar width */
+        padding: 20px;
+    }
+
     .user-section {
         text-align: center;
         margin-bottom: 30px;
@@ -194,6 +199,13 @@
         </li>
         <% } %>
 
+        <!-- Delivery Tracking for Warehouse Manager & Admin -->
+        <% if ("admin".equals(userRole) || "warehouse_manager".equals(userRole)) { %>
+        <li class="nav-item">
+            <a href="${pageContext.request.contextPath}/delivery-tracking?action=list" class="nav-link"><i class="bi bi-geo-alt"></i><span class="link-text">Theo dõi giao hàng</span></a>
+        </li>
+        <% } %>
+
         <!-- Quản lý đơn bán hàng - Admin only -->
         <% if ("admin".equals(userRole)) { %>
         <li class="nav-item">
@@ -247,7 +259,16 @@
 
         <!-- Warehouse Staff Operations -->
         <% if ("warehouse_staff".equals(userRole)) { %>
-      
+        <li class="nav-item">
+            <a href="${pageContext.request.contextPath}/warehouse?action=list-sales-orders" class="nav-link"><i class="bi bi-box-arrow-up"></i><span class="link-text">Xuất kho bán hàng</span></a>
+        </li>
+        <% } %>
+        
+         <!-- DS Phiếu xuất kho - Warehouse Staff, Manager, Admin -->
+        <% if ("warehouse_staff".equals(userRole) || "warehouse_manager".equals(userRole) || "admin".equals(userRole)) { %>
+        <li class="nav-item">
+            <a href="${pageContext.request.contextPath}/warehouse?action=list-outwards" class="nav-link"><i class="bi bi-card-list"></i><span class="link-text">DS Phiếu Xuất Kho</span></a>
+        </li>
         <% } %>
         
          <!-- Quản lý kiểm kê - Admin only -->

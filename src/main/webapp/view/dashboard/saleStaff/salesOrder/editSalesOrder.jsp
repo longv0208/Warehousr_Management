@@ -17,24 +17,31 @@
     <input type="hidden" name="id" value="${order.salesOrderId}">
     <div class="card mb-4">
       <div class="card-body">
-        <div class="row mb-2">
+        <div class="row mb-3">
           <div class="col-md-6">
-            <label class="form-label">Mã đơn hàng</label>
-            <input type="text" class="form-control" value="${order.orderCode}" readonly>
+            <label for="customerName" class="form-label">Tên khách hàng</label>
+            <input type="text" class="form-control" id="customerName" name="customerName" value="${order.customerName}" required>
           </div>
           <div class="col-md-6">
-            <label class="form-label">Khách hàng</label>
-            <input type="text" class="form-control" name="customerName" value="${order.customerName}" required>
+            <label for="orderDate" class="form-label">Ngày đặt</label>
+            <input type="date" class="form-control" id="orderDate" name="orderDate" value="<fmt:formatDate value='${order.orderDate}' pattern='yyyy-MM-dd'/>" required>
           </div>
         </div>
-        <div class="row mb-2">
+        <div class="row mb-3">
           <div class="col-md-6">
-            <label class="form-label">Ngày đặt</label>
-            <input type="date" class="form-control" name="orderDate" value="<fmt:formatDate value='${order.orderDate}' pattern='yyyy-MM-dd'/>" required>
+            <label for="warehouseId" class="form-label">Kho xuất hàng</label>
+            <select class="form-select" id="warehouseId" name="warehouseId" required>
+              <option value="" disabled>-- Chọn kho --</option>
+              <c:forEach var="warehouse" items="${warehouses}">
+                <option value="${warehouse.warehouseId}" ${warehouse.warehouseId == order.warehouseId ? 'selected' : ''}>
+                  ${warehouse.warehouseName}
+                </option>
+              </c:forEach>
+            </select>
           </div>
           <div class="col-md-6">
-            <label class="form-label">Ghi chú</label>
-            <input type="text" class="form-control" name="notes" value="${order.notes}">
+            <label for="notes" class="form-label">Ghi chú</label>
+            <textarea class="form-control" id="notes" name="notes" rows="1">${order.notes}</textarea>
           </div>
         </div>
       </div>
