@@ -142,7 +142,7 @@
                                 <option value="INVENTORY" ${selectedEntityType == 'INVENTORY' ? 'selected' : ''}>Tồn kho</option>
                                 <option value="STOCK_TAKE" ${selectedEntityType == 'STOCK_TAKE' ? 'selected' : ''}>Kiểm kê</option>
                                 <option value="SALES_ORDER" ${selectedEntityType == 'SALES_ORDER' ? 'selected' : ''}>Đơn bán hàng</option>
-                                <option value="PURCHASE_REQUEST" ${selectedEntityType == 'PURCHASE_REQUEST' ? 'selected' : ''}>Yêu cầu nhập hàng</option>
+    
                                 <option value="USER" ${selectedEntityType == 'USER' ? 'selected' : ''}>Người dùng</option>
                                 <option value="USER_SESSION" ${selectedEntityType == 'USER_SESSION' ? 'selected' : ''}>Phiên đăng nhập</option>
                             </select>

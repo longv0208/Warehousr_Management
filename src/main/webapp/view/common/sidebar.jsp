@@ -204,12 +204,7 @@ ul#sidebarnav li a.nav-link.active {
             </li>
             <% } %>
             
-            <!-- Quản lý yêu cầu nhập hàng - Admin only -->
-            <% if ("admin".equals(userRole)) { %>
-            <li class="nav-item">
-                <a href="${pageContext.request.contextPath}/admin/purchase-management/requests" class="nav-link"><i class="bi bi-clipboard-check"></i><span class="link-text">Yêu cầu nhập hàng</span></a>
-            </li>
-            <% } %>
+
             
             <!-- Báo cáo tồn kho - Admin only -->
             <% if ("admin".equals(userRole)) { %>
@@ -241,10 +236,7 @@ ul#sidebarnav li a.nav-link.active {
             
             <!-- Warehouse Staff Operations -->
             <% if ("warehouse_staff".equals(userRole)) { %>
-            <!-- Yêu cầu nhập hàng đã duyệt -->
-            <li class="nav-item">
-                <a href="${pageContext.request.contextPath}/warehouse-staff?action=approved-purchase-requests" class="nav-link"><i class="bi bi-clipboard-check"></i><span class="link-text">YC nhập hàng đã duyệt</span></a>
-            </li>
+
             
             <!-- Quản lý nhập kho -->
             <li class="nav-item">
@@ -281,12 +273,7 @@ ul#sidebarnav li a.nav-link.active {
             </li>
             <% } %>
             
-            <!-- Yêu cầu nhập hàng - purchasing_staff only -->
-            <% if ("purchasing_staff".equals(userRole)) { %>
-            <li class="nav-item">
-                <a href="${pageContext.request.contextPath}/purchase-staff/purchase-request" class="nav-link"><i class="bi bi-plus-circle"></i><span class="link-text">Yêu cầu nhập hàng</span></a>
-            </li>
-            <% } %>
+
             
 <!--             Phiếu nhập hàng - purchasing_staff only 
             <% if ("purchasing_staff".equals(userRole)) { %>

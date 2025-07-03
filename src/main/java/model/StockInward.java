@@ -26,11 +26,9 @@ public class StockInward {
     private Timestamp inwardDate;
     private String notes;
     private Timestamp createdAt;
-    private Integer purchaseRequestId; // Liên kết với purchase request
     
     // Thông tin chi tiết để hiển thị (không có trong DB)
     private String supplierName;
     private String userFullName;
     private String warehouseName;
-    private String purchaseRequestCode;
 } 

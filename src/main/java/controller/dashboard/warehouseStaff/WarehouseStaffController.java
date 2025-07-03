@@ -25,8 +25,6 @@ public class WarehouseStaffController extends HttpServlet {
     private StockOutwardDetailDAO stockOutwardDetailDAO = new StockOutwardDetailDAO();
     private PickRequestDAO pickRequestDAO = new PickRequestDAO();
     private PickRequestDetailDAO pickRequestDetailDAO = new PickRequestDetailDAO();
-    private PurchaseRequestDAO purchaseRequestDAO = new PurchaseRequestDAO();
-    private PurchaseRequestDetailDAO purchaseRequestDetailDAO = new PurchaseRequestDetailDAO();
     private ProductDAO productDAO = new ProductDAO();
     private SupplierDAO supplierDAO = new SupplierDAO();
     private WarehouseDAO warehouseDAO = new WarehouseDAO();
@@ -74,9 +72,7 @@ public class WarehouseStaffController extends HttpServlet {
             case "view-stock-outward":
                 viewStockOutward(request, response);
                 break;
-            case "approved-purchase-requests":
-                showApprovedPurchaseRequests(request, response);
-                break;
+
             case "pending-sales-orders":
                 showPendingSalesOrders(request, response);
                 break;
@@ -149,19 +145,7 @@ public class WarehouseStaffController extends HttpServlet {
         request.getRequestDispatcher("view/dashboard/warehouseStaff/pick-request/list.jsp").forward(request, response);
     }
 
-    private void showApprovedPurchaseRequests(HttpServletRequest request, HttpServletResponse response) 
-            throws ServletException, IOException {
-        List<PurchaseRequest> approvedRequests = purchaseRequestDAO.findByStatus("approved");
-        
-        // Load details for each purchase request for modal display
-        for (PurchaseRequest purchaseRequest : approvedRequests) {
-            List<PurchaseRequestDetail> details = purchaseRequestDetailDAO.findByRequestId(purchaseRequest.getRequestId());
-            purchaseRequest.setDetails(details);
-        }
-        
-        request.setAttribute("purchaseRequests", approvedRequests);
-        request.getRequestDispatcher("view/dashboard/warehouseStaff/purchase-request/approved-list.jsp").forward(request, response);
-    }
+
 
     private void showPendingSalesOrders(HttpServletRequest request, HttpServletResponse response) 
             throws ServletException, IOException {
@@ -179,15 +163,6 @@ public class WarehouseStaffController extends HttpServlet {
 
     private void showCreateStockInward(HttpServletRequest request, HttpServletResponse response) 
             throws ServletException, IOException {
-        String purchaseRequestIdStr = request.getParameter("purchaseRequestId");
-        if (purchaseRequestIdStr != null) {
-            int purchaseRequestId = Integer.parseInt(purchaseRequestIdStr);
-            PurchaseRequest purchaseRequest = purchaseRequestDAO.findById(purchaseRequestId);
-            List<PurchaseRequestDetail> details = purchaseRequestDetailDAO.findByRequestId(purchaseRequestId);
-            request.setAttribute("purchaseRequest", purchaseRequest);
-            request.setAttribute("purchaseRequestDetails", details);
-        }
-        
         List<Supplier> suppliers = supplierDAO.findAll();
         List<Warehouse> warehouses = warehouseDAO.findAll();
         request.setAttribute("suppliers", suppliers);
@@ -201,7 +176,6 @@ public class WarehouseStaffController extends HttpServlet {
             HttpSession session = request.getSession();
             User currentUser = (User) session.getAttribute("user");
             
-            String purchaseRequestIdStr = request.getParameter("purchaseRequestId");
             String supplierIdStr = request.getParameter("supplierId");
             String warehouseIdStr = request.getParameter("warehouseId");
             String notes = request.getParameter("notes");
@@ -214,7 +188,6 @@ public class WarehouseStaffController extends HttpServlet {
                     .warehouseId(warehouseIdStr != null && !warehouseIdStr.isEmpty() ? Integer.parseInt(warehouseIdStr) : null)
                     .inwardDate(Timestamp.valueOf(LocalDateTime.now()))
                     .notes(notes)
-                    .purchaseRequestId(purchaseRequestIdStr != null && !purchaseRequestIdStr.isEmpty() ? Integer.parseInt(purchaseRequestIdStr) : null)
                     .build();
                     
             int stockInwardId = stockInwardDAO.insert(stockInward);

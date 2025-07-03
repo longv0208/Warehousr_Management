@@ -25,12 +25,10 @@ public class StockInwardDAO extends DBContext implements I_DAO<StockInward> {
                 .inwardDate(rs.getTimestamp("inward_date"))
                 .notes(rs.getString("notes"))
                 .createdAt(rs.getTimestamp("created_at"))
-                .purchaseRequestId(rs.getObject("purchase_request_id") != null ? rs.getInt("purchase_request_id") : null)
                 // Thông tin join
                 .supplierName(rs.getString("supplier_name"))
                 .userFullName(rs.getString("user_full_name"))
                 .warehouseName(rs.getString("warehouse_name"))
-                .purchaseRequestCode(rs.getString("purchase_request_code"))
                 .build();
     }
 
@@ -40,13 +38,11 @@ public class StockInwardDAO extends DBContext implements I_DAO<StockInward> {
         String sql = "SELECT si.*, " +
                 "s.supplier_name, " +
                 "u.full_name as user_full_name, " +
-                "w.warehouse_name, " +
-                "pr.request_code as purchase_request_code " +
+                "w.warehouse_name " +
                 "FROM stockinwards si " +
                 "LEFT JOIN suppliers s ON si.supplier_id = s.supplier_id " +
                 "LEFT JOIN users u ON si.user_id = u.user_id " +
                 "LEFT JOIN warehouses w ON si.warehouse_id = w.warehouse_id " +
-                "LEFT JOIN purchaserequests pr ON si.purchase_request_id = pr.request_id " +
                 "ORDER BY si.created_at DESC";
 
         try {
@@ -67,7 +63,7 @@ public class StockInwardDAO extends DBContext implements I_DAO<StockInward> {
     @Override
     public int insert(StockInward stockInward) {
         String sql = "INSERT INTO stockinwards (inward_code, supplier_id, user_id, warehouse_id, " +
-                "inward_date, notes, purchase_request_id) VALUES (?, ?, ?, ?, ?, ?, ?)";
+                "inward_date, notes) VALUES (?, ?, ?, ?, ?, ?)";
 
         try {
             conn = getConnection();
@@ -78,7 +74,6 @@ public class StockInwardDAO extends DBContext implements I_DAO<StockInward> {
             statement.setObject(4, stockInward.getWarehouseId());
             statement.setTimestamp(5, stockInward.getInwardDate());
             statement.setString(6, stockInward.getNotes());
-            statement.setObject(7, stockInward.getPurchaseRequestId());
 
             int affectedRows = statement.executeUpdate();
             if (affectedRows == 0) {
@@ -137,13 +132,11 @@ public class StockInwardDAO extends DBContext implements I_DAO<StockInward> {
         String sql = "SELECT si.*, " +
                 "s.supplier_name, " +
                 "u.full_name as user_full_name, " +
-                "w.warehouse_name, " +
-                "pr.request_code as purchase_request_code " +
+                "w.warehouse_name " +
                 "FROM stockinwards si " +
                 "LEFT JOIN suppliers s ON si.supplier_id = s.supplier_id " +
                 "LEFT JOIN users u ON si.user_id = u.user_id " +
                 "LEFT JOIN warehouses w ON si.warehouse_id = w.warehouse_id " +
-                "LEFT JOIN purchaserequests pr ON si.purchase_request_id = pr.request_id " +
                 "WHERE si.stock_inward_id = ?";
 
         try {
@@ -162,37 +155,6 @@ public class StockInwardDAO extends DBContext implements I_DAO<StockInward> {
         return null;
     }
 
-    public List<StockInward> findByPurchaseRequestId(Integer purchaseRequestId) {
-        List<StockInward> stockInwards = new ArrayList<>();
-        String sql = "SELECT si.*, " +
-                "s.supplier_name, " +
-                "u.full_name as user_full_name, " +
-                "w.warehouse_name, " +
-                "pr.request_code as purchase_request_code " +
-                "FROM stockinwards si " +
-                "LEFT JOIN suppliers s ON si.supplier_id = s.supplier_id " +
-                "LEFT JOIN users u ON si.user_id = u.user_id " +
-                "LEFT JOIN warehouses w ON si.warehouse_id = w.warehouse_id " +
-                "LEFT JOIN purchaserequests pr ON si.purchase_request_id = pr.request_id " +
-                "WHERE si.purchase_request_id = ? " +
-                "ORDER BY si.created_at DESC";
-
-        try {
-            conn = getConnection();
-            statement = conn.prepareStatement(sql);
-            statement.setInt(1, purchaseRequestId);
-            resultSet = statement.executeQuery();
-            while (resultSet.next()) {
-                stockInwards.add(getFromResultSet(resultSet));
-            }
-        } catch (SQLException ex) {
-            LOGGER.log(Level.SEVERE, "Error finding stock inwards by purchase request ID: " + purchaseRequestId, ex);
-        } finally {
-            close();
-        }
-        return stockInwards;
-    }
-
     public String generateInwardCode() {
         String prefix = "SI";
         String sql = "SELECT COUNT(*) + 1 as next_num FROM stockinwards";
@@ -202,7 +164,7 @@ public class StockInwardDAO extends DBContext implements I_DAO<StockInward> {
             resultSet = statement.executeQuery();
             if (resultSet.next()) {
                 int nextNum = resultSet.getInt("next_num");
-                return prefix + String.format("%06d", nextNum);
+                return String.format("%s%06d", prefix, nextNum);
             }
         } catch (SQLException ex) {
             LOGGER.log(Level.SEVERE, "Error generating inward code", ex);

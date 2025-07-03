@@ -139,10 +139,7 @@ public class ActivityLogger {
         log(userId, actionType, "SALES_ORDER", salesOrderId, oldValue, newValue, note);
     }
 
-    public static void logPurchaseRequestAction(Integer userId, String actionType, Integer purchaseRequestId, 
-                                              String oldValue, String newValue, String note) {
-        log(userId, actionType, "PURCHASE_REQUEST", purchaseRequestId, oldValue, newValue, note);
-    }
+
 
     public static void logUserAction(Integer userId, String actionType, Integer targetUserId, 
                                    String oldValue, String newValue, String note) {
