@@ -140,7 +140,17 @@ public class PurchaseManagementController extends HttpServlet {
             requests = purchaseRequestDAO.findAll();
         }
         
-        // TODO: Có thể thêm filter theo warehouse nếu cần
+        // Filter by warehouse if specified
+        if (warehouseIdStr != null && !warehouseIdStr.isEmpty()) {
+            try {
+                Integer warehouseId = Integer.parseInt(warehouseIdStr);
+                requests = requests.stream()
+                    .filter(req -> req.getWarehouseId() != null && req.getWarehouseId().equals(warehouseId))
+                    .collect(java.util.stream.Collectors.toList());
+            } catch (NumberFormatException e) {
+                request.getSession().setAttribute("errorMessage", "Invalid warehouse ID");
+            }
+        }
 
         List<Warehouse> warehouses = warehouseDAO.findAll();
         
@@ -210,50 +220,9 @@ public class PurchaseManagementController extends HttpServlet {
                 boolean updateSuccess = purchaseRequestDAO.update(purchaseRequest);
                 
                 if (updateSuccess) {
-                    /* 
-                    * REMOVED: Cập nhật inventory tự động khi duyệt yêu cầu
-                    * Theo yêu cầu mới: Khi duyệt yêu cầu nhập hàng chỉ dừng ở việc duyệt
-                    * mà không cập nhật số lượng trong kho ngay lập tức
-                    
-                    // Cập nhật inventory cho từng sản phẩm trong yêu cầu
-                    boolean inventoryUpdateSuccess = true;
-                    StringBuilder updateResults = new StringBuilder();
-                    
-                    for (PurchaseRequestDetail detail : details) {
-                        try {
-                            // Cập nhật số lượng trong kho
-                            boolean updated = inventoryDAO.updateQuantityAfterApproval(
-                                detail.getProductId(), 
-                                detail.getRequestedQuantity(), 
-                                purchaseRequest.getWarehouseId()
-                            );
-                            
-                            if (!updated) {
-                                inventoryUpdateSuccess = false;
-                                updateResults.append("Không thể cập nhật kho cho sản phẩm ID: ")
-                                             .append(detail.getProductId()).append(". ");
-                            }
-                        } catch (Exception e) {
-                            inventoryUpdateSuccess = false;
-                            updateResults.append("Lỗi cập nhật kho cho sản phẩm ID: ")
-                                         .append(detail.getProductId()).append(" - ").append(e.getMessage()).append(". ");
-                        }
-                    }
-                    
-                    if (inventoryUpdateSuccess) {
-                        request.getSession().setAttribute("successMessage", 
-                            "Phê duyệt yêu cầu thành công và đã cập nhật số lượng trong kho!");
-                    } else {
-                        request.getSession().setAttribute("warningMessage", 
-                            "Phê duyệt yêu cầu thành công nhưng có lỗi khi cập nhật kho: " + updateResults.toString());
-                    }
-                    */
-                    
-                    // Chỉ thông báo phê duyệt thành công mà không cập nhật kho
                     request.getSession().setAttribute("successMessage", 
                         "Phê duyệt yêu cầu nhập hàng thành công! " +
                         "Số lượng trong kho sẽ được cập nhật khi thực hiện nhập hàng thực tế.");
-                        
                 } else {
                     request.getSession().setAttribute("errorMessage", "Có lỗi xảy ra khi phê duyệt!");
                 }
@@ -580,4 +549,4 @@ public class PurchaseManagementController extends HttpServlet {
             throw new ServletException("Error generating Excel report", e);
         }
     }
-} 
+}

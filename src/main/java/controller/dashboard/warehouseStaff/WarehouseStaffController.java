@@ -294,9 +294,26 @@ public class WarehouseStaffController extends HttpServlet {
             HttpSession session = request.getSession();
             User currentUser = (User) session.getAttribute("user");
             
+            // Kiểm tra user có tồn tại trong session không
+            if (currentUser == null) {
+                session.setAttribute("toastMessage", "Phiên làm việc đã hết hạn. Vui lòng đăng nhập lại!");
+                session.setAttribute("toastType", "error");
+                response.sendRedirect("login.jsp");
+                return;
+            }
+            
             String salesOrderIdStr = request.getParameter("salesOrderId");
             String warehouseIdStr = request.getParameter("warehouseId");
             String notes = request.getParameter("notes");
+            
+            // Validate input parameters
+            if (salesOrderIdStr == null || salesOrderIdStr.isEmpty() || 
+                warehouseIdStr == null || warehouseIdStr.isEmpty()) {
+                session.setAttribute("toastMessage", "Vui lòng nhập đầy đủ thông tin!");
+                session.setAttribute("toastType", "error");
+                response.sendRedirect("warehouse-staff?action=pick-request-list");
+                return;
+            }
             
             // Tạo pick request
             PickRequest pickRequest = PickRequest.builder()

@@ -55,17 +55,20 @@ public class PurchaseRequestDAO extends DBContext implements I_DAO<PurchaseReque
     @Override
     public List<PurchaseRequest> findAll() {
         List<PurchaseRequest> requests = new ArrayList<>();
-        String sql = "SELECT pr.*, " +
-                    "u.full_name as requested_by_name, " +
-                    "w.warehouse_name, " +
-                    "s.supplier_id, s.supplier_name, s.contact_person, s.phone_number, s.email, s.address " +
-                    "FROM purchaserequests pr " +
-                    "LEFT JOIN users u ON pr.user_id_requester = u.user_id " +
-                    "LEFT JOIN warehouses w ON pr.warehouse_id = w.warehouse_id " +
-                    "LEFT JOIN purchaserequestdetails prd ON pr.request_id = prd.request_id " +
-                    "LEFT JOIN suppliers s ON prd.supplier_id_suggested = s.supplier_id " +
-                    "GROUP BY pr.request_id " +
-                    "ORDER BY pr.created_at DESC";
+        String sql = "SELECT pr.request_id, pr.request_code, pr.user_id_requester, pr.warehouse_id, " +
+                     "pr.request_date, pr.status, pr.notes, pr.created_at, " +
+                     "MAX(u.full_name) as requested_by_name, " +
+                     "MAX(w.warehouse_name) as warehouse_name, " +
+                     "MAX(s.supplier_id) as supplier_id, MAX(s.supplier_name) as supplier_name, " +
+                     "MAX(s.contact_person) as contact_person, MAX(s.phone_number) as phone_number, " +
+                     "MAX(s.email) as email, MAX(s.address) as address " +
+                     "FROM purchaserequests pr " +
+                     "LEFT JOIN users u ON pr.user_id_requester = u.user_id " +
+                     "LEFT JOIN warehouses w ON pr.warehouse_id = w.warehouse_id " +
+                     "LEFT JOIN purchaserequestdetails prd ON pr.request_id = prd.request_id " +
+                     "LEFT JOIN suppliers s ON prd.supplier_id_suggested = s.supplier_id " +
+                     "GROUP BY pr.request_id " +
+                     "ORDER BY pr.created_at DESC";
         try {
             conn = getConnection();
             statement = conn.prepareStatement(sql);
@@ -74,7 +77,9 @@ public class PurchaseRequestDAO extends DBContext implements I_DAO<PurchaseReque
                 requests.add(getFromResultSet(resultSet));
             }
         } catch (SQLException ex) {
-            LOGGER.log(Level.SEVERE, "Error getting all purchase requests", ex);
+            LOGGER.log(Level.SEVERE, "Error getting all purchase requests, SQL Error Code: " + ex.getErrorCode() + 
+                      ", SQL State: " + ex.getSQLState() + ", Message: " + ex.getMessage(), ex);
+            throw new RuntimeException("Error fetching all purchase requests", ex);
         } finally {
             close();
         }
@@ -84,7 +89,7 @@ public class PurchaseRequestDAO extends DBContext implements I_DAO<PurchaseReque
     @Override
     public int insert(PurchaseRequest request) {
         String sql = "INSERT INTO purchaserequests (request_code, user_id_requester, warehouse_id, request_date, status, notes) " +
-                    "VALUES (?, ?, ?, ?, ?, ?)";
+                     "VALUES (?, ?, ?, ?, ?, ?)";
         try {
             conn = getConnection();
             statement = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
@@ -107,8 +112,10 @@ public class PurchaseRequestDAO extends DBContext implements I_DAO<PurchaseReque
                 throw new SQLException("Creating purchase request failed, no ID obtained.");
             }
         } catch (SQLException ex) {
-            LOGGER.log(Level.SEVERE, "Error inserting purchase request: " + request.toString(), ex);
-            return -1;
+            LOGGER.log(Level.SEVERE, "Error inserting purchase request: " + request.toString() + 
+                      ", SQL Error Code: " + ex.getErrorCode() + 
+                      ", SQL State: " + ex.getSQLState() + ", Message: " + ex.getMessage(), ex);
+            throw new RuntimeException("Error inserting purchase request", ex);
         } finally {
             close();
         }
@@ -126,8 +133,10 @@ public class PurchaseRequestDAO extends DBContext implements I_DAO<PurchaseReque
 
             return statement.executeUpdate() > 0;
         } catch (SQLException ex) {
-            LOGGER.log(Level.SEVERE, "Error updating purchase request: " + request.toString(), ex);
-            return false;
+            LOGGER.log(Level.SEVERE, "Error updating purchase request: " + request.toString() + 
+                      ", SQL Error Code: " + ex.getErrorCode() + 
+                      ", SQL State: " + ex.getSQLState() + ", Message: " + ex.getMessage(), ex);
+            throw new RuntimeException("Error updating purchase request", ex);
         } finally {
             close();
         }
@@ -142,26 +151,32 @@ public class PurchaseRequestDAO extends DBContext implements I_DAO<PurchaseReque
             statement.setInt(1, request.getRequestId());
             return statement.executeUpdate() > 0;
         } catch (SQLException ex) {
-            LOGGER.log(Level.SEVERE, "Error deleting purchase request: " + request.getRequestId(), ex);
-            return false;
-        } finally {
+            LOGGER.log(Level.SEVERE, "Error deleting purchase request: " + request.getRequestId() + 
+                      ", SQL Error Code: " + ex.getErrorCode() + 
+                      ", SQL State: " + ex.getSQLState() + ", Message: " + ex.getMessage(), ex);
+            throw new RuntimeException("Error deleting purchase request", ex);
+        } finally 
+                {
             close();
         }
     }
 
     @Override
     public PurchaseRequest findById(Integer id) {
-        String sql = "SELECT pr.*, " +
-                    "u.full_name as requested_by_name, " +
-                    "w.warehouse_name, " +
-                    "s.supplier_id, s.supplier_name, s.contact_person, s.phone_number, s.email, s.address " +
-                    "FROM purchaserequests pr " +
-                    "LEFT JOIN users u ON pr.user_id_requester = u.user_id " +
-                    "LEFT JOIN warehouses w ON pr.warehouse_id = w.warehouse_id " +
-                    "LEFT JOIN purchaserequestdetails prd ON pr.request_id = prd.request_id " +
-                    "LEFT JOIN suppliers s ON prd.supplier_id_suggested = s.supplier_id " +
-                    "WHERE pr.request_id = ? " +
-                    "GROUP BY pr.request_id";
+        String sql = "SELECT pr.request_id, pr.request_code, pr.user_id_requester, pr.warehouse_id, " +
+                     "pr.request_date, pr.status, pr.notes, pr.created_at, " +
+                     "MAX(u.full_name) as requested_by_name, " +
+                     "MAX(w.warehouse_name) as warehouse_name, " +
+                     "MAX(s.supplier_id) as supplier_id, MAX(s.supplier_name) as supplier_name, " +
+                     "MAX(s.contact_person) as contact_person, MAX(s.phone_number) as phone_number, " +
+                     "MAX(s.email) as email, MAX(s.address) as address " +
+                     "FROM purchaserequests pr " +
+                     "LEFT JOIN users u ON pr.user_id_requester = u.user_id " +
+                     "LEFT JOIN warehouses w ON pr.warehouse_id = w.warehouse_id " +
+                     "LEFT JOIN purchaserequestdetails prd ON pr.request_id = prd.request_id " +
+                     "LEFT JOIN suppliers s ON prd.supplier_id_suggested = s.supplier_id " +
+                     "WHERE pr.request_id = ? " +
+                     "GROUP BY pr.request_id";
         try {
             conn = getConnection();
             statement = conn.prepareStatement(sql);
@@ -171,7 +186,10 @@ public class PurchaseRequestDAO extends DBContext implements I_DAO<PurchaseReque
                 return getFromResultSet(resultSet);
             }
         } catch (SQLException ex) {
-            LOGGER.log(Level.SEVERE, "Error finding purchase request by ID: " + id, ex);
+            LOGGER.log(Level.SEVERE, "Error finding purchase request by ID: " + id + 
+                      ", SQL Error Code: " + ex.getErrorCode() + 
+                      ", SQL State: " + ex.getSQLState() + ", Message: " + ex.getMessage(), ex);
+            throw new RuntimeException("Error finding purchase request by ID", ex);
         } finally {
             close();
         }
@@ -181,18 +199,21 @@ public class PurchaseRequestDAO extends DBContext implements I_DAO<PurchaseReque
     // Tìm kiếm theo trạng thái
     public List<PurchaseRequest> findByStatus(String status) {
         List<PurchaseRequest> requests = new ArrayList<>();
-        String sql = "SELECT pr.*, " +
-                    "u.full_name as requested_by_name, " +
-                    "w.warehouse_name, " +
-                    "s.supplier_id, s.supplier_name, s.contact_person, s.phone_number, s.email, s.address " +
-                    "FROM purchaserequests pr " +
-                    "LEFT JOIN users u ON pr.user_id_requester = u.user_id " +
-                    "LEFT JOIN warehouses w ON pr.warehouse_id = w.warehouse_id " +
-                    "LEFT JOIN purchaserequestdetails prd ON pr.request_id = prd.request_id " +
-                    "LEFT JOIN suppliers s ON prd.supplier_id_suggested = s.supplier_id " +
-                    "WHERE pr.status = ? " +
-                    "GROUP BY pr.request_id " +
-                    "ORDER BY pr.created_at DESC";
+        String sql = "SELECT pr.request_id, pr.request_code, pr.user_id_requester, pr.warehouse_id, " +
+                     "pr.request_date, pr.status, pr.notes, pr.created_at, " +
+                     "MAX(u.full_name) as requested_by_name, " +
+                     "MAX(w.warehouse_name) as warehouse_name, " +
+                     "MAX(s.supplier_id) as supplier_id, MAX(s.supplier_name) as supplier_name, " +
+                     "MAX(s.contact_person) as contact_person, MAX(s.phone_number) as phone_number, " +
+                     "MAX(s.email) as email, MAX(s.address) as address " +
+                     "FROM purchaserequests pr " +
+                     "LEFT JOIN users u ON pr.user_id_requester = u.user_id " +
+                     "LEFT JOIN warehouses w ON pr.warehouse_id = w.warehouse_id " +
+                     "LEFT JOIN purchaserequestdetails prd ON pr.request_id = prd.request_id " +
+                     "LEFT JOIN suppliers s ON prd.supplier_id_suggested = s.supplier_id " +
+                     "WHERE pr.status = ? " +
+                     "GROUP BY pr.request_id " +
+                     "ORDER BY pr.created_at DESC";
         try {
             conn = getConnection();
             statement = conn.prepareStatement(sql);
@@ -202,7 +223,10 @@ public class PurchaseRequestDAO extends DBContext implements I_DAO<PurchaseReque
                 requests.add(getFromResultSet(resultSet));
             }
         } catch (SQLException ex) {
-            LOGGER.log(Level.SEVERE, "Error finding purchase requests by status: " + status, ex);
+            LOGGER.log(Level.SEVERE, "Error finding purchase requests by status: " + status + 
+                      ", SQL Error Code: " + ex.getErrorCode() + 
+                      ", SQL State: " + ex.getSQLState() + ", Message: " + ex.getMessage(), ex);
+            throw new RuntimeException("Error finding purchase requests by status", ex);
         } finally {
             close();
         }
@@ -211,19 +235,26 @@ public class PurchaseRequestDAO extends DBContext implements I_DAO<PurchaseReque
 
     // Tìm kiếm theo user ID
     public List<PurchaseRequest> findByRequestedBy(Integer userId) {
+        if (userId == null || userId <= 0) {
+            LOGGER.log(Level.WARNING, "Invalid user ID provided: " + userId);
+            return new ArrayList<>();
+        }
         List<PurchaseRequest> requests = new ArrayList<>();
-        String sql = "SELECT pr.*, " +
-                    "u.full_name as requested_by_name, " +
-                    "w.warehouse_name, " +
-                    "s.supplier_id, s.supplier_name, s.contact_person, s.phone_number, s.email, s.address " +
-                    "FROM purchaserequests pr " +
-                    "LEFT JOIN users u ON pr.user_id_requester = u.user_id " +
-                    "LEFT JOIN warehouses w ON pr.warehouse_id = w.warehouse_id " +
-                    "LEFT JOIN purchaserequestdetails prd ON pr.request_id = prd.request_id " +
-                    "LEFT JOIN suppliers s ON prd.supplier_id_suggested = s.supplier_id " +
-                    "WHERE pr.user_id_requester = ? " +
-                    "GROUP BY pr.request_id " +
-                    "ORDER BY pr.created_at DESC";
+        String sql = "SELECT pr.request_id, pr.request_code, pr.user_id_requester, pr.warehouse_id, " +
+                     "pr.request_date, pr.status, pr.notes, pr.created_at, " +
+                     "MAX(u.full_name) as requested_by_name, " +
+                     "MAX(w.warehouse_name) as warehouse_name, " +
+                     "MAX(s.supplier_id) as supplier_id, MAX(s.supplier_name) as supplier_name, " +
+                     "MAX(s.contact_person) as contact_person, MAX(s.phone_number) as phone_number, " +
+                     "MAX(s.email) as email, MAX(s.address) as address " +
+                     "FROM purchaserequests pr " +
+                     "LEFT JOIN users u ON pr.user_id_requester = u.user_id " +
+                     "LEFT JOIN warehouses w ON pr.warehouse_id = w.warehouse_id " +
+                     "LEFT JOIN purchaserequestdetails prd ON pr.request_id = prd.request_id " +
+                     "LEFT JOIN suppliers s ON prd.supplier_id_suggested = s.supplier_id " +
+                     "WHERE pr.user_id_requester = ? " +
+                     "GROUP BY pr.request_id " +
+                     "ORDER BY pr.created_at DESC";
         try {
             conn = getConnection();
             statement = conn.prepareStatement(sql);
@@ -233,7 +264,10 @@ public class PurchaseRequestDAO extends DBContext implements I_DAO<PurchaseReque
                 requests.add(getFromResultSet(resultSet));
             }
         } catch (SQLException ex) {
-            LOGGER.log(Level.SEVERE, "Error finding purchase requests by user ID: " + userId, ex);
+            LOGGER.log(Level.SEVERE, "Error finding purchase requests by user ID: " + userId + 
+                      ", SQL Error Code: " + ex.getErrorCode() + 
+                      ", SQL State: " + ex.getSQLState() + ", Message: " + ex.getMessage(), ex);
+            throw new RuntimeException("Error fetching purchase requests by user ID", ex);
         } finally {
             close();
         }
@@ -253,10 +287,12 @@ public class PurchaseRequestDAO extends DBContext implements I_DAO<PurchaseReque
                 return prefix + String.format("%06d", nextNum);
             }
         } catch (SQLException ex) {
-            LOGGER.log(Level.SEVERE, "Error generating request code", ex);
+            LOGGER.log(Level.SEVERE, "Error generating request code, SQL Error Code: " + ex.getErrorCode() + 
+                      ", SQL State: " + ex.getSQLState() + ", Message: " + ex.getMessage(), ex);
+            throw new RuntimeException("Error generating request code", ex);
         } finally {
             close();
         }
         return prefix + "000001";
     }
-} 
+}
