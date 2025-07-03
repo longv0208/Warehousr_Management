@@ -156,173 +156,114 @@
         </li>
         <% } %>
 
-        <!-- Quản lý danh mục - Admin only -->
+        <!-- ============================================================== -->
+        <!-- Quản lý cho Admin -->
+        <!-- ============================================================== -->
         <% if ("admin".equals(userRole)) { %>
         <li class="nav-item">
             <a href="${pageContext.request.contextPath}/admin/manage-category" class="nav-link"><i class="bi bi-tags"></i><span class="link-text">Danh mục</span></a>
         </li>
-        <% } %>
-
-        <!-- Quản lý sản phẩm - Admin only -->
-        <% if ("admin".equals(userRole)) { %>
         <li class="nav-item">
             <a href="${pageContext.request.contextPath}/admin/manage-product" class="nav-link"><i class="bi bi-box-seam"></i><span class="link-text">Sản phẩm</span></a>
         </li>
-        <% } %>
-
-        <!-- Quản lý nhà cung cấp - Admin only -->
-        <% if ("admin".equals(userRole)) { %>
         <li class="nav-item">
             <a href="${pageContext.request.contextPath}/admin/manage-supplier" class="nav-link"><i class="bi bi-truck"></i><span class="link-text">Nhà cung cấp</span></a>
         </li>
-        <% } %>
-
-        <!-- Quản lý kho hàng - All roles can view -->
-        <li class="nav-item">
-            <a href="${pageContext.request.contextPath}/admin/manage-warehouse" class="nav-link"><i class="bi bi-building"></i><span class="link-text">Kho hàng</span></a>
-        </li>
-
-        <!-- Stock Inward for Warehouse Staff -->
-        <% if ("warehouse_staff".equals(userRole)) { %>
-        <li class="nav-item">
-            <a href="${pageContext.request.contextPath}/warehouse?action=list-po-for-inward" class="nav-link"><i class="bi bi-box-arrow-in-down"></i><span class="link-text">Nhập kho từ PO</span></a>
-        </li>
-        <li class="nav-item">
-            <a href="${pageContext.request.contextPath}/warehouse?action=list-stock-inward" class="nav-link"><i class="bi bi-list-check"></i><span class="link-text">Phiếu nhập kho</span></a>
-        </li>
-        <% } %>
-
-        <!-- Stock Inward for Warehouse Manager -->
-        <% if ("admin".equals(userRole) || "warehouse_manager".equals(userRole)) { %>
-        <li class="nav-item">
-            <a href="${pageContext.request.contextPath}/warehouse?action=list-stock-inward" class="nav-link"><i class="bi bi-list-check"></i><span class="link-text">Quản lý phiếu nhập kho</span></a>
-        </li>
-        <% } %>
-
-        <!-- Delivery Tracking for Warehouse Manager & Admin -->
-        <% if ("admin".equals(userRole) || "warehouse_manager".equals(userRole)) { %>
-        <li class="nav-item">
-            <a href="${pageContext.request.contextPath}/warehouse-manager/delivery?action=list" class="nav-link"><i class="bi bi-geo-alt"></i><span class="link-text">Theo dõi giao hàng</span></a>
-        </li>
-        <% } %>
-
-        <!-- Quản lý đơn bán hàng - Admin only -->
-        <% if ("admin".equals(userRole)) { %>
         <li class="nav-item">
             <a href="${pageContext.request.contextPath}/admin/manage-sales-order" class="nav-link"><i class="bi bi-receipt"></i><span class="link-text">Đơn bán hàng</span></a>
         </li>
-        <% } %>
-
-        <!-- Báo cáo tồn kho - Admin only -->
-        <% if ("admin".equals(userRole)) { %>
         <li class="nav-item">
-            <a href="${pageContext.request.contextPath}/admin/purchase-management/reports" class="nav-link"><i class="bi bi-chart-bar"></i><span class="link-text">Báo cáo tồn kho</span></a>
-        </li>
-        <% } %>
-
-        <!-- Đơn bán hàng - sales_staff only -->
-        <% if ("sales_staff".equals(userRole)) { %>
-        <li class="nav-item">
-            <a href="${pageContext.request.contextPath}/sale-staff/sales-order" class="nav-link"><i class="bi bi-receipt"></i><span class="link-text">Đơn bán hàng</span></a>
-        </li>
-        <% } %>
-
-        <!-- Purchasing Staff Menu Group -->
-        <% if ("purchasing_staff".equals(userRole)) { %>
-        <!-- Xem tồn kho -->
-        <li class="nav-item">
-            <a href="${pageContext.request.contextPath}/purchasing?action=inventory-list" class="nav-link"><i class="bi bi-boxes"></i><span class="link-text">Xem tồn kho</span></a>
-        </li>
-
-        <!-- RFQ Management -->
-        <li class="nav-item">
-            <a href="${pageContext.request.contextPath}/purchasing?action=list-rfq" class="nav-link"><i class="bi bi-file-text"></i><span class="link-text">Quản lý RFQ</span></a>
-        </li>
-
-        <!-- Purchase Order Management -->
-        <li class="nav-item">
-            <a href="${pageContext.request.contextPath}/purchasing?action=list-po" class="nav-link"><i class="bi bi-cart-plus"></i><span class="link-text">Đơn đặt hàng</span></a>
+            <a href="${pageContext.request.contextPath}/admin/stock-take" class="nav-link"><i class="bi bi-clipboard-check"></i><span class="link-text">Kiểm kê kho</span></a>
         </li>
         <li class="nav-item">
-            <a href="${pageContext.request.contextPath}/purchasing?action=list-po-for-stock-inward" class="nav-link">
-                <i class="bi bi-archive"></i><span class="link-text">Tạo phiếu nhập</span>
+            <a href="${pageContext.request.contextPath}/admin/manage-user" class="nav-link"><i class="bi bi-people"></i><span class="link-text">Người dùng</span></a>
+        </li>
+        <li class="nav-item">
+            <a href="${pageContext.request.contextPath}/admin/manage-notification" class="nav-link"><i class="bi bi-bell"></i><span class="link-text">Thông báo</span></a>
+        </li>
+         <li class="nav-item">
+            <a href="${pageContext.request.contextPath}/admin/low-stock-report" class="nav-link">
+                <i class="bi bi-exclamation-triangle"></i><span class="link-text">Hàng sắp hết</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="${pageContext.request.contextPath}/admin/activity-log" class="nav-link">
+                <i class="bi bi-journal-text"></i><span class="link-text">Lịch sử hoạt động</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="${pageContext.request.contextPath}/admin/manage-setting" class="nav-link">
+                <i class="bi bi-gear"></i><span class="link-text">Cài đặt hệ thống</span>
             </a>
         </li>
         <% } %>
 
-        <!-- Xuất kho - sales_staff only -->
-        <% if ("sales_staff".equals(userRole)) { %>
+        <!-- ============================================================== -->
+        <!-- Chức năng chung -->
+        <!-- ============================================================== -->
         <li class="nav-item">
-            <a href="stockout.jsp" class="nav-link"><i class="bi bi-arrow-up-circle"></i><span class="link-text">Xuất kho</span></a>
+            <a href="${pageContext.request.contextPath}/admin/manage-warehouse" class="nav-link"><i class="bi bi-building"></i><span class="link-text">Kho hàng</span></a>
         </li>
-        <% } %>
-
-        <!-- Warehouse Staff Operations -->
-        <% if ("warehouse_staff".equals(userRole)) { %>
-        <li class="nav-item">
-            <a href="${pageContext.request.contextPath}/warehouse?action=list-sales-orders" class="nav-link"><i class="bi bi-box-arrow-up"></i><span class="link-text">Xuất kho bán hàng</span></a>
-        </li>
-        <% } %>
-        
-         <!-- DS Phiếu xuất kho - Warehouse Staff, Manager, Admin -->
-        <% if ("warehouse_staff".equals(userRole) || "warehouse_manager".equals(userRole) || "admin".equals(userRole)) { %>
-        <li class="nav-item">
-            <a href="${pageContext.request.contextPath}/warehouse?action=list-outwards" class="nav-link"><i class="bi bi-card-list"></i><span class="link-text">DS Phiếu Xuất Kho</span></a>
-        </li>
-        <% } %>
-        
-         <!-- Quản lý kiểm kê - Admin only -->
-        <% if ("admin".equals(userRole)) { %>
-        <li class="nav-item">
-            <a href="${pageContext.request.contextPath}/admin/stock-take" class="nav-link"><i class="bi bi-clipboard-check"></i><span class="link-text">Kiểm kê kho</span></a>
-        </li>
-        <% } %>
-
-        <!-- Quản lý người dùng - Admin only -->
-        <% if ("admin".equals(userRole)) { %>
-        <li class="nav-item">
-            <a href="${pageContext.request.contextPath}/admin/manage-user" class="nav-link"><i class="bi bi-people"></i><span class="link-text">Người dùng</span></a>
-        </li>
-        <% } %>
-        
-        <!-- Quản lý thông báo - Admin only -->
-        <% if ("admin".equals(userRole)) { %>
-        <li class="nav-item">
-            <a href="${pageContext.request.contextPath}/admin/manage-notification" class="nav-link"><i class="bi bi-bell"></i><span class="link-text">Thông báo</span></a>
-        </li>
-        <% } %>
-        
-        <!-- Xem thông báo - All users -->
         <li class="nav-item">
             <a href="${pageContext.request.contextPath}/notifications" class="nav-link">
                 <i class="bi bi-bell-fill"></i><span class="link-text">Thông báo của bạn</span>
             </a>
         </li>
 
-        <!-- Báo cáo hàng sắp hết - Admin only -->
-        <% if ("admin".equals(userRole)) { %>
+        <!-- ============================================================== -->
+        <!-- Purchasing Staff -->
+        <!-- ============================================================== -->
+        <% if ("purchasing_staff".equals(userRole)) { %>
         <li class="nav-item">
-            <a href="${pageContext.request.contextPath}/admin/low-stock-report" class="nav-link">
-                <i class="bi bi-exclamation-triangle"></i><span class="link-text">Hàng sắp hết</span>
-            </a>
+            <a href="${pageContext.request.contextPath}/purchasing?action=inventory-list" class="nav-link"><i class="bi bi-boxes"></i><span class="link-text">Xem tồn kho</span></a>
+        </li>
+        <li class="nav-item">
+            <a href="${pageContext.request.contextPath}/purchasing?action=list-rfq" class="nav-link"><i class="bi bi-file-text"></i><span class="link-text">Quản lý RFQ</span></a>
+        </li>
+        <li class="nav-item">
+            <a href="${pageContext.request.contextPath}/purchasing?action=list-po" class="nav-link"><i class="bi bi-cart-plus"></i><span class="link-text">Đơn đặt hàng</span></a>
         </li>
         <% } %>
-        
-        <!-- Activity Log - Admin only -->
-        <% if ("admin".equals(userRole)) { %>
+
+        <!-- ============================================================== -->
+        <!-- Sales Staff -->
+        <!-- ============================================================== -->
+        <% if ("sales_staff".equals(userRole)) { %>
         <li class="nav-item">
-            <a href="${pageContext.request.contextPath}/admin/activity-log" class="nav-link">
-                <i class="bi bi-journal-text"></i><span class="link-text">Lịch sử hoạt động</span>
-            </a>
+            <a href="${pageContext.request.contextPath}/sale-staff/sales-order" class="nav-link"><i class="bi bi-receipt"></i><span class="link-text">Đơn bán hàng</span></a>
         </li>
         <% } %>
-        
-        <!-- System Settings - Admin only -->
-        <% if ("admin".equals(userRole)) { %>
+
+        <!-- ============================================================== -->
+        <!-- Warehouse Staff -->
+        <!-- ============================================================== -->
+        <% if ("warehouse_staff".equals(userRole)) { %>
         <li class="nav-item">
-            <a href="${pageContext.request.contextPath}/admin/manage-setting" class="nav-link">
-                <i class="bi bi-gear"></i><span class="link-text">Cài đặt hệ thống</span>
-            </a>
+            <a href="${pageContext.request.contextPath}/warehouse?action=list-po-for-inward" class="nav-link"><i class="bi bi-box-arrow-in-down"></i><span class="link-text">Nhận hàng</span></a>
+        </li>
+        <li class="nav-item">
+            <a href="${pageContext.request.contextPath}/warehouse?action=list-sales-orders" class="nav-link"><i class="bi bi-box-arrow-up"></i><span class="link-text">Xuất kho bán hàng</span></a>
+        </li>
+        <% } %>
+
+        <!-- ============================================================== -->
+        <!-- Warehouse Manager & Admin -->
+        <!-- ============================================================== -->
+        <% if ("admin".equals(userRole) || "warehouse_manager".equals(userRole)) { %>
+        <li class="nav-item">
+            <a href="${pageContext.request.contextPath}/warehouse-manager/delivery?action=list" class="nav-link"><i class="bi bi-geo-alt"></i><span class="link-text">Theo dõi giao hàng</span></a>
+        </li>
+        <% } %>
+
+        <!-- ============================================================== -->
+        <!-- Warehouse Staff, Manager & Admin -->
+        <!-- ============================================================== -->
+        <% if ("warehouse_staff".equals(userRole) || "warehouse_manager".equals(userRole) || "admin".equals(userRole)) { %>
+        <li class="nav-item">
+            <a href="${pageContext.request.contextPath}/warehouse?action=list-stock-inward" class="nav-link"><i class="bi bi-card-list"></i><span class="link-text">DS Phiếu Nhập Kho</span></a>
+        </li>
+        <li class="nav-item">
+            <a href="${pageContext.request.contextPath}/warehouse?action=list-outwards" class="nav-link"><i class="bi bi-card-list"></i><span class="link-text">DS Phiếu Xuất Kho</span></a>
         </li>
         <% } %>
     </ul>

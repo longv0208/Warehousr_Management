@@ -13,10 +13,12 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -34,6 +36,12 @@ public class WarehouseController extends HttpServlet {
     private UserDAO userDAO;
     private WarehouseDAO warehouseDAO;
     private ProductDAO productDAO;
+    private PurchaseOrderDAO purchaseOrderDAO;
+    private PurchaseOrderDetailDAO purchaseOrderDetailDAO;
+    private StockInwardDAO stockInwardDAO;
+    private StockInwardDetailDAO stockInwardDetailDAO;
+    private SupplierDAO supplierDAO;
+    private RfqDAO rfqDAO;
 
     @Override
     public void init() {
@@ -46,6 +54,12 @@ public class WarehouseController extends HttpServlet {
         userDAO = new UserDAO();
         warehouseDAO = new WarehouseDAO();
         productDAO = new ProductDAO();
+        purchaseOrderDAO = new PurchaseOrderDAO();
+        purchaseOrderDetailDAO = new PurchaseOrderDetailDAO();
+        stockInwardDAO = new StockInwardDAO();
+        stockInwardDetailDAO = new StockInwardDetailDAO();
+        supplierDAO = new SupplierDAO();
+        rfqDAO = new RfqDAO();
     }
 
     @Override
@@ -56,6 +70,18 @@ public class WarehouseController extends HttpServlet {
         }
 
         switch (action) {
+            case "list-po-for-inward":
+                handleListPoForInward(request, response);
+                break;
+            case "create-stock-inward-form":
+                handleShowCreateStockInward(request, response);
+                break;
+            case "list-stock-inward":
+                handleListStockInward(request, response);
+                break;
+            case "view-stock-inward":
+                handleViewStockInward(request, response);
+                break;
             case "list-sales-orders":
                 listSalesOrders(request, response);
                 break;
@@ -86,6 +112,9 @@ public class WarehouseController extends HttpServlet {
         }
 
         switch (action) {
+            case "create-stock-inward":
+                handleCreateAndCompleteStockInward(request, response);
+                break;
             case "create-stock-outward":
                 createStockOutward(request, response);
                 break;
@@ -95,6 +124,162 @@ public class WarehouseController extends HttpServlet {
             default:
                 listSalesOrders(request, response);
                 break;
+        }
+    }
+
+    private void handleListPoForInward(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        List<PurchaseOrder> pendingPOs = purchaseOrderDAO.findByStatus("pending");
+        request.setAttribute("pos", pendingPOs);
+        request.setAttribute("suppliers", supplierDAO.findAll());
+        request.setAttribute("warehouses", warehouseDAO.findAll());
+        request.getRequestDispatcher("/view/dashboard/warehouseStaff/po-list-for-inward.jsp").forward(request, response);
+    }
+
+    private void handleShowCreateStockInward(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        try {
+            int poId = Integer.parseInt(request.getParameter("poId"));
+            PurchaseOrder po = purchaseOrderDAO.findById(poId);
+            if (po == null) {
+                response.sendError(HttpServletResponse.SC_NOT_FOUND, "Purchase Order not found.");
+                return;
+            }
+
+            List<PurchaseOrderDetail> poDetails = purchaseOrderDetailDAO.findByPoId(poId);
+            Supplier supplier = supplierDAO.findById(po.getProviderId());
+            Warehouse warehouse = warehouseDAO.findById(po.getWarehouseId());
+            List<Product> allProducts = productDAO.findAll();
+
+            List<PurchaseOrderDetailView> detailViews = new ArrayList<>();
+            for (PurchaseOrderDetail detail : poDetails) {
+                Product product = allProducts.stream()
+                        .filter(p -> p.getProductId().equals(detail.getProductId()))
+                        .findFirst()
+                        .orElse(null);
+                detailViews.add(new PurchaseOrderDetailView(detail, product));
+            }
+
+            request.setAttribute("po", po);
+            request.setAttribute("poDetails", detailViews);
+            request.setAttribute("supplier", supplier);
+            request.setAttribute("warehouse", warehouse);
+
+            request.getRequestDispatcher("/view/dashboard/warehouseStaff/create-stock-inward.jsp").forward(request, response);
+        } catch (NumberFormatException e) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid Purchase Order ID.");
+        }
+    }
+
+    private void handleListStockInward(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        User currentUser = SessionUtil.getUserFromSession(request);
+        if (currentUser == null) {
+            response.sendRedirect(request.getContextPath() + "/login");
+            return;
+        }
+
+        List<StockInward> stockInwards;
+        String userRole = currentUser.getRoleId();
+
+        // Warehouse Manager (admin) sees all, Warehouse Staff sees their own
+        if ("admin".equals(userRole) || "warehouse_manager".equals(userRole)) {
+            stockInwards = stockInwardDAO.findAll();
+        } else if ("warehouse_staff".equals(userRole)) {
+            stockInwards = stockInwardDAO.findByCreatedBy(currentUser.getUserId());
+        } else {
+            // If user is not authorized, redirect or show an error
+            response.sendError(HttpServletResponse.SC_FORBIDDEN, "You are not authorized to view this page.");
+            return;
+        }
+
+        request.setAttribute("stockInwards", stockInwards);
+        request.getRequestDispatcher("/view/dashboard/warehouseStaff/list-stock-inward.jsp").forward(request, response);
+    }
+
+    private void handleViewStockInward(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        try {
+            int inwardId = Integer.parseInt(request.getParameter("id"));
+            StockInward stockInward = stockInwardDAO.findById(inwardId);
+            if (stockInward == null) {
+                response.sendError(HttpServletResponse.SC_NOT_FOUND, "Stock Inward record not found.");
+                return;
+            }
+
+            List<StockInwardDetail> details = stockInwardDetailDAO.findByStockInwardId(inwardId);
+
+            request.setAttribute("stockInward", stockInward);
+            request.setAttribute("details", details);
+            request.setAttribute("products", productDAO.findAll()); // To get product names
+
+            request.getRequestDispatcher("/view/dashboard/warehouseStaff/view-stock-inward.jsp").forward(request, response);
+        } catch (NumberFormatException e) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid Stock Inward ID.");
+        }
+    }
+
+    private void handleCreateAndCompleteStockInward(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        HttpSession session = request.getSession();
+        try {
+            User currentUser = SessionUtil.getUserFromSession(request);
+            int poId = Integer.parseInt(request.getParameter("poId"));
+            PurchaseOrder po = purchaseOrderDAO.findById(poId);
+            Rfq rfq = rfqDAO.findById(po.getRfqId());
+
+            StockInward stockInward = StockInward.builder()
+                    .inwardCode(stockInwardDAO.generateInwardCode())
+                    .supplierId(po.getProviderId())
+                    .userId(currentUser.getUserId())
+                    .warehouseId(po.getWarehouseId())
+                    .poId(poId)
+                    .inwardDate(LocalDateTime.now())
+                    .notes(request.getParameter("description"))
+                    .build();
+
+            int stockInwardId = stockInwardDAO.insert(stockInward);
+
+            if (stockInwardId > 0) {
+                String[] productIds = request.getParameterValues("productId");
+                String[] receivedQuantities = request.getParameterValues("actualReceivedQty");
+                String[] unitPrices = request.getParameterValues("unitPrice");
+
+                for (int i = 0; i < productIds.length; i++) {
+                    int productId = Integer.parseInt(productIds[i]);
+                    int quantity = Integer.parseInt(receivedQuantities[i]);
+                    BigDecimal unitPrice = new BigDecimal(unitPrices[i]);
+
+                    StockInwardDetail detail = StockInwardDetail.builder()
+                            .stockInwardId(stockInwardId)
+                            .productId(productId)
+                            .quantityReceived(quantity)
+                            .unitPurchasePrice(unitPrice)
+                            .build();
+                    stockInwardDetailDAO.insert(detail);
+
+                    inventoryDAO.updateQuantityOnHand(productId, po.getWarehouseId(), quantity, "add");
+                }
+
+                po.setStatus("completed");
+                purchaseOrderDAO.update(po);
+
+                if (rfq != null) {
+                    rfq.setStatus("completed");
+                    rfqDAO.update(rfq);
+                }
+
+                session.setAttribute("toastMessage", "Import receipt created successfully and inventory updated.");
+                session.setAttribute("toastType", "success");
+                response.sendRedirect(request.getContextPath() + "/warehouse?action=list-po-for-inward");
+            } else {
+                throw new Exception("Failed to create stock inward record.");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            session.setAttribute("toastMessage", "Error creating import receipt: " + e.getMessage());
+            session.setAttribute("toastType", "error");
+            response.sendRedirect(request.getContextPath() + "/warehouse?action=list-po-for-inward");
         }
     }
 

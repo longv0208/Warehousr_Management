@@ -67,7 +67,7 @@
                                         ">${po.status}</span>
                                     </td>
                                     <td>
-                                        <a href="${pageContext.request.contextPath}/warehouse?action=create-stock-inward&poId=${po.poId}" class="btn btn-primary btn-sm">
+                                        <a href="${pageContext.request.contextPath}/warehouse?action=create-stock-inward-form&poId=${po.poId}" class="btn btn-primary btn-sm">
                                             <i class="fas fa-plus-circle"></i> Create Import Receipt
                                         </a>
                                     </td>
