@@ -177,10 +177,10 @@
             <a href="${pageContext.request.contextPath}/admin/manage-warehouse" class="nav-link"><i class="bi bi-building"></i><span class="link-text">Kho hàng</span></a>
         </li>
 
-        <!-- Dashboard for Warehouse Staff -->
+        <!-- Stock Inward for Warehouse Staff -->
         <% if ("warehouse_staff".equals(userRole)) { %>
         <li class="nav-item">
-            <a href="${pageContext.request.contextPath}/warehouse-staff" class="nav-link"><i class="bi bi-speedometer2"></i><span class="link-text">Dashboard Kho</span></a>
+            <a href="${pageContext.request.contextPath}/warehouse?action=list-po-for-inward" class="nav-link"><i class="bi bi-box-arrow-in-down"></i><span class="link-text">Nhập kho</span></a>
         </li>
         <% } %>
 
@@ -237,31 +237,7 @@
 
         <!-- Warehouse Staff Operations -->
         <% if ("warehouse_staff".equals(userRole)) { %>
-        <li class="nav-item">
-            <a href="${pageContext.request.contextPath}/warehouse-staff?action=approved-po-list" class="nav-link">
-                <i class="bi bi-check-circle"></i><span class="link-text">Đơn hàng đã duyệt</span>
-            </a>
-        </li>
-        <li class="nav-item">
-            <a href="${pageContext.request.contextPath}/warehouse-staff?action=stock-inward-list" class="nav-link">
-                <i class="bi bi-box-arrow-in-down"></i><span class="link-text">Quản lý nhập kho</span>
-            </a>
-        </li>
-        <li class="nav-item">
-            <a href="${pageContext.request.contextPath}/warehouse-staff?action=pick-request-list" class="nav-link">
-                <i class="bi bi-list-check"></i><span class="link-text">Yêu cầu lấy hàng</span>
-            </a>
-        </li>
-        <li class="nav-item">
-            <a href="${pageContext.request.contextPath}/warehouse-staff?action=pending-sales-orders" class="nav-link">
-                <i class="bi bi-box-seam"></i><span class="link-text">Đơn hàng chờ xử lý</span>
-            </a>
-        </li>
-        <li class="nav-item">
-            <a href="${pageContext.request.contextPath}/warehouse-staff?action=stock-outward-list" class="nav-link">
-                <i class="bi bi-truck"></i><span class="link-text">Quản lý xuất kho</span>
-            </a>
-        </li>
+      
         <% } %>
         
          <!-- Quản lý kiểm kê - Admin only -->

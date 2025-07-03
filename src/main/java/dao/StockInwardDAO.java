@@ -65,7 +65,7 @@ public class StockInwardDAO extends DBContext implements I_DAO<StockInward> {
     @Override
     public int insert(StockInward stockInward) {
         String sql = "INSERT INTO stockinwards (inward_code, supplier_id, user_id, warehouse_id, " +
-                "purchase_request_id, inward_date, notes, po_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+                "inward_date, notes, po_id) VALUES (?, ?, ?, ?, ?, ?, ?)";
 
         try {
             conn = getConnection();
@@ -74,11 +74,10 @@ public class StockInwardDAO extends DBContext implements I_DAO<StockInward> {
             statement.setObject(2, stockInward.getSupplierId());
             statement.setInt(3, stockInward.getUserId());
             statement.setObject(4, stockInward.getWarehouseId());
-            statement.setObject(5, stockInward.getPurchaseRequestId());
-            statement.setTimestamp(6, stockInward.getInwardDate() != null ? 
+            statement.setTimestamp(5, stockInward.getInwardDate() != null ? 
                 java.sql.Timestamp.valueOf(stockInward.getInwardDate()) : null);
-            statement.setString(7, stockInward.getNotes());
-            statement.setObject(8, stockInward.getPoId());
+            statement.setString(6, stockInward.getNotes());
+            statement.setObject(7, stockInward.getPoId());
 
             int affectedRows = statement.executeUpdate();
             if (affectedRows == 0) {
