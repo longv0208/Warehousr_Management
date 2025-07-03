@@ -138,7 +138,26 @@ public class WarehouseController extends HttpServlet {
 
     private void handleListStockInward(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        List<StockInward> stockInwards = stockInwardDAO.findAll();
+        User currentUser = SessionUtil.getUserFromSession(request);
+        if (currentUser == null) {
+            response.sendRedirect(request.getContextPath() + "/login");
+            return;
+        }
+
+        List<StockInward> stockInwards;
+        String userRole = currentUser.getRoleId();
+
+        // Warehouse Manager (admin) sees all, Warehouse Staff sees their own
+        if ("admin".equals(userRole) || "warehouse_manager".equals(userRole)) {
+            stockInwards = stockInwardDAO.findAll();
+        } else if ("warehouse_staff".equals(userRole)) {
+            stockInwards = stockInwardDAO.findByCreatedBy(currentUser.getUserId());
+        } else {
+            // If user is not authorized, redirect or show an error
+            response.sendError(HttpServletResponse.SC_FORBIDDEN, "You are not authorized to view this page.");
+            return;
+        }
+        
         request.setAttribute("stockInwards", stockInwards);
         request.getRequestDispatcher("/view/dashboard/warehouseStaff/list-stock-inward.jsp").forward(request, response);
     }

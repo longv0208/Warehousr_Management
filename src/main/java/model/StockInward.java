@@ -10,6 +10,7 @@ import lombok.ToString;
 
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 @ToString
 @Builder
@@ -34,4 +35,12 @@ public class StockInward {
     private String supplierName;
     private String userFullName;
     private String warehouseName;
+
+    public String getFormattedInwardDate() {
+        if (inwardDate == null) {
+            return "";
+        }
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
+        return inwardDate.format(formatter);
+    }
 } 

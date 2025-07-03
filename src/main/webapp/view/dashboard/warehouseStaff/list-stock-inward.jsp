@@ -43,7 +43,7 @@
                                     <td>${inward.warehouseName}</td>
                                     <td>${inward.userFullName}</td>
                                     <td>
-                                        <fmt:formatDate value="${inward.inwardDate}" pattern="dd/MM/yyyy HH:mm:ss"/>
+                                        ${inward.formattedInwardDate}
                                     </td>
                                     <td>
                                         <a href="${pageContext.request.contextPath}/warehouse?action=view-stock-inward&id=${inward.stockInwardId}" class="btn btn-sm btn-info">

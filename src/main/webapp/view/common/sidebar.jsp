@@ -180,7 +180,17 @@
         <!-- Stock Inward for Warehouse Staff -->
         <% if ("warehouse_staff".equals(userRole)) { %>
         <li class="nav-item">
-            <a href="${pageContext.request.contextPath}/warehouse?action=list-po-for-inward" class="nav-link"><i class="bi bi-box-arrow-in-down"></i><span class="link-text">Nhập kho</span></a>
+            <a href="${pageContext.request.contextPath}/warehouse?action=list-po-for-inward" class="nav-link"><i class="bi bi-box-arrow-in-down"></i><span class="link-text">Nhập kho từ PO</span></a>
+        </li>
+        <li class="nav-item">
+            <a href="${pageContext.request.contextPath}/warehouse?action=list-stock-inward" class="nav-link"><i class="bi bi-list-check"></i><span class="link-text">Phiếu nhập kho</span></a>
+        </li>
+        <% } %>
+
+        <!-- Stock Inward for Warehouse Manager -->
+        <% if ("admin".equals(userRole) || "warehouse_manager".equals(userRole)) { %>
+        <li class="nav-item">
+            <a href="${pageContext.request.contextPath}/warehouse?action=list-stock-inward" class="nav-link"><i class="bi bi-list-check"></i><span class="link-text">Quản lý phiếu nhập kho</span></a>
         </li>
         <% } %>
 

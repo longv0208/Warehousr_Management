@@ -22,7 +22,6 @@ public class StockInwardDAO extends DBContext implements I_DAO<StockInward> {
                 .supplierId(rs.getInt("supplier_id"))
                 .userId(rs.getInt("user_id"))
                 .warehouseId(rs.getInt("warehouse_id"))
-                .purchaseRequestId(rs.getObject("purchase_request_id") != null ? rs.getInt("purchase_request_id") : null)
                 .inwardDate(rs.getTimestamp("inward_date") != null ? rs.getTimestamp("inward_date").toLocalDateTime() : null)
                 .notes(rs.getString("notes"))
                 .createdAt(rs.getTimestamp("created_at"))
@@ -203,5 +202,34 @@ public class StockInwardDAO extends DBContext implements I_DAO<StockInward> {
             close();
         }
         return null;
+    }
+
+    public List<StockInward> findByCreatedBy(int createdById) {
+        List<StockInward> stockInwards = new ArrayList<>();
+        String sql = "SELECT si.*, " +
+                "s.supplier_name, " +
+                "u.full_name as user_full_name, " +
+                "w.warehouse_name " +
+                "FROM stockinwards si " +
+                "LEFT JOIN suppliers s ON si.supplier_id = s.supplier_id " +
+                "LEFT JOIN users u ON si.user_id = u.user_id " +
+                "LEFT JOIN warehouses w ON si.warehouse_id = w.warehouse_id " +
+                "WHERE si.user_id = ? " +
+                "ORDER BY si.created_at DESC";
+
+        try {
+            conn = getConnection();
+            statement = conn.prepareStatement(sql);
+            statement.setInt(1, createdById);
+            resultSet = statement.executeQuery();
+            while (resultSet.next()) {
+                stockInwards.add(getFromResultSet(resultSet));
+            }
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Error getting stock inwards by created by", ex);
+        } finally {
+            close();
+        }
+        return stockInwards;
     }
 } 
