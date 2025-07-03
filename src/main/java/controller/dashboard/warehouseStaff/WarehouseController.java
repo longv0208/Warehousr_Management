@@ -33,6 +33,7 @@ public class WarehouseController extends HttpServlet {
     private DeliveryTrackingDAO deliveryTrackingDAO;
     private UserDAO userDAO;
     private WarehouseDAO warehouseDAO;
+    private ProductDAO productDAO;
 
     @Override
     public void init() {
@@ -44,6 +45,7 @@ public class WarehouseController extends HttpServlet {
         deliveryTrackingDAO = new DeliveryTrackingDAO();
         userDAO = new UserDAO();
         warehouseDAO = new WarehouseDAO();
+        productDAO = new ProductDAO();
     }
 
     @Override
@@ -113,28 +115,72 @@ public class WarehouseController extends HttpServlet {
         User creator = userDAO.findById(order.getUserId());
         Warehouse warehouse = warehouseDAO.findById(order.getWarehouseId());
 
-        boolean allInStock = true;
         Map<Integer, Integer> inventoryInfo = new HashMap<>();
         for (SalesOrderDetailDAO.SalesOrderDetailWithProduct detail : details) {
             int stock = inventoryDAO.getQuantityByProductIdAndWarehouse(detail.getProductId(), order.getWarehouseId());
             inventoryInfo.put(detail.getProductId(), stock);
-            if (stock < detail.getQuantityOrdered()) {
-                allInStock = false;
-            }
         }
 
         request.setAttribute("order", order);
         request.setAttribute("details", details);
-        request.setAttribute("allInStock", allInStock);
         request.setAttribute("inventoryInfo", inventoryInfo);
         request.setAttribute("creator", creator);
         request.setAttribute("warehouse", warehouse);
         request.getRequestDispatcher("/view/dashboard/warehouseStaff/sales/view.jsp").forward(request, response);
     }
 
-    private void confirmStock(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    private void confirmStock(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
+        HttpSession session = request.getSession();
         int orderId = Integer.parseInt(request.getParameter("id"));
-        salesOrderDAO.updateStatus(orderId, "awaiting_shipment");
+        SalesOrder order = salesOrderDAO.findById(orderId);
+
+        if (order == null) {
+            session.setAttribute("toastMessage", "Không tìm thấy đơn hàng!");
+            session.setAttribute("toastType", "error");
+            response.sendRedirect(request.getContextPath() + "/warehouse?action=list-sales-orders");
+            return;
+        }
+
+        // Ensure order is in the correct state to be confirmed
+        if (!"pending_stock_check".equals(order.getStatus())) {
+            session.setAttribute("toastMessage", "Đơn hàng không ở trạng thái 'Chờ kiểm tra kho' nên không thể xác nhận.");
+            session.setAttribute("toastType", "warning");
+            response.sendRedirect(request.getContextPath() + "/warehouse?action=view-sales-order&id=" + orderId);
+            return;
+        }
+
+        List<SalesOrderDetail> orderDetails = salesOrderDetailDAO.findBySalesOrderId(orderId);
+        StringBuilder insufficientStockMessage = new StringBuilder();
+
+        for (SalesOrderDetail detail : orderDetails) {
+            int availableQuantity = inventoryDAO.getQuantityByProductIdAndWarehouse(detail.getProductId(), order.getWarehouseId());
+            if (detail.getQuantityOrdered() > availableQuantity) {
+                Product product = productDAO.findById(detail.getProductId());
+                if (insufficientStockMessage.length() > 0) {
+                    insufficientStockMessage.append("<br>");
+                }
+                insufficientStockMessage.append("Không đủ tồn kho cho sản phẩm: <b>")
+                        .append(product.getProductName()).append(" (").append(product.getProductCode()).append(")</b>")
+                        .append(". Yêu cầu: ").append(detail.getQuantityOrdered())
+                        .append(", Tồn kho: ").append(availableQuantity);
+            }
+        }
+
+        if (insufficientStockMessage.length() > 0) {
+            session.setAttribute("toastMessage", insufficientStockMessage.toString());
+            session.setAttribute("toastType", "error");
+            response.sendRedirect(request.getContextPath() + "/warehouse?action=view-sales-order&id=" + orderId);
+            return;
+        }
+
+        boolean updated = salesOrderDAO.updateStatus(orderId, "awaiting_shipment");
+        if (updated) {
+            session.setAttribute("toastMessage", "Xác nhận tồn kho thành công. Đơn hàng đã chuyển sang trạng thái Chờ giao hàng.");
+            session.setAttribute("toastType", "success");
+        } else {
+            session.setAttribute("toastMessage", "Lỗi khi cập nhật trạng thái đơn hàng.");
+            session.setAttribute("toastType", "error");
+        }
         response.sendRedirect(request.getContextPath() + "/warehouse?action=view-sales-order&id=" + orderId);
     }
 

@@ -475,6 +475,40 @@ public class ManageSalesOrderController extends HttpServlet {
                 response.sendRedirect(request.getContextPath() + "/admin/manage-sales-order?action=list");
                 return;
             }
+
+            // Check stock availability before updating to "awaiting_shipment"
+            if ("awaiting_shipment".equals(newStatus)) {
+                if (order.getWarehouseId() == null) {
+                    session.setAttribute("toastMessage", "Đơn hàng chưa được gán kho. Vui lòng gán kho trước khi xác nhận.");
+                    session.setAttribute("toastType", "error");
+                    response.sendRedirect(request.getContextPath() + "/admin/manage-sales-order?action=view&id=" + orderId);
+                    return;
+                }
+
+                List<SalesOrderDetail> orderDetails = salesOrderDetailDAO.findBySalesOrderId(orderId);
+                StringBuilder insufficientStockMessage = new StringBuilder();
+
+                for (SalesOrderDetail detail : orderDetails) {
+                    int availableQuantity = inventoryDAO.getQuantityByProductIdAndWarehouse(detail.getProductId(), order.getWarehouseId());
+                    if (detail.getQuantityOrdered() > availableQuantity) {
+                        Product product = productDAO.findById(detail.getProductId());
+                        if (insufficientStockMessage.length() > 0) {
+                            insufficientStockMessage.append("<br>");
+                        }
+                        insufficientStockMessage.append("Không đủ tồn kho cho sản phẩm: <b>")
+                                .append(product.getProductName()).append(" (").append(product.getProductCode()).append(")</b>")
+                                .append(". Yêu cầu: ").append(detail.getQuantityOrdered())
+                                .append(", Tồn kho: ").append(availableQuantity);
+                    }
+                }
+
+                if (insufficientStockMessage.length() > 0) {
+                    session.setAttribute("toastMessage", insufficientStockMessage.toString());
+                    session.setAttribute("toastType", "error");
+                    response.sendRedirect(request.getContextPath() + "/admin/manage-sales-order?action=view&id=" + orderId);
+                    return;
+                }
+            }
             
             boolean updated = salesOrderDAO.updateStatus(orderId, newStatus);
             

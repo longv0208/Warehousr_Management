@@ -74,15 +74,10 @@
 
                                         <div class="mt-4">
                                             <c:if test="${order.status == 'pending_stock_check'}">
-                                                <form action="${pageContext.request.contextPath}/warehouse" method="POST" style="display: inline;">
+                                                <form action="${pageContext.request.contextPath}/warehouse" method="GET" style="display: inline;">
                                                     <input type="hidden" name="action" value="confirm-stock">
                                                     <input type="hidden" name="id" value="${order.salesOrderId}">
-                                                    <c:if test="${allInStock}">
-                                                        <button type="submit" class="btn btn-success">Confirm Stock Availability</button>
-                                                    </c:if>
-                                                    <c:if test="${!allInStock}">
-                                                        <p class="text-danger">Cannot confirm: One or more items are out of stock.</p>
-                                                    </c:if>
+                                                    <button type="submit" class="btn btn-success">Confirm Stock Availability</button>
                                                 </form>
                                             </c:if>
                                             <c:if test="${order.status == 'awaiting_shipment'}">
