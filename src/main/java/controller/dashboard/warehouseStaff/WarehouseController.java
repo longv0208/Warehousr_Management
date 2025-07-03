@@ -223,7 +223,7 @@ public class WarehouseController extends HttpServlet {
             for (SalesOrderDetail detail : details) {
                 StockOutwardDetail sod = new StockOutwardDetail(null, stockOutwardId, detail.getProductId(), detail.getQuantityOrdered(), null, null, null);
                 stockOutwardDetailDAO.insert(sod);
-                inventoryDAO.updateQuantityOnHand(detail.getProductId(), order.getWarehouseId(), detail.getQuantityOrdered(), "decrease");
+                inventoryDAO.decreaseQuantity(detail.getProductId(), order.getWarehouseId(), detail.getQuantityOrdered());
             }
 
             boolean statusUpdated = salesOrderDAO.updateStatus(orderId, "shipped");

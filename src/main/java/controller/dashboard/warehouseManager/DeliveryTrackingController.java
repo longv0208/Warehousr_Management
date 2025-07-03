@@ -2,33 +2,31 @@ package controller.dashboard.warehouseManager;
 
 import dao.DeliveryTrackingDAO;
 import dao.SalesOrderDAO;
-import dao.UserDAO;
 import model.DeliveryTracking;
-import model.User;
+import model.SalesOrder;
 import utils.SessionUtil;
+import model.User;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
+
 import java.io.IOException;
-import java.sql.Timestamp;
-import java.time.Instant;
 import java.util.List;
 
-@WebServlet(name = "DeliveryTrackingController", urlPatterns = {"/delivery-tracking"})
+@WebServlet(name = "DeliveryTrackingController", urlPatterns = {"/warehouse-manager/delivery"})
 public class DeliveryTrackingController extends HttpServlet {
 
     private DeliveryTrackingDAO deliveryTrackingDAO;
     private SalesOrderDAO salesOrderDAO;
-    private UserDAO userDAO;
 
     @Override
     public void init() {
         deliveryTrackingDAO = new DeliveryTrackingDAO();
         salesOrderDAO = new SalesOrderDAO();
-        userDAO = new UserDAO();
     }
 
     @Override
@@ -38,96 +36,109 @@ public class DeliveryTrackingController extends HttpServlet {
             action = "list";
         }
 
+        // Role check
         User currentUser = SessionUtil.getUserFromSession(request);
-        if (currentUser == null || (!"admin".equals(currentUser.getRoleId()) && !"warehouse_manager".equals(currentUser.getRoleId()))) {
+        if (currentUser == null || !"warehouse_manager".equals(currentUser.getRoleId())) {
             response.sendError(HttpServletResponse.SC_FORBIDDEN, "You are not authorized to access this page.");
             return;
         }
 
         switch (action) {
             case "list":
-                listTrackings(request, response);
+                listDeliveries(request, response);
                 break;
             case "view":
-                viewTracking(request, response);
+                viewDelivery(request, response);
                 break;
             default:
-                listTrackings(request, response);
+                listDeliveries(request, response);
                 break;
         }
     }
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-         String action = request.getParameter("action");
-        if (action == null) {
-            response.sendRedirect(request.getContextPath() + "/delivery-tracking?action=list");
-            return;
-        }
+        String action = request.getParameter("action");
 
+        // Role check
         User currentUser = SessionUtil.getUserFromSession(request);
-        if (currentUser == null || (!"admin".equals(currentUser.getRoleId()) && !"warehouse_manager".equals(currentUser.getRoleId()))) {
+        if (currentUser == null || !"warehouse_manager".equals(currentUser.getRoleId())) {
             response.sendError(HttpServletResponse.SC_FORBIDDEN, "You are not authorized to perform this action.");
             return;
         }
-
-        switch (action) {
-            case "update":
-                updateTrackingStatus(request, response);
-                break;
-            default:
-                 response.sendRedirect(request.getContextPath() + "/delivery-tracking?action=list");
-                break;
+        
+        if ("update-status".equals(action)) {
+            updateDeliveryStatus(request, response);
+        } else {
+            response.sendRedirect(request.getContextPath() + "/warehouse-manager/delivery?action=list");
         }
     }
 
-    private void listTrackings(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        List<DeliveryTrackingDAO.DeliveryTrackingInfo> trackingList = deliveryTrackingDAO.getAllDeliveryTrackingInfo();
-        request.setAttribute("trackingList", trackingList);
+    private void listDeliveries(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        List<DeliveryTracking> deliveries = deliveryTrackingDAO.findAllWithSalesOrderDetails();
+        request.setAttribute("deliveries", deliveries);
         request.getRequestDispatcher("/view/dashboard/warehouseManager/delivery/list.jsp").forward(request, response);
     }
 
-    private void viewTracking(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    private void viewDelivery(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         try {
-            int salesOrderId = Integer.parseInt(request.getParameter("soId"));
+            int salesOrderId = Integer.parseInt(request.getParameter("id"));
+            SalesOrder salesOrder = salesOrderDAO.findById(salesOrderId);
             List<DeliveryTracking> trackingHistory = deliveryTrackingDAO.findBySalesOrderId(salesOrderId);
 
+            request.setAttribute("salesOrder", salesOrder);
             request.setAttribute("trackingHistory", trackingHistory);
-            request.setAttribute("salesOrder", salesOrderDAO.findById(salesOrderId));
-            request.setAttribute("userDAO", userDAO); // Pass DAO for fetching user names
             request.getRequestDispatcher("/view/dashboard/warehouseManager/delivery/view.jsp").forward(request, response);
         } catch (NumberFormatException e) {
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid Sales Order ID.");
+            response.sendRedirect(request.getContextPath() + "/warehouse-manager/delivery?action=list");
         }
     }
 
-    private void updateTrackingStatus(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    private void updateDeliveryStatus(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        HttpSession session = request.getSession();
         try {
             int salesOrderId = Integer.parseInt(request.getParameter("salesOrderId"));
-            String location = request.getParameter("location");
-            String status = request.getParameter("status");
+            String newStatus = request.getParameter("status");
             String notes = request.getParameter("notes");
-            User currentUser = SessionUtil.getUserFromSession(request);
+
+            // Basic validation
+            if (newStatus == null || newStatus.isEmpty()) {
+                session.setAttribute("toastMessage", "Status cannot be empty.");
+                session.setAttribute("toastType", "error");
+                response.sendRedirect(request.getContextPath() + "/warehouse-manager/delivery?action=view&id=" + salesOrderId);
+                return;
+            }
 
             DeliveryTracking newTracking = DeliveryTracking.builder()
                     .salesOrderId(salesOrderId)
-                    .location(location)
-                    .status(status)
+                    .status(newStatus)
                     .notes(notes)
-                    .updatedBy(currentUser.getUserId())
-                    .updateTime(Timestamp.from(Instant.now()))
                     .build();
 
-            deliveryTrackingDAO.insert(newTracking);
+            int result = deliveryTrackingDAO.insert(newTracking);
             
-            request.getSession().setAttribute("toastMessage", "Delivery status updated successfully.");
-            request.getSession().setAttribute("toastType", "success");
-            response.sendRedirect(request.getContextPath() + "/delivery-tracking?action=view&soId=" + salesOrderId);
+            // Also update the main sales order status if the delivery is completed or failed
+            if ("delivered".equals(newStatus) || "failed".equals(newStatus)) {
+                String finalStatus = "completed"; // Assume 'delivered' means 'completed'
+                if("failed".equals(newStatus)){
+                    finalStatus = "failed"; // Or some other status to indicate failure
+                }
+                salesOrderDAO.updateStatus(salesOrderId, finalStatus);
+            }
 
+
+            if (result != -1) {
+                session.setAttribute("toastMessage", "Delivery status updated successfully.");
+                session.setAttribute("toastType", "success");
+            } else {
+                session.setAttribute("toastMessage", "Failed to update delivery status.");
+                session.setAttribute("toastType", "error");
+            }
         } catch (NumberFormatException e) {
-             request.getSession().setAttribute("toastMessage", "Invalid data provided.");
-             request.getSession().setAttribute("toastType", "error");
-             response.sendRedirect(request.getContextPath() + "/delivery-tracking?action=list");
+            session.setAttribute("toastMessage", "Invalid Order ID.");
+            session.setAttribute("toastType", "error");
         }
+        
+        response.sendRedirect(request.getContextPath() + "/warehouse-manager/delivery?action=view&id=" + request.getParameter("salesOrderId"));
     }
 } 

@@ -202,7 +202,7 @@
         <!-- Delivery Tracking for Warehouse Manager & Admin -->
         <% if ("admin".equals(userRole) || "warehouse_manager".equals(userRole)) { %>
         <li class="nav-item">
-            <a href="${pageContext.request.contextPath}/delivery-tracking?action=list" class="nav-link"><i class="bi bi-geo-alt"></i><span class="link-text">Theo dõi giao hàng</span></a>
+            <a href="${pageContext.request.contextPath}/warehouse-manager/delivery?action=list" class="nav-link"><i class="bi bi-geo-alt"></i><span class="link-text">Theo dõi giao hàng</span></a>
         </li>
         <% } %>
 

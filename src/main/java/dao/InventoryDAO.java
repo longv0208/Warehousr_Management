@@ -230,22 +230,32 @@ public class InventoryDAO extends DBContext implements I_DAO<Inventory> {
     }
 
     /**
-     * Decrease quantity for a product (for sales)
+     * Decrease quantity for a product in a specific warehouse (for sales, transfers, etc.)
+     * This method ensures that the stock doesn't go below zero.
+     *
+     * @param productId The ID of the product.
+     * @param warehouseId The ID of the warehouse.
+     * @param decreaseAmount The amount to decrease.
+     * @return true if the update was successful, false otherwise.
      */
-    public boolean decreaseQuantity(Integer productId, Integer decreaseAmount) {
-        String sql = "UPDATE inventory SET quantity_on_hand = quantity_on_hand - ? WHERE product_id = ? AND quantity_on_hand >= ?";
+    public boolean decreaseQuantity(Integer productId, Integer warehouseId, Integer decreaseAmount) {
+        String sql = "UPDATE inventory SET quantity_on_hand = quantity_on_hand - ? "
+                + "WHERE product_id = ? AND warehouse_id = ? AND quantity_on_hand >= ?";
         try {
-            conn = getConnection();
+            conn = getConnection(); // Assuming getConnection() is handled by DBContext
             statement = conn.prepareStatement(sql);
             statement.setInt(1, decreaseAmount);
             statement.setInt(2, productId);
-            statement.setInt(3, decreaseAmount);
-            return statement.executeUpdate() > 0;
+            statement.setInt(3, warehouseId);
+            statement.setInt(4, decreaseAmount); // Ensure we have enough stock
+
+            int rowsAffected = statement.executeUpdate();
+            return rowsAffected > 0; // Returns true if a row was updated
         } catch (SQLException ex) {
-            LOGGER.log(Level.SEVERE, "Error decreasing quantity for product ID: " + productId, ex);
+            LOGGER.log(Level.SEVERE, "Error decreasing quantity for product ID: " + productId + " in warehouse: " + warehouseId, ex);
             return false;
         } finally {
-            close();
+            close(); // Manages closing connections
         }
     }
 

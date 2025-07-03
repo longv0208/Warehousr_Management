@@ -13,42 +13,48 @@
                 <main class="content">
                     <div class="container-fluid p-0">
                         <h1 class="h3 mb-3">Delivery Tracking</h1>
-                        <div class="card">
-                            <div class="card-header">
-                                <h5 class="card-title">All Shipments</h5>
-                            </div>
-                            <div class="card-body">
-                                <table class="table table-striped">
-                                    <thead>
-                                        <tr>
-                                            <th>Order Code</th>
-                                            <th>Customer</th>
-                                            <th>Last Status</th>
-                                            <th>Last Location</th>
-                                            <th>Last Updated</th>
-                                            <th>Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <c:forEach var="tracking" items="${trackingList}">
-                                            <tr>
-                                                <td>${tracking.orderCode}</td>
-                                                <td>${tracking.customerName}</td>
-                                                <td><span class="badge bg-info">${tracking.lastStatus}</span></td>
-                                                <td>${tracking.lastLocation}</td>
-                                                <td><fmt:formatDate value="${tracking.lastUpdateTime}" pattern="dd-MM-yyyy HH:mm"/></td>
-                                                <td>
-                                                    <a href="${pageContext.request.contextPath}/delivery-tracking?action=view&soId=${tracking.salesOrderId}" class="btn btn-primary btn-sm">View Details</a>
-                                                </td>
-                                            </tr>
-                                        </c:forEach>
-                                        <c:if test="${empty trackingList}">
-                                            <tr>
-                                                <td colspan="6" class="text-center">No shipments to track.</td>
-                                            </tr>
-                                        </c:if>
-                                    </tbody>
-                                </table>
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5 class="card-title">Orders in Transit</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <table class="table table-striped">
+                                            <thead>
+                                                <tr>
+                                                    <th>Order Code</th>
+                                                    <th>Customer</th>
+                                                    <th>Last Status</th>
+                                                    <th>Last Updated</th>
+                                                    <th>Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <c:forEach var="delivery" items="${deliveries}">
+                                                    <tr>
+                                                        <td>${delivery.salesOrder.orderCode}</td>
+                                                        <td>${delivery.salesOrder.customerName}</td>
+                                                        <td>
+                                                            <span class="badge ${delivery.status == 'shipped' ? 'bg-primary' : (delivery.status == 'delivered' ? 'bg-success' : 'bg-danger')}">
+                                                                ${delivery.status}
+                                                            </span>
+                                                        </td>
+                                                        <td><fmt:formatDate value="${delivery.updatedAt}" pattern="dd-MM-yyyy HH:mm:ss"/></td>
+                                                        <td>
+                                                            <a href="${pageContext.request.contextPath}/warehouse-manager/delivery?action=view&id=${delivery.salesOrderId}" class="btn btn-sm btn-info">View Details</a>
+                                                        </td>
+                                                    </tr>
+                                                </c:forEach>
+                                                <c:if test="${empty deliveries}">
+                                                    <tr>
+                                                        <td colspan="5" class="text-center">No deliveries in transit.</td>
+                                                    </tr>
+                                                </c:if>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -56,5 +62,6 @@
                 <jsp:include page="../../../common/foot.jsp"/>
             </div>
         </div>
+        <script src="${pageContext.request.contextPath}/js/app.js"></script>
     </body>
 </html> 
