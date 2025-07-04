@@ -51,7 +51,11 @@
                                                 </tr>
                                             </thead>
                                             <tbody>
+                                                <c:set var="allInStock" value="${true}" />
                                                 <c:forEach var="detail" items="${details}">
+                                                     <c:if test="${detail.quantityOrdered > inventoryInfo[detail.productId]}">
+                                                        <c:set var="allInStock" value="${false}" />
+                                                    </c:if>
                                                     <tr>
                                                         <td>${detail.productName}</td>
                                                         <td><fmt:formatNumber value="${detail.unitSalePrice}" type="currency" currencySymbol="₫"/></td>
@@ -73,7 +77,7 @@
                                         </table>
 
                                         <div class="mt-4">
-                                            <c:if test="${order.status == 'pending_stock_check'}">
+                                            <c:if test="${order.status == 'pending_stock_check' && allInStock}">
                                                 <form action="${pageContext.request.contextPath}/warehouse" method="GET" style="display: inline;">
                                                     <input type="hidden" name="action" value="confirm-stock">
                                                     <input type="hidden" name="id" value="${order.salesOrderId}">

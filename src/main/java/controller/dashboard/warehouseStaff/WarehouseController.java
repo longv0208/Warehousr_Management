@@ -284,12 +284,31 @@ public class WarehouseController extends HttpServlet {
     }
 
     private void listSalesOrders(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        String[] statuses = {"pending_stock_check", "awaiting_shipment", "shipped"};
-        List<SalesOrder> orders = new ArrayList<>();
-        for (String status : statuses) {
-            orders.addAll(salesOrderDAO.findByStatus(status));
+        String statusFilter = request.getParameter("status");
+        String warehouseIdFilterStr = request.getParameter("warehouseId");
+        Integer warehouseIdFilter = null;
+        if (warehouseIdFilterStr != null && !warehouseIdFilterStr.isEmpty()) {
+            warehouseIdFilter = Integer.parseInt(warehouseIdFilterStr);
         }
+
+        List<String> statuses = List.of("pending_stock_check", "awaiting_shipment");
+
+        List<SalesOrder> orders = salesOrderDAO.findOrdersWithFilters(
+            statusFilter,
+            null,
+            null,
+            warehouseIdFilter,
+            1, 
+            1000 
+        );
+
         request.setAttribute("orders", orders);
+        request.setAttribute("statuses", statuses);
+        request.setAttribute("warehouses", warehouseDAO.findAll());
+        request.setAttribute("users", userDAO.findAll());
+        request.setAttribute("statusFilter", statusFilter);
+        request.setAttribute("warehouseIdFilter", warehouseIdFilter);
+
         request.getRequestDispatcher("/view/dashboard/warehouseStaff/sales/list.jsp").forward(request, response);
     }
 
