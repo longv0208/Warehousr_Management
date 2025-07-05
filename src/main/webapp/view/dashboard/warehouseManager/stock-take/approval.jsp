@@ -8,7 +8,7 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8" />
-    <title>Quản Lý Kho Hàng - Xem Đơn Kiểm Kê</title>
+    <title>Warehouse Manager - Đối Soát Kiểm Kê</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono&display=swap" rel="stylesheet"/>
     <link href="./styles/index.css" rel="stylesheet"/>
@@ -38,7 +38,7 @@
     </style>
 </head>
 <body>
-<jsp:include page="../common/sidebar.jsp" />
+<jsp:include page="../../../common/sidebar.jsp" />
 
 <div class="container-fluid">
     <div class="row">
@@ -46,11 +46,11 @@
         <main class="col-md-10 px-md-4 py-4">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
-                    <h3><i class="bi bi-clipboard-check"></i> Xem Đơn Kiểm Kê</h3>
+                    <h3><i class="bi bi-clipboard-check"></i> Đối Soát Kiểm Kê - Warehouse Manager</h3>
                     <p class="text-muted mb-0">Phiếu: ${stockTake.stockTakeCode} - Ngày: <fmt:formatDate value="${stockTake.stockTakeDate}" pattern="dd/MM/yyyy HH:mm" /></p>
                 </div>
                 <div>
-                    <a href="${pageContext.request.contextPath}/stock-take" class="btn btn-secondary">Quay lại</a>
+                    <a href="${pageContext.request.contextPath}/warehouse-manager/stock-take" class="btn btn-secondary">Quay lại</a>
                 </div>
             </div>
 
@@ -199,12 +199,8 @@
                                                     <td><strong>${detail.productCode}</strong></td>
                                                     <td>${detail.productName}</td>
                                                     <td class="text-center">${detail.unit}</td>
-                                                    <td class="text-center">
-                                                        <span class="badge bg-secondary">${detail.systemQuantity}</span>
-                                                    </td>
-                                                    <td class="text-center">
-                                                        <span class="badge bg-primary">${detail.countedQuantity}</span>
-                                                    </td>
+                                                    <td class="text-center"><strong>${detail.systemQuantity}</strong></td>
+                                                    <td class="text-center"><strong>${detail.countedQuantity}</strong></td>
                                                     <td class="text-center">
                                                         <span class="badge ${diff > 0 ? 'bg-success' : 'bg-danger'} fs-6">
                                                             ${diff > 0 ? '+' : ''}${diff}
@@ -212,8 +208,8 @@
                                                     </td>
                                                     <td class="text-center">
                                                         <c:if test="${detail.systemQuantity > 0}">
-                                                            <c:set var="percentage" value="${diff * 100 / detail.systemQuantity}" />
-                                                            <span class="badge ${Math.abs(percentage) > 10 ? 'bg-danger' : 'bg-warning'}">
+                                                            <c:set var="percentage" value="${(diff * 100) / detail.systemQuantity}" />
+                                                            <span class="badge ${Math.abs(percentage) > 10 ? 'bg-danger' : 'bg-warning'} text-dark">
                                                                 <fmt:formatNumber value="${percentage}" maxFractionDigits="1" />%
                                                             </span>
                                                         </c:if>
@@ -229,27 +225,36 @@
                 </div>
             </c:if>
 
-            <!-- Phần điều chỉnh tồn kho - Chuyển sang Warehouse Manager -->
+            <!-- Phần điều chỉnh tồn kho cho Warehouse Manager -->
             <c:if test="${stockTake.status == 'completed'}">
                 <div class="row">
                     <div class="col-md-12">
-                        <div class="card border-warning">
-                            <div class="card-header bg-warning text-dark">
-                                <h5 class="mb-0"><i class="bi bi-exclamation-triangle"></i> Quyền Đối Soát Đã Chuyển</h5>
+                        <div class="card border-success">
+                            <div class="card-header bg-success text-white">
+                                <h5 class="mb-0"><i class="bi bi-arrow-repeat"></i> Đối Soát & Điều chỉnh tồn kho</h5>
                             </div>
                             <div class="card-body">
-                                <div class="alert alert-warning">
-                                    <i class="bi bi-info-circle"></i>
-                                    <strong>Thông báo:</strong> Chức năng đối soát và điều chỉnh tồn kho hiện tại được thực hiện bởi <strong>Warehouse Manager</strong>.
-                                    <br><strong>Admin chỉ có thể xem kết quả.</strong>
-                                    <br>Vui lòng liên hệ Warehouse Manager để thực hiện đối soát phiếu kiểm kê này.
-                                </div>
-                                
-                                <div class="d-grid">
-                                    <button type="button" class="btn btn-secondary btn-lg" disabled>
-                                        <i class="bi bi-lock"></i> Chức năng đối soát đã chuyển cho Warehouse Manager
-                                    </button>
-                                </div>
+                                <form id="reconcileForm" method="POST" action="${pageContext.request.contextPath}/warehouse-manager/stock-take">
+                                    <input type="hidden" name="action" value="reconcile">
+                                    <input type="hidden" name="stockTakeId" value="${stockTake.stockTakeId}">
+                                    
+                                    <div class="mb-3">
+                                        <div class="alert alert-info">
+                                            <i class="bi bi-info-circle"></i>
+                                            <strong>Lưu ý:</strong> Việc đối soát sẽ cập nhật số lượng trong inventory theo số lượng kiểm đếm thực tế.
+                                            <c:if test="${not empty discrepancies}">
+                                                <br><strong>Sẽ điều chỉnh ${discrepancies.size()} sản phẩm có chênh lệch.</strong>
+                                            </c:if>
+                                            <br><strong>Quyền hạn:</strong> Warehouse Manager có thể thực hiện đối soát và điều chỉnh tồn kho.
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="d-grid">
+                                        <button type="button" class="btn btn-success btn-lg" onclick="confirmReconcile()">
+                                            <i class="bi bi-arrow-repeat"></i> Đối Soát & Điều chỉnh tồn kho
+                                        </button>
+                                    </div>
+                                </form>
                             </div>
                         </div>
                     </div>
@@ -261,8 +266,8 @@
                     <div class="col-12">
                         <div class="alert alert-success text-center" role="alert">
                             <i class="bi bi-check-circle-fill fs-1"></i>
-                            <h4 class="mt-2">Đã điều chỉnh tồn kho</h4>
-                            <p class="mb-0">Tồn kho đã được cập nhật theo kết quả kiểm kê.</p>
+                            <h4 class="mt-2">Đã đối soát và điều chỉnh tồn kho</h4>
+                            <p class="mb-0">Tồn kho đã được cập nhật theo kết quả kiểm kê bởi Warehouse Manager.</p>
                         </div>
                     </div>
                 </div>
@@ -275,6 +280,9 @@
                             <i class="bi bi-check-circle-fill fs-1"></i>
                             <h4 class="mt-2">Kiểm kê chính xác 100%</h4>
                             <p class="mb-0">Tất cả sản phẩm đều khớp với số lượng hệ thống. Không cần điều chỉnh tồn kho!</p>
+                            <button type="button" class="btn btn-success mt-2" onclick="markAsReconciled()">
+                                <i class="bi bi-check-circle"></i> Đánh dấu đã đối soát
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -285,13 +293,45 @@
 
 <script>
 function confirmReconcile() {
-    if (confirm('Bạn có chắc chắn muốn điều chỉnh tồn kho theo kết quả kiểm kê?\n\nSau khi điều chỉnh, số lượng tồn kho sẽ được cập nhật theo số lượng kiểm đếm thực tế.')) {
+    const message = "Bạn có chắc chắn muốn đối soát và điều chỉnh tồn kho theo kết quả kiểm kê?\n\n" +
+                   "Thao tác này sẽ:\n" +
+                   "1. Cập nhật số lượng tồn kho theo số lượng kiểm đếm thực tế\n" +
+                   "2. Thay đổi trạng thái phiếu thành 'Đã đối soát'\n" +
+                   "3. Không thể hoàn tác sau khi thực hiện\n\n" +
+                   "Nhấn OK để tiếp tục hoặc Cancel để hủy.";
+    
+    if (confirm(message)) {
         document.getElementById('reconcileForm').submit();
+    }
+}
+
+function markAsReconciled() {
+    const message = "Đánh dấu phiếu kiểm kê này đã được đối soát?\n" +
+                   "(Không có thay đổi tồn kho vì kết quả kiểm kê chính xác 100%)";
+    
+    if (confirm(message)) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '${pageContext.request.contextPath}/warehouse-manager/stock-take';
+        
+        const actionInput = document.createElement('input');
+        actionInput.type = 'hidden';
+        actionInput.name = 'action';
+        actionInput.value = 'reconcile';
+        form.appendChild(actionInput);
+        
+        const idInput = document.createElement('input');
+        idInput.type = 'hidden';
+        idInput.name = 'stockTakeId';
+        idInput.value = '${stockTake.stockTakeId}';
+        form.appendChild(idInput);
+        
+        document.body.appendChild(form);
+        form.submit();
     }
 }
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
 </body>
 </html> 

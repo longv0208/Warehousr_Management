@@ -102,9 +102,7 @@ public class StockTakeController extends HttpServlet {
                 handleUpdateCount(request, response);
                 break;
 
-            case "reconcile":
-                handleReconcileStockTake(request, response);
-                break;
+            // case "reconcile": - Chức năng này đã chuyển cho Warehouse Manager
             case "delete":
                 handleDeleteStockTake(request, response);
                 break;
@@ -343,70 +341,9 @@ public class StockTakeController extends HttpServlet {
         }
     }
 
-    private void handleReconcileStockTake(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        HttpSession session = request.getSession();
-        User currentUser = SessionUtil.getUserFromSession(request);
-        
-        if (currentUser == null || !"admin".equals(currentUser.getRoleId())) {
-            response.sendRedirect(request.getContextPath() + "/stock-take");
-            return;
-        }
-
-        try {
-            int stockTakeId = Integer.parseInt(request.getParameter("stockTakeId"));
-            StockTake stockTake = stockTakeDAO.findById(stockTakeId);
-            
-            if (stockTake == null || !"completed".equals(stockTake.getStatus())) {
-                session.setAttribute("errorMessage", "Phiếu kiểm kê không hợp lệ hoặc chưa hoàn thành!");
-                response.sendRedirect(request.getContextPath() + "/stock-take");
-                return;
-            }
-
-            // Lấy danh sách tất cả chi tiết kiểm kê đã được kiểm đếm
-            List<StockTakeDetail> allDetails = stockTakeDetailDAO.findByStockTakeId(stockTakeId);
-            
-            boolean hasErrors = false;
-            int updatedItems = 0;
-            
-            // Điều chỉnh inventory cho tất cả sản phẩm đã được kiểm đếm theo đúng warehouse
-            Integer warehouseId = stockTake.getWarehouseId() != null ? stockTake.getWarehouseId() : 1;
-            
-            for (StockTakeDetail detail : allDetails) {
-                if (detail.getCountedQuantity() != null) {
-                    boolean success = inventoryDAO.updateQuantityByProductId(
-                        detail.getProductId(), 
-                        detail.getCountedQuantity(),
-                        warehouseId
-                    );
-                    
-                    if (success) {
-                        updatedItems++;
-                    } else {
-                        hasErrors = true;
-                    }
-                }
-            }
-            
-            if (!hasErrors) {
-                // Cập nhật trạng thái thành reconciled
-                stockTakeDAO.updateStatus(stockTakeId, "reconciled");
-                session.setAttribute("successMessage", 
-                    String.format("Điều chỉnh tồn kho thành công! Đã cập nhật %d sản phẩm.", updatedItems));
-            } else {
-                session.setAttribute("errorMessage", 
-                    String.format("Điều chỉnh hoàn thành với một số lỗi. Đã cập nhật %d sản phẩm.", updatedItems));
-            }
-            
-        } catch (NumberFormatException e) {
-            session.setAttribute("errorMessage", "Dữ liệu không hợp lệ!");
-        } catch (Exception e) {
-            e.printStackTrace();
-            session.setAttribute("errorMessage", "Có lỗi xảy ra: " + e.getMessage());
-        }
-        
-        response.sendRedirect(request.getContextPath() + "/stock-take");
-    }
+    // handleReconcileStockTake method đã được chuyển sang Warehouse Manager Controller
+    // Chức năng đối soát kiểm kê hiện tại được quản lý bởi:
+    // controller.dashboard.warehouseManager.StockTakeController
 
 
 
@@ -484,6 +421,9 @@ public class StockTakeController extends HttpServlet {
             response.sendRedirect(request.getContextPath() + "/stock-take");
             return;
         }
+        
+        // Admin hiện tại chỉ có quyền xem kết quả, không thể đối soát
+        // Chức năng đối soát đã chuyển cho Warehouse Manager
 
         try {
             int stockTakeId = Integer.parseInt(request.getParameter("id"));

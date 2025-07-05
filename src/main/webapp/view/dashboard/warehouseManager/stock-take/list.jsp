@@ -8,28 +8,26 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8" />
-    <title>Quản Lý Kho Hàng - Kiểm Kê</title>
+    <title>Warehouse Manager - Kiểm Kê Kho</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono&display=swap" rel="stylesheet"/>
     <link href="./styles/index.css" rel="stylesheet"/>
 </head>
 <body>
-<jsp:include page="../common/sidebar.jsp" />
+<jsp:include page="../../../common/sidebar.jsp" />
 
 <div class="container-fluid">
     <div class="row">
         <main class="col-md-10 ms-sm-auto col-lg-10 px-md-4 py-4">
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <h3>Danh sách Kiểm Kê</h3>
-                <c:if test="${currentUser.roleId == 'warehouse_staff'}">
-                    <a href="${pageContext.request.contextPath}/stock-take?action=create" class="btn btn-success">+ Tạo Phiếu Kiểm Kê</a>
-                </c:if>
+                <h3>Danh sách Kiểm Kê - Đối Soát</h3>
+                <span class="badge bg-primary fs-6">Warehouse Manager</span>
             </div>
 
             <!-- Bộ lọc trạng thái -->
             <div class="row mb-3">
                 <div class="col-md-4">
-                    <form method="GET" action="${pageContext.request.contextPath}/stock-take">
+                    <form method="GET" action="${pageContext.request.contextPath}/warehouse-manager/stock-take">
                         <div class="input-group">
                             <select name="status" class="form-select">
                                 <option value="">-- Tất cả trạng thái --</option>
@@ -42,24 +40,22 @@
                         </div>
                     </form>
                 </div>
-                <c:if test="${currentUser.roleId == 'admin' || currentUser.roleId == 'warehouse_manager'}">
-                    <div class="col-md-4">
-                        <form method="GET" action="${pageContext.request.contextPath}/stock-take">
-                            <div class="input-group">
-                                <select name="warehouseId" class="form-select">
-                                    <option value="">-- Tất cả kho hàng --</option>
-                                    <c:forEach var="warehouse" items="${warehouses}">
-                                        <option value="${warehouse.warehouseId}" 
-                                                ${selectedWarehouseId == warehouse.warehouseId.toString() ? 'selected' : ''}>
-                                            ${warehouse.warehouseName}
-                                        </option>
-                                    </c:forEach>
-                                </select>
-                                <button type="submit" class="btn btn-outline-primary">Lọc theo kho</button>
-                            </div>
-                        </form>
-                    </div>
-                </c:if>
+                <div class="col-md-4">
+                    <form method="GET" action="${pageContext.request.contextPath}/warehouse-manager/stock-take">
+                        <div class="input-group">
+                            <select name="warehouseId" class="form-select">
+                                <option value="">-- Tất cả kho hàng --</option>
+                                <c:forEach var="warehouse" items="${warehouses}">
+                                    <option value="${warehouse.warehouseId}" 
+                                            ${selectedWarehouseId == warehouse.warehouseId.toString() ? 'selected' : ''}>
+                                        ${warehouse.warehouseName}
+                                    </option>
+                                </c:forEach>
+                            </select>
+                            <button type="submit" class="btn btn-outline-primary">Lọc theo kho</button>
+                        </div>
+                    </form>
+                </div>
             </div>
 
             <!-- Hiển thị thông báo -->
@@ -133,25 +129,19 @@
                                 </td>
                                 <td>
                                     <div class="btn-group" role="group">
-                                        <a href="${pageContext.request.contextPath}/stock-take?action=view&id=${stockTake.stockTakeId}" 
+                                        <a href="${pageContext.request.contextPath}/warehouse-manager/stock-take?action=view&id=${stockTake.stockTakeId}" 
                                            class="btn btn-sm btn-outline-info">Xem</a>
                                         
-                                        <c:if test="${currentUser.roleId == 'warehouse_staff' && (stockTake.status == 'pending' || stockTake.status == 'in_progress')}">
-                                            <a href="${pageContext.request.contextPath}/stock-take?action=perform&id=${stockTake.stockTakeId}" 
-                                               class="btn btn-sm btn-primary">Kiểm kê</a>
+                                        <!-- Warehouse Manager có thể đối soát các phiếu đã hoàn thành -->
+                                        <c:if test="${stockTake.status == 'completed' || stockTake.status == 'reconciled'}">
+                                            <a href="${pageContext.request.contextPath}/warehouse-manager/stock-take?action=approve-view&id=${stockTake.stockTakeId}" 
+                                               class="btn btn-sm btn-warning">
+                                                <c:choose>
+                                                    <c:when test="${stockTake.status == 'completed'}">Đối soát</c:when>
+                                                    <c:otherwise>Xem đối soát</c:otherwise>
+                                                </c:choose>
+                                            </a>
                                         </c:if>
-                                        
-                                                                <c:if test="${currentUser.roleId == 'warehouse_manager'}">
-                            <c:if test="${stockTake.status == 'completed' || stockTake.status == 'reconciled'}">
-                                <a href="${pageContext.request.contextPath}/warehouse-manager/stock-take?action=approve-view&id=${stockTake.stockTakeId}" 
-                                   class="btn btn-sm btn-warning">
-                                    <c:choose>
-                                        <c:when test="${stockTake.status == 'completed'}">Đối soát</c:when>
-                                        <c:otherwise>Xem đối soát</c:otherwise>
-                                    </c:choose>
-                                </a>
-                            </c:if>
-                        </c:if>
                                     </div>
                                 </td>
                             </tr>
@@ -165,26 +155,19 @@
                     </div>
                 </c:if>
             </div>
+
+            <!-- Thông tin hướng dẫn -->
+            <div class="alert alert-info mt-4" role="alert">
+                <h6><i class="bi bi-info-circle"></i> Hướng dẫn sử dụng</h6>
+                <ul class="mb-0">
+                    <li><strong>Xem:</strong> Xem thông tin chi tiết phiếu kiểm kê</li>
+                    <li><strong>Đối soát:</strong> Điều chỉnh tồn kho theo kết quả kiểm kê (chỉ áp dụng với phiếu đã hoàn thành)</li>
+                    <li><strong>Xem đối soát:</strong> Xem kết quả đối soát đã thực hiện</li>
+                </ul>
+            </div>
         </main>
     </div>
 </div>
-
-<!-- Form ẩn để cập nhật trạng thái -->
-<form id="updateStatusForm" method="POST" action="${pageContext.request.contextPath}/stock-take" style="display: none;">
-    <input type="hidden" name="action" value="update-status">
-    <input type="hidden" name="stockTakeId" id="updateStockTakeId">
-    <input type="hidden" name="status" id="updateStatus">
-</form>
-
-<script>
-function updateStatus(stockTakeId, status) {
-    if (confirm('Bạn có chắc chắn muốn cập nhật trạng thái phiếu kiểm kê này?')) {
-        document.getElementById('updateStockTakeId').value = stockTakeId;
-        document.getElementById('updateStatus').value = status;
-        document.getElementById('updateStatusForm').submit();
-    }
-}
-</script>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
