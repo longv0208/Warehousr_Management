@@ -47,66 +47,71 @@
       </div>
     </div>
     <h5>Danh sách sản phẩm</h5>
+    
+    <!-- Product Table Header -->
+    <div class="row fw-bold border-bottom mb-2 pb-2">
+      <div class="col-md-3">Sản phẩm</div>
+      <div class="col-md-2">Số lượng</div>
+      <div class="col-md-2">Đơn giá</div>
+      <div class="col-md-2">Thành tiền</div>
+      <div class="col-md-2">Đơn vị</div>
+      <div class="col-md-1">Thao tác</div>
+    </div>
+    
     <div id="productContainer">
       <c:forEach var="detail" items="${orderDetailsWithProduct}" varStatus="status">
         <div class="row mb-2 product-row">
-          <div class="col-md-4">
-            <select class="form-select" name="productId" required>
+          <div class="col-md-3">
+            <select class="form-select" name="productId" onchange="updateProductInfoEdit(this)" required>
               <c:forEach var="p" items="${products}">
                 <option value="${p['productId']}" data-price="${p['salePrice']}" data-quantity="${p['quantity']}" data-unit="${p['unit']}"
                   <c:if test="${p['productId'] == detail.productId}">selected</c:if>>
-                  ${p['productCode']} - ${p['productName']} (${p['unit']})
+                  ${p['productCode']} - ${p['productName']}
                 </option>
               </c:forEach>
             </select>
           </div>
           <div class="col-md-2">
-            <input type="number" class="form-control" name="quantity" min="1" value="${detail.quantityOrdered}" required>
+            <input type="number" class="form-control" name="quantity" min="1" value="${detail.quantityOrdered}" 
+                   oninput="calculateRowTotalEdit(this)" onchange="calculateRowTotalEdit(this)" required>
           </div>
           <div class="col-md-2">
-            <input type="number" class="form-control" name="unitPrice" step="0.01" min="0" value="${detail.unitSalePrice}" required>
+            <input type="number" class="form-control" name="unitPrice" step="0.01" min="0" value="${detail.unitSalePrice}" 
+                   oninput="calculateRowTotalEdit(this)" onchange="calculateRowTotalEdit(this)" required>
           </div>
           <div class="col-md-2">
-            <span class="form-control-plaintext">${detail.unit}</span>
+            <div class="form-control-plaintext fw-bold text-success row-total">
+              <fmt:formatNumber value="${detail.quantityOrdered * detail.unitSalePrice}" type="number" pattern="#,##0" /> đ
+            </div>
           </div>
           <div class="col-md-2">
-            <button type="button" class="btn btn-danger btn-sm" onclick="this.closest('.product-row').remove()">Xóa</button>
+            <span class="form-control-plaintext unit-display">${detail.unit}</span>
+          </div>
+          <div class="col-md-1">
+            <button type="button" class="btn btn-danger btn-sm" onclick="removeProductRowEdit(this)">Xóa</button>
           </div>
         </div>
       </c:forEach>
     </div>
+    
     <button type="button" class="btn btn-success mb-3" onclick="addProductRowEdit()">+ Thêm sản phẩm</button>
-    <div class="d-flex justify-content-end">
+    
+    <!-- Total Amount -->
+    <div class="row mt-3">
+      <div class="col-md-6 offset-md-6">
+        <div class="d-flex justify-content-between align-items-center border-top pt-3">
+          <h5 class="mb-0 text-primary">Tổng tiền:</h5>
+          <h5 class="mb-0 text-success fw-bold" id="totalAmount">0 đ</h5>
+        </div>
+      </div>
+    </div>
+    
+    <div class="d-flex justify-content-end mt-3">
       <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
     </div>
   </form>
 </div>
-<script>
-function addProductRowEdit() {
-  var container = document.getElementById('productContainer');
-  var row = document.createElement('div');
-  row.className = 'row mb-2 product-row';
-  row.innerHTML = `
-    <div class="col-md-4">
-      <select class="form-select" name="productId" required>
-        ${document.querySelector('#productContainer select').innerHTML}
-      </select>
-    </div>
-    <div class="col-md-2">
-      <input type="number" class="form-control" name="quantity" min="1" value="1" required>
-    </div>
-    <div class="col-md-2">
-      <input type="number" class="form-control" name="unitPrice" step="0.01" min="0" value="0" required>
-    </div>
-    <div class="col-md-2">
-      <span class="form-control-plaintext"></span>
-    </div>
-    <div class="col-md-2">
-      <button type="button" class="btn btn-danger btn-sm" onclick="this.closest('.product-row').remove()">Xóa</button>
-    </div>
-  `;
-  container.appendChild(row);
-}
-</script>
+<!-- Include external JavaScript -->
+<script src="${pageContext.request.contextPath}/js/sales-order-edit.js"></script>
 </body>
 </html> 

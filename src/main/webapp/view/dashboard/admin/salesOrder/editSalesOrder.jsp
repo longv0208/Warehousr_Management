@@ -132,11 +132,12 @@
             <!-- Product Headers -->
             <div class="product-header">
               <div class="row">
-                <div class="col-md-4">Sản phẩm</div>
+                <div class="col-md-3">Sản phẩm</div>
                 <div class="col-md-2">Số lượng</div>
                 <div class="col-md-2">Đơn giá</div>
+                <div class="col-md-2">Thành tiền</div>
                 <div class="col-md-2">Đơn vị</div>
-                <div class="col-md-2">Hành động</div>
+                <div class="col-md-1">Hành động</div>
               </div>
             </div>
             
@@ -147,8 +148,8 @@
                   <c:forEach var="detail" items="${orderDetailsWithProduct}" varStatus="status">
                     <div class="product-row">
                       <div class="row align-items-center">
-                        <div class="col-md-4">
-                          <select class="form-select" name="productId" required onchange="updateProductInfo(this)">
+                        <div class="col-md-3">
+                          <select class="form-select" name="productId" required onchange="updateProductInfoAdmin(this)">
                             <option value="">-- Chọn sản phẩm --</option>
                             <c:forEach var="p" items="${products}">
                               <option value="${p.productId}" 
@@ -164,18 +165,25 @@
                         <div class="col-md-2">
                           <input type="number" class="form-control" name="quantity" min="1" 
                                  value="${detail.quantityOrdered}" required 
-                                 title="Số lượng tồn kho: ${detail.availableQuantity}">
+                                 title="Số lượng tồn kho: ${detail.availableQuantity}"
+                                 oninput="calculateRowTotalAdmin(this)" onchange="calculateRowTotalAdmin(this)">
                           <small class="text-muted">Tồn: ${detail.availableQuantity}</small>
                         </div>
                         <div class="col-md-2">
                           <input type="number" class="form-control" name="unitPrice" step="0.01" min="0" 
-                                 value="${detail.unitSalePrice}" required>
+                                 value="${detail.unitSalePrice}" required
+                                 oninput="calculateRowTotalAdmin(this)" onchange="calculateRowTotalAdmin(this)">
                         </div>
                         <div class="col-md-2">
-                          <span class="form-control-plaintext">${detail.unit}</span>
+                          <div class="form-control-plaintext fw-bold text-success row-total">
+                            <fmt:formatNumber value="${detail.quantityOrdered * detail.unitSalePrice}" type="number" pattern="#,##0" /> đ
+                          </div>
                         </div>
                         <div class="col-md-2">
-                          <button type="button" class="btn btn-danger btn-sm" onclick="removeProductRow(this)">
+                          <span class="form-control-plaintext unit-info">${detail.unit}</span>
+                        </div>
+                        <div class="col-md-1">
+                          <button type="button" class="btn btn-danger btn-sm" onclick="removeProductRowAdmin(this)">
                             <i class="fas fa-trash"></i> Xóa
                           </button>
                         </div>
@@ -189,6 +197,18 @@
                   </div>
                 </c:otherwise>
               </c:choose>
+            </div>
+            
+            <!-- Total Amount -->
+            <div class="mt-3">
+              <div class="row">
+                <div class="col-md-6 offset-md-6">
+                  <div class="d-flex justify-content-between align-items-center border-top pt-3">
+                    <h5 class="mb-0 text-primary">Tổng tiền:</h5>
+                    <h5 class="mb-0 text-success fw-bold" id="totalAmountAdmin">0 đ</h5>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -219,143 +239,23 @@
     }<c:if test="${!status.last}">,</c:if>
     </c:forEach>
   ];
+  
+  // Set products data when page loads
+  if (typeof setProductsData === 'function') {
+    setProductsData(productsData);
+  }
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/izitoast@1.4.0/dist/js/iziToast.min.js"></script>
 
-<script>
-function addProductRow() {
-  const container = document.getElementById('productContainer');
-  
-  // Remove empty message if exists
-  const emptyMessage = container.querySelector('.text-center.text-muted');
-  if (emptyMessage) {
-    emptyMessage.remove();
+<!-- Include external JavaScript -->
+<script src="${pageContext.request.contextPath}/js/admin-sales-order-edit.js"></script>
+<script type="text/javascript">
+  // Set products data after the external JS is loaded
+  if (typeof setProductsData === 'function') {
+    setProductsData(productsData);
   }
-  
-  const row = document.createElement('div');
-  row.className = 'product-row';
-  
-  let productOptions = '<option value="">-- Chọn sản phẩm --</option>';
-  productsData.forEach(product => {
-    productOptions += '<option value="' + product.id + '" data-price="' + product.price + '" data-quantity="' + product.quantity + '" data-unit="' + product.unit + '">' +
-      product.code + ' - ' + product.name + '</option>';
-  });
-  
-  row.innerHTML = 
-    '<div class="row align-items-center">' +
-      '<div class="col-md-4">' +
-        '<select class="form-select" name="productId" required onchange="updateProductInfo(this)">' +
-          productOptions +
-        '</select>' +
-      '</div>' +
-      '<div class="col-md-2">' +
-        '<input type="number" class="form-control" name="quantity" min="1" value="1" required>' +
-        '<small class="text-muted">Tồn: <span class="stock-info">0</span></small>' +
-      '</div>' +
-      '<div class="col-md-2">' +
-        '<input type="number" class="form-control" name="unitPrice" step="0.01" min="0" value="0" required>' +
-      '</div>' +
-      '<div class="col-md-2">' +
-        '<span class="form-control-plaintext unit-info"></span>' +
-      '</div>' +
-      '<div class="col-md-2">' +
-        '<button type="button" class="btn btn-danger btn-sm" onclick="removeProductRow(this)">' +
-          '<i class="fas fa-trash"></i> Xóa' +
-        '</button>' +
-      '</div>' +
-    '</div>';
-  
-  container.appendChild(row);
-}
-
-function removeProductRow(button) {
-  const row = button.closest('.product-row');
-  row.remove();
-  
-  // Show empty message if no products left
-  const container = document.getElementById('productContainer');
-  if (container.children.length === 0) {
-    container.innerHTML = 
-      '<div class="text-center text-muted py-3">' +
-        '<p>Chưa có sản phẩm nào. Nhấn "Thêm sản phẩm" để bắt đầu.</p>' +
-      '</div>';
-  }
-}
-
-function updateProductInfo(selectElement) {
-  const selectedOption = selectElement.options[selectElement.selectedIndex];
-  const row = selectElement.closest('.product-row');
-  
-  if (selectedOption.value) {
-    const price = selectedOption.getAttribute('data-price');
-    const unit = selectedOption.getAttribute('data-unit');
-    const quantity = selectedOption.getAttribute('data-quantity');
-    
-    // Update unit price
-    const priceInput = row.querySelector('input[name="unitPrice"]');
-    priceInput.value = price;
-    
-    // Update unit display
-    const unitSpan = row.querySelector('.unit-info');
-    unitSpan.textContent = unit;
-    
-    // Update stock info
-    const stockInfo = row.querySelector('.stock-info');
-    if (stockInfo) {
-      stockInfo.textContent = quantity;
-    }
-    
-    // Update quantity input title
-    const quantityInput = row.querySelector('input[name="quantity"]');
-    quantityInput.title = 'Số lượng tồn kho: ' + quantity;
-    quantityInput.max = quantity;
-  } else {
-    // Clear fields if no product selected
-    const priceInput = row.querySelector('input[name="unitPrice"]');
-    const unitSpan = row.querySelector('.unit-info');
-    const stockInfo = row.querySelector('.stock-info');
-    const quantityInput = row.querySelector('input[name="quantity"]');
-    
-    priceInput.value = '0';
-    unitSpan.textContent = '';
-    if (stockInfo) stockInfo.textContent = '0';
-    quantityInput.removeAttribute('max');
-    quantityInput.title = '';
-  }
-}
-
-// Validate form before submit
-document.querySelector('form').addEventListener('submit', function(e) {
-  const productRows = document.querySelectorAll('.product-row');
-  if (productRows.length === 0) {
-    e.preventDefault();
-    iziToast.error({
-      title: 'Lỗi',
-      message: 'Vui lòng thêm ít nhất một sản phẩm vào đơn hàng!'
-    });
-    return false;
-  }
-  
-  // Check if all products are selected
-  let hasEmptyProduct = false;
-  productRows.forEach(row => {
-    const productSelect = row.querySelector('select[name="productId"]');
-    if (!productSelect.value) {
-      hasEmptyProduct = true;
-    }
-  });
-  
-  if (hasEmptyProduct) {
-    e.preventDefault();
-    iziToast.error({
-      title: 'Lỗi',
-      message: 'Vui lòng chọn sản phẩm cho tất cả các dòng!'
-    });
-    return false;
-  }
-});
 </script>
 
 <!-- Toast messages -->

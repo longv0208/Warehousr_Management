@@ -84,6 +84,7 @@
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono&display=swap" rel="stylesheet"/>
   <link href="${pageContext.request.contextPath}/css/index.css" rel="stylesheet"/>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/izitoast@1.4.0/dist/css/iziToast.min.css">
+  <meta name="context-path" content="${pageContext.request.contextPath}">
 </head>
 <body>
 <div class="container-fluid">
@@ -169,9 +170,9 @@
                 </div>
                 <div class="row mt-3">
                   <div class="col-md-6 offset-md-6">
-                    <div class="d-flex justify-content-between">
-                      <strong>Tổng tiền:</strong>
-                      <strong id="totalAmount">0 đ</strong>
+                     <div class="d-flex justify-content-between align-items-center border-top pt-3">
+                      <h5 class="mb-0 text-primary">Tổng tiền:</h5>
+                      <h5 class="mb-0 text-success fw-bold" id="totalAmount">0 đ</h5>
                     </div>
                   </div>
                 </div>
@@ -208,201 +209,15 @@
     </c:forEach>
 </template>
 
-<script>
-  let productRowIndex = 0;
+<!-- Pass data to JavaScript -->
+<script type="text/javascript">
+  // Pass JSP data to JavaScript without using template literals
   const hasProducts = <c:out value="${not empty products}" default="false"/>;
   const productCount = <c:out value="${fn:length(products)}" default="0"/>;
-  
-  document.addEventListener('DOMContentLoaded', function() {
-    if (hasProducts) {
-      addProductRow();
-    } else {
-      iziToast.error({
-        title: 'Lỗi',
-        message: 'Không có sản phẩm nào có sẵn để tạo đơn hàng.'
-      });
-    }
-  });
-
-  function addProductRow() {
-    const tpl = document.getElementById('productOptionsTemplate');
-    if (!tpl) return;
-
-    const container = document.getElementById('productContainer');
-    const rowIndex = productRowIndex++;
-    const rowWrapper = document.createElement('div');
-    rowWrapper.className = 'product-row row mb-3 align-items-center';
-    rowWrapper.id = 'productRow' + rowIndex;
-
-    rowWrapper.innerHTML = `
-        <div class="col-md-4">
-            <label class="form-label d-md-none">Sản phẩm</label>
-            <select class="form-select" name="productId[]" onchange="updateProductInfo(this, ${rowIndex})" required></select>
-        </div>
-        <div class="col-md-2">
-            <label class="form-label d-md-none">Số lượng</label>
-            <input type="number" class="form-control" name="quantity[]" min="1" oninput="calculateRowTotal(${rowIndex})" required>
-            <small class="text-muted">Tồn: <span id="stockQuantity${rowIndex}">0</span></small>
-        </div>
-        <div class="col-md-2">
-            <label class="form-label d-md-none">Đơn giá</label>
-            <input type="number" class="form-control" name="unitPrice[]" step="any" min="0" oninput="calculateRowTotal(${rowIndex})" required>
-        </div>
-        <div class="col-md-2">
-            <label class="form-label d-md-none">Thành tiền</label>
-            <div class="form-control-plaintext fw-bold" id="rowTotal${rowIndex}">0 đ</div>
-        </div>
-        <div class="col-md-2">
-            <label class="form-label d-md-none">&nbsp;</label>
-            <button type="button" class="btn btn-danger btn-sm d-block w-100" onclick="removeProductRow(${rowIndex})">Xóa</button>
-        </div>
-    `;
-
-    container.appendChild(rowWrapper);
-
-    const selectElement = rowWrapper.querySelector('select[name="productId[]"]');
-    const optionsFragment = document.importNode(tpl.content, true);
-    selectElement.appendChild(optionsFragment);
-    
-    // Trigger warehouse check for the new row if a warehouse is already selected
-    const warehouseId = document.getElementById('warehouseId').value;
-    if (warehouseId) {
-        updateProductInfo(selectElement, rowIndex);
-    }
-  }
-
-  function removeProductRow(index) {
-    const row = document.getElementById('productRow' + index);
-    if (row) {
-      row.remove();
-      calculateTotal();
-    }
-  }
-  
-  function updateAllStockQuantities() {
-    const productRows = document.querySelectorAll('.product-row');
-    productRows.forEach(row => {
-        const select = row.querySelector('select[name^="productId"]');
-        if (select.value) {
-            const index = parseInt(row.id.replace('productRow', ''));
-            fetchInventory(select.value, index);
-        }
-    });
-  }
-
-  function updateProductInfo(selectElement, index) {
-    const selectedOption = selectElement.options[selectElement.selectedIndex];
-    const row = selectElement.closest('.product-row');
-    const priceInput = row.querySelector('input[name^="unitPrice"]');
-    const quantityInput = row.querySelector('input[name^="quantity"]');
-    const rowTotalDiv = row.querySelector('#rowTotal' + index);
-
-    if (!selectedOption || !selectedOption.value) {
-        priceInput.value = '';
-        quantityInput.value = '';
-        rowTotalDiv.textContent = '0 đ';
-        document.getElementById('stockQuantity' + index).textContent = '0';
-        calculateTotal();
-        return;
-    }
-    
-    const price = selectedOption.getAttribute('data-price');
-    priceInput.value = price || '0';
-    
-    fetchInventory(selectElement.value, index);
-    calculateRowTotal(index);
-  }
-  
-  function fetchInventory(productId, index) {
-      const warehouseId = document.getElementById('warehouseId').value;
-      const stockSpan = document.getElementById('stockQuantity' + index);
-      const quantityInput = document.getElementById('productRow' + index).querySelector('input[name^="quantity"]');
-
-      if (!warehouseId) {
-          stockSpan.textContent = 'Chọn kho';
-          stockSpan.className = 'text-danger';
-          quantityInput.max = null;
-          return;
-      }
-      if (!productId) {
-          stockSpan.textContent = '0';
-          quantityInput.max = null;
-          return;
-      }
-
-      stockSpan.textContent = '...';
-      stockSpan.className = 'text-muted';
-
-      const url = `${pageContext.request.contextPath}/sale-staff/sales-order?action=get-inventory&productId=${productId}&warehouseId=${warehouseId}`;
-
-      fetch(url)
-          .then(response => {
-              if (!response.ok) throw new Error('Network response was not ok');
-              return response.json();
-          })
-          .then(data => {
-              if (data.error) throw new Error(data.error);
-              
-              const stock = data.quantity || 0;
-              stockSpan.textContent = stock;
-              quantityInput.max = stock; // Set max attribute for validation
-
-              quantityInput.addEventListener('input', () => {
-                  if (parseInt(quantityInput.value, 10) > stock) {
-                      stockSpan.classList.add('text-danger', 'fw-bold');
-                  } else {
-                      stockSpan.classList.remove('text-danger', 'fw-bold');
-                  }
-              });
-          })
-          .catch(error => {
-              console.error('Error fetching inventory:', error);
-              stockSpan.textContent = 'Lỗi';
-              stockSpan.className = 'text-danger';
-          });
-  }
-
-  function calculateRowTotal(index) {
-    const row = document.getElementById('productRow' + index);
-    const quantity = parseFloat(row.querySelector('input[name^="quantity"]').value) || 0;
-    const unitPrice = parseFloat(row.querySelector('input[name^="unitPrice"]').value) || 0;
-    const total = quantity * unitPrice;
-    
-    const rowTotalEl = document.getElementById('rowTotal' + index);
-    rowTotalEl.textContent = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(total);
-    
-    calculateTotal();
-  }
-
-  function calculateTotal() {
-    let totalAmount = 0;
-    const rows = document.querySelectorAll('.product-row');
-    rows.forEach(row => {
-      const quantity = parseFloat(row.querySelector('input[name^="quantity"]').value) || 0;
-      const unitPrice = parseFloat(row.querySelector('input[name^="unitPrice"]').value) || 0;
-      totalAmount += quantity * unitPrice;
-    });
-
-    const totalAmountEl = document.getElementById('totalAmount');
-    totalAmountEl.textContent = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(totalAmount);
-  }
-
-  // Bootstrap form validation
-  (function () {
-    'use strict'
-    var forms = document.querySelectorAll('.needs-validation')
-    Array.prototype.slice.call(forms)
-      .forEach(function (form) {
-        form.addEventListener('submit', function (event) {
-          if (!form.checkValidity()) {
-            event.preventDefault()
-            event.stopPropagation()
-          }
-          form.classList.add('was-validated')
-        }, false)
-      })
-  })()
 </script>
+
+<!-- Include external JavaScript -->
+<script src="${pageContext.request.contextPath}/js/sales-order-create.js"></script>
 
   </body>
 </html> 
