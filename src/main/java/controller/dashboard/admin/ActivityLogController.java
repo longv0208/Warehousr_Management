@@ -14,7 +14,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.List;
 
-@WebServlet("/activity-logs")
+@WebServlet("/admin/activity-log")
 public class ActivityLogController extends HttpServlet {
 
     private ActivityLogDAO activityLogDAO;
@@ -124,7 +124,7 @@ public class ActivityLogController extends HttpServlet {
         request.setAttribute("selectedStartDate", startDate);
         request.setAttribute("selectedEndDate", endDate);
 
-        request.getRequestDispatcher("view/dashboard/admin/activity-logs/list.jsp").forward(request, response);
+        request.getRequestDispatcher("/view/dashboard/admin/activity-logs/list.jsp").forward(request, response);
     }
 
     private void handleFilterLogs(HttpServletRequest request, HttpServletResponse response)
@@ -153,7 +153,7 @@ public class ActivityLogController extends HttpServlet {
         request.setAttribute("startDate", startDate);
         request.setAttribute("endDate", endDate);
 
-        request.getRequestDispatcher("view/dashboard/admin/activity-logs/statistics.jsp").forward(request, response);
+        request.getRequestDispatcher("/view/dashboard/admin/activity-logs/statistics.jsp").forward(request, response);
     }
 
     private void handleSuspiciousActivities(HttpServletRequest request, HttpServletResponse response)
@@ -180,7 +180,7 @@ public class ActivityLogController extends HttpServlet {
         request.setAttribute("startDate", startDate);
         request.setAttribute("endDate", endDate);
 
-        request.getRequestDispatcher("view/dashboard/admin/activity-logs/suspicious.jsp").forward(request, response);
+        request.getRequestDispatcher("/view/dashboard/admin/activity-logs/suspicious.jsp").forward(request, response);
     }
 
     private void handleAfterHoursActivities(HttpServletRequest request, HttpServletResponse response)
@@ -207,7 +207,7 @@ public class ActivityLogController extends HttpServlet {
         request.setAttribute("startDate", startDate);
         request.setAttribute("endDate", endDate);
 
-        request.getRequestDispatcher("view/dashboard/admin/activity-logs/after-hours.jsp").forward(request, response);
+        request.getRequestDispatcher("/view/dashboard/admin/activity-logs/after-hours.jsp").forward(request, response);
     }
 
     private void handleLoginHistory(HttpServletRequest request, HttpServletResponse response)
@@ -256,6 +256,6 @@ public class ActivityLogController extends HttpServlet {
         request.setAttribute("selectedStartDate", startDate);
         request.setAttribute("selectedEndDate", endDate);
 
-        request.getRequestDispatcher("view/dashboard/admin/activity-logs/login-history.jsp").forward(request, response);
+        request.getRequestDispatcher("/view/dashboard/admin/activity-logs/login-history.jsp").forward(request, response);
     }
 } 
