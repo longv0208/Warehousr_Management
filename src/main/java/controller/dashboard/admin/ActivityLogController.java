@@ -36,8 +36,8 @@ public class ActivityLogController extends HttpServlet {
         }
 
         switch (action) {
-            case "suspicious":
-                handleSuspiciousActivities(request, response);
+            case "after-hours":
+                handleAfterHoursActivities(request, response);
                 break;
             case "login-history":
                 handleLoginHistory(request, response);
@@ -56,7 +56,7 @@ public class ActivityLogController extends HttpServlet {
         handleLoginHistory(request, response);
     }
 
-    private void handleSuspiciousActivities(HttpServletRequest request, HttpServletResponse response)
+    private void handleAfterHoursActivities(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         
         String startDate = request.getParameter("startDate");
@@ -70,17 +70,30 @@ public class ActivityLogController extends HttpServlet {
             endDate = java.time.LocalDate.now().toString();
         }
 
-        List<Object[]> suspiciousActivities = activityLogDAO.getSuspiciousActivities(startDate);
+        // Pagination
+        int page = 1;
+        int limit = 10; // Records per page
+        if (request.getParameter("page") != null) {
+            page = Integer.parseInt(request.getParameter("page"));
+        }
+        int offset = (page - 1) * limit;
+
+        int totalRecords = activityLogDAO.countAfterHoursLogins(startDate, endDate);
+        int totalPages = (int) Math.ceil((double) totalRecords / limit);
+
+        List<ActivityLog> afterHoursLogins = activityLogDAO.getAfterHoursLogins(startDate, endDate, offset, limit);
 
         // Get all users for name lookup
         List<User> users = userDAO.findAll();
 
-        request.setAttribute("suspiciousActivities", suspiciousActivities);
+        request.setAttribute("afterHoursLogins", afterHoursLogins);
         request.setAttribute("users", users);
         request.setAttribute("startDate", startDate);
         request.setAttribute("endDate", endDate);
+        request.setAttribute("currentPage", page);
+        request.setAttribute("totalPages", totalPages);
 
-        request.getRequestDispatcher("/view/dashboard/admin/activity-logs/suspicious.jsp").forward(request, response);
+        request.getRequestDispatcher("/view/dashboard/admin/activity-logs/after-hours.jsp").forward(request, response);
     }
 
     private void handleLoginHistory(HttpServletRequest request, HttpServletResponse response)

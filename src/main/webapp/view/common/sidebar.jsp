@@ -183,8 +183,8 @@
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="${pageContext.request.contextPath}/admin/activity-log?action=suspicious" class="nav-link">
-                             <span class="link-text">Hoạt động đáng ngờ</span>
+                        <a href="${pageContext.request.contextPath}/admin/activity-log?action=after-hours" class="nav-link">
+                             <span class="link-text">Đăng nhập ngoài giờ</span>
                         </a>
                     </li>
                 </ul>

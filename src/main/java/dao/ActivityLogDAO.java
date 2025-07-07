@@ -254,35 +254,72 @@ public class ActivityLogDAO extends DBContext implements I_DAO<ActivityLog> {
         return statistics;
     }
 
-    public List<Object[]> getSuspiciousActivities(String date) {
-        String sql = "SELECT u.full_name, COUNT(*) as adjust_count " +
-                    "FROM activity_logs al " +
-                    "JOIN users u ON al.user_id = u.user_id " +
-                    "WHERE al.action_type = 'ADJUST' AND DATE(al.timestamp) = ? " +
-                    "GROUP BY al.user_id, u.full_name " +
-                    "HAVING COUNT(*) >= 5 " +
-                    "ORDER BY adjust_count DESC";
+    public int countAfterHoursLogins(String startDate, String endDate) {
+        StringBuilder sql = new StringBuilder("SELECT count(*) FROM activity_logs WHERE action_type = 'LOGIN'");
+        sql.append(" AND (HOUR(timestamp) < 8 OR HOUR(timestamp) >= 18)");
 
-        List<Object[]> suspicious = new ArrayList<>();
+        List<Object> params = new ArrayList<>();
+        if (startDate != null && !startDate.isEmpty()) {
+            sql.append(" AND DATE(timestamp) >= ?");
+            params.add(startDate);
+        }
+        if (endDate != null && !endDate.isEmpty()) {
+            sql.append(" AND DATE(timestamp) <= ?");
+            params.add(endDate);
+        }
 
         try {
             conn = getConnection();
-            statement = conn.prepareStatement(sql);
-            statement.setString(1, date);
+            statement = conn.prepareStatement(sql.toString());
+            for (int i = 0; i < params.size(); i++) {
+                statement.setObject(i + 1, params.get(i));
+            }
             resultSet = statement.executeQuery();
-
-            while (resultSet.next()) {
-                Object[] row = new Object[2];
-                row[0] = resultSet.getString("full_name");
-                row[1] = resultSet.getInt("adjust_count");
-                suspicious.add(row);
+            if (resultSet.next()) {
+                return resultSet.getInt(1);
             }
         } catch (SQLException ex) {
-            System.out.println("Error getting suspicious activities: " + ex.getMessage());
+            System.out.println("Error counting after hours logins: " + ex.getMessage());
         } finally {
             close();
         }
-        return suspicious;
+        return 0;
+    }
+
+    public List<ActivityLog> getAfterHoursLogins(String startDate, String endDate, int offset, int limit) {
+        StringBuilder sql = new StringBuilder("SELECT * FROM activity_logs WHERE action_type = 'LOGIN'");
+        sql.append(" AND (HOUR(timestamp) < 8 OR HOUR(timestamp) >= 18)");
+
+        List<Object> params = new ArrayList<>();
+        if (startDate != null && !startDate.isEmpty()) {
+            sql.append(" AND DATE(timestamp) >= ?");
+            params.add(startDate);
+        }
+        if (endDate != null && !endDate.isEmpty()) {
+            sql.append(" AND DATE(timestamp) <= ?");
+            params.add(endDate);
+        }
+        sql.append(" ORDER BY timestamp DESC LIMIT ? OFFSET ?");
+        params.add(limit);
+        params.add(offset);
+
+        List<ActivityLog> afterHours = new ArrayList<>();
+        try {
+            conn = getConnection();
+            statement = conn.prepareStatement(sql.toString());
+            for (int i = 0; i < params.size(); i++) {
+                statement.setObject(i + 1, params.get(i));
+            }
+            resultSet = statement.executeQuery();
+            while (resultSet.next()) {
+                afterHours.add(getFromResultSet(resultSet));
+            }
+        } catch (SQLException ex) {
+            System.out.println("Error getting after hours logins: " + ex.getMessage());
+        } finally {
+            close();
+        }
+        return afterHours;
     }
 
     public List<Object[]> getAfterHoursActivities(String date) {
