@@ -6,7 +6,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lịch sử đăng nhập - Warehouse Management</title>
+    <title>Lịch sử Đăng nhập / Đăng xuất - Warehouse Management</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
     <style>
@@ -76,7 +76,7 @@
             <div class="d-flex justify-content-between align-items-center">
                 <div>
                     <h1 class="mb-2">
-                        <i class="bi bi-clock-history"></i> Lịch sử đăng nhập
+                        <i class="bi bi-clock-history"></i> Lịch sử Đăng nhập / Đăng xuất
                     </h1>
                     <p class="mb-0">Theo dõi các phiên đăng nhập và đăng xuất của người dùng</p>
                 </div>
@@ -85,48 +85,9 @@
                         <li class="breadcrumb-item">
                             <a href="${pageContext.request.contextPath}/dashboard" class="text-white-50">Dashboard</a>
                         </li>
-                        <li class="breadcrumb-item">
-                            <a href="${pageContext.request.contextPath}/admin/activity-log" class="text-white-50">Activity Logs</a>
-                        </li>
                         <li class="breadcrumb-item active text-white">Lịch sử đăng nhập</li>
                     </ol>
                 </nav>
-            </div>
-        </div>
-
-        <!-- Quick Navigation -->
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-3">
-                                <a href="${pageContext.request.contextPath}/admin/activity-log?action=list" 
-                                   class="btn btn-outline-primary w-100 mb-2">
-                                    <i class="bi bi-list"></i> Tất cả logs
-                                </a>
-                            </div>
-                            <div class="col-md-3">
-                                <a href="${pageContext.request.contextPath}/admin/activity-log?action=statistics" 
-                                   class="btn btn-outline-info w-100 mb-2">
-                                    <i class="bi bi-chart-bar"></i> Thống kê
-                                </a>
-                            </div>
-                            <div class="col-md-3">
-                                <a href="${pageContext.request.contextPath}/admin/activity-log?action=suspicious" 
-                                   class="btn btn-outline-warning w-100 mb-2">
-                                    <i class="bi bi-exclamation-triangle"></i> Hoạt động đáng nghi
-                                </a>
-                            </div>
-                            <div class="col-md-3">
-                                <a href="${pageContext.request.contextPath}/admin/activity-log?action=login-history" 
-                                   class="btn btn-success w-100 mb-2">
-                                    <i class="bi bi-clock-history"></i> Lịch sử đăng nhập
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
             </div>
         </div>
 
@@ -383,6 +344,71 @@
                         </div>
                     </c:otherwise>
                 </c:choose>
+            </div>
+            <div class="card-footer bg-light">
+                <nav aria-label="Page navigation">
+                    <ul class="pagination justify-content-center mb-0">
+                        <%-- Logic for smart pagination --%>
+                        <c:set var="currentPage" value="${requestScope.currentPage}" />
+                        <c:set var="totalPages" value="${requestScope.totalPages}" />
+                        <c:set var="maxPagesToShow" value="5" />
+                        <c:set var="halfPages" value="${maxPagesToShow / 2}" />
+
+                        <c:set var="startPage" value="${currentPage - halfPages}" />
+                        <c:set var="endPage" value="${currentPage + halfPages}" />
+
+                        <c:if test="${startPage < 1}">
+                            <c:set var="startPage" value="1" />
+                            <c:set var="endPage" value="${totalPages < maxPagesToShow ? totalPages : maxPagesToShow}" />
+                        </c:if>
+
+                        <c:if test="${endPage > totalPages}">
+                            <c:set var="endPage" value="${totalPages}" />
+                            <c:set var="startPage" value="${totalPages - maxPagesToShow + 1 < 1 ? 1 : totalPages - maxPagesToShow + 1}" />
+                        </c:if>
+
+                        <%-- Previous Page Link --%>
+                        <c:if test="${currentPage > 1}">
+                            <li class="page-item">
+                                <a class="page-link" href="${pageContext.request.contextPath}/admin/activity-log?action=login-history&page=1&userId=${selectedUserId}&startDate=${selectedStartDate}&endDate=${selectedEndDate}">Trang đầu</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="${pageContext.request.contextPath}/admin/activity-log?action=login-history&page=${currentPage - 1}&userId=${selectedUserId}&startDate=${selectedStartDate}&endDate=${selectedEndDate}" aria-label="Previous">
+                                    <span aria-hidden="true">&laquo;</span>
+                                </a>
+                            </li>
+                        </c:if>
+
+                        <%-- Ellipsis at the beginning --%>
+                        <c:if test="${startPage > 1}">
+                            <li class="page-item disabled"><a class="page-link" href="#">...</a></li>
+                        </c:if>
+
+                        <%-- Page Number Links --%>
+                        <c:forEach begin="${startPage}" end="${endPage}" var="i">
+                            <li class="page-item ${currentPage == i ? 'active' : ''}">
+                                <a class="page-link" href="${pageContext.request.contextPath}/admin/activity-log?action=login-history&page=${i}&userId=${selectedUserId}&startDate=${selectedStartDate}&endDate=${selectedEndDate}">${i}</a>
+                            </li>
+                        </c:forEach>
+
+                        <%-- Ellipsis at the end --%>
+                        <c:if test="${endPage < totalPages}">
+                            <li class="page-item disabled"><a class="page-link" href="#">...</a></li>
+                        </c:if>
+
+                        <%-- Next Page Link --%>
+                        <c:if test="${currentPage < totalPages}">
+                            <li class="page-item">
+                                <a class="page-link" href="${pageContext.request.contextPath}/admin/activity-log?action=login-history&page=${currentPage + 1}&userId=${selectedUserId}&startDate=${selectedStartDate}&endDate=${selectedEndDate}" aria-label="Next">
+                                    <span aria-hidden="true">&raquo;</span>
+                                </a>
+                            </li>
+                             <li class="page-item">
+                                <a class="page-link" href="${pageContext.request.contextPath}/admin/activity-log?action=login-history&page=${totalPages}&userId=${selectedUserId}&startDate=${selectedStartDate}&endDate=${selectedEndDate}">Trang cuối</a>
+                            </li>
+                        </c:if>
+                    </ul>
+                </nav>
             </div>
         </div>
     </div>

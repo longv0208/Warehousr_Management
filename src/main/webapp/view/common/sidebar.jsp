@@ -127,6 +127,18 @@
         color: gray;
         background-color: #f0f0f0;
     }
+
+    .sidebar .nav-item .collapse .nav-link,
+    .sidebar .nav-item .collapsing .nav-link {
+        padding: 10px 20px 10px 70px; /* Indent sub-items */
+        font-size: 0.9em;
+        background-color: #2c3136;
+    }
+
+    .sidebar .nav-item .collapse .nav-link:hover,
+    .sidebar .nav-item .collapsing .nav-link:hover {
+        background-color: #0d6efd;
+    }
 </style>
 <nav class="sidebar" id="sidebar">
     <div class="user-section" id="userSection">
@@ -160,9 +172,23 @@
             <a href="${pageContext.request.contextPath}/admin/manage-notification" class="nav-link"><i class="bi bi-bell"></i><span class="link-text">Thông báo</span></a>
         </li>
         <li class="nav-item">
-            <a href="${pageContext.request.contextPath}/admin/activity-log" class="nav-link">
-                <i class="bi bi-journal-text"></i><span class="link-text">Lịch sử hoạt động</span>
+            <a class="nav-link" data-bs-toggle="collapse" href="#activityCollapse" role="button" aria-expanded="false" aria-controls="activityCollapse">
+                <i class="bi bi-shield-check"></i><span class="link-text">Giám sát hoạt động</span>
             </a>
+            <div class="collapse" id="activityCollapse">
+                <ul class="nav flex-column ms-1">
+                    <li class="nav-item">
+                        <a href="${pageContext.request.contextPath}/admin/activity-log?action=login-history" class="nav-link">
+                            <span class="link-text">Lịch sử đăng nhập</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="${pageContext.request.contextPath}/admin/activity-log?action=suspicious" class="nav-link">
+                             <span class="link-text">Hoạt động đáng ngờ</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
         </li>
         <li class="nav-item">
             <a href="${pageContext.request.contextPath}/admin/manage-setting" class="nav-link">

@@ -318,20 +318,37 @@ public class ActivityLogDAO extends DBContext implements I_DAO<ActivityLog> {
         return afterHours;
     }
 
-    public List<ActivityLog> getLoginLogoutHistory(Integer userId, String startDate, String endDate) {
-        String sql = "SELECT * FROM activity_logs " +
-                    "WHERE user_id = ? AND action_type IN ('LOGIN', 'LOGOUT') " +
-                    "AND DATE(timestamp) BETWEEN ? AND ? " +
-                    "ORDER BY timestamp DESC";
+    public List<ActivityLog> getLoginLogoutHistory(Integer userId, String startDate, String endDate, int page, int pageSize) {
+        StringBuilder sql = new StringBuilder("SELECT * FROM activity_logs WHERE action_type IN ('LOGIN', 'LOGOUT')");
+        List<Object> params = new ArrayList<>();
+
+        if (userId != null) {
+            sql.append(" AND user_id = ?");
+            params.add(userId);
+        }
+        if (startDate != null && !startDate.isEmpty()) {
+            sql.append(" AND DATE(timestamp) >= ?");
+            params.add(startDate);
+        }
+        if (endDate != null && !endDate.isEmpty()) {
+            sql.append(" AND DATE(timestamp) <= ?");
+            params.add(endDate);
+        }
+        
+        sql.append(" ORDER BY timestamp DESC LIMIT ? OFFSET ?");
+        params.add(pageSize);
+        params.add((page - 1) * pageSize);
 
         List<ActivityLog> loginHistory = new ArrayList<>();
 
         try {
             conn = getConnection();
-            statement = conn.prepareStatement(sql);
-            statement.setInt(1, userId);
-            statement.setString(2, startDate);
-            statement.setString(3, endDate);
+            statement = conn.prepareStatement(sql.toString());
+            
+            for (int i = 0; i < params.size(); i++) {
+                statement.setObject(i + 1, params.get(i));
+            }
+            
             resultSet = statement.executeQuery();
 
             while (resultSet.next()) {
@@ -343,5 +360,42 @@ public class ActivityLogDAO extends DBContext implements I_DAO<ActivityLog> {
             close();
         }
         return loginHistory;
+    }
+
+    public int getTotalLoginLogoutHistory(Integer userId, String startDate, String endDate) {
+        StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM activity_logs WHERE action_type IN ('LOGIN', 'LOGOUT')");
+        List<Object> params = new ArrayList<>();
+
+        if (userId != null) {
+            sql.append(" AND user_id = ?");
+            params.add(userId);
+        }
+        if (startDate != null && !startDate.isEmpty()) {
+            sql.append(" AND DATE(timestamp) >= ?");
+            params.add(startDate);
+        }
+        if (endDate != null && !endDate.isEmpty()) {
+            sql.append(" AND DATE(timestamp) <= ?");
+            params.add(endDate);
+        }
+
+        try {
+            conn = getConnection();
+            statement = conn.prepareStatement(sql.toString());
+
+            for (int i = 0; i < params.size(); i++) {
+                statement.setObject(i + 1, params.get(i));
+            }
+
+            resultSet = statement.executeQuery();
+            if (resultSet.next()) {
+                return resultSet.getInt(1);
+            }
+        } catch (SQLException ex) {
+            System.out.println("Error counting login/logout history: " + ex.getMessage());
+        } finally {
+            close();
+        }
+        return 0;
     }
 } 
