@@ -67,7 +67,7 @@
                             <a href="${pageContext.request.contextPath}/dashboard" class="text-white-50">Dashboard</a>
                         </li>
                         <li class="breadcrumb-item">
-                            <a href="${pageContext.request.contextPath}/activity-logs" class="text-white-50">Activity Logs</a>
+                            <a href="${pageContext.request.contextPath}/admin/activity-log" class="text-white-50">Activity Logs</a>
                         </li>
                         <li class="breadcrumb-item active text-white">Thống kê</li>
                     </ol>
@@ -82,25 +82,25 @@
                     <div class="card-body">
                         <div class="row">
                             <div class="col-md-3">
-                                <a href="${pageContext.request.contextPath}/activity-logs?action=list" 
+                                <a href="${pageContext.request.contextPath}/admin/activity-log?action=list" 
                                    class="btn btn-outline-primary w-100 mb-2">
                                     <i class="bi bi-list"></i> Tất cả logs
                                 </a>
                             </div>
                             <div class="col-md-3">
-                                <a href="${pageContext.request.contextPath}/activity-logs?action=statistics" 
+                                <a href="${pageContext.request.contextPath}/admin/activity-log?action=statistics" 
                                    class="btn btn-primary w-100 mb-2">
                                     <i class="bi bi-chart-bar"></i> Thống kê
                                 </a>
                             </div>
                             <div class="col-md-3">
-                                <a href="${pageContext.request.contextPath}/activity-logs?action=suspicious" 
+                                <a href="${pageContext.request.contextPath}/admin/activity-log?action=suspicious" 
                                    class="btn btn-outline-warning w-100 mb-2">
                                     <i class="bi bi-exclamation-triangle"></i> Hoạt động đáng nghi
                                 </a>
                             </div>
                             <div class="col-md-3">
-                                <a href="${pageContext.request.contextPath}/activity-logs?action=login-history" 
+                                <a href="${pageContext.request.contextPath}/admin/activity-log?action=login-history" 
                                    class="btn btn-outline-success w-100 mb-2">
                                     <i class="bi bi-clock-history"></i> Lịch sử đăng nhập
                                 </a>
@@ -119,7 +119,7 @@
                 </h5>
             </div>
             <div class="card-body">
-                <form action="${pageContext.request.contextPath}/activity-logs" method="GET">
+                <form action="${pageContext.request.contextPath}/admin/activity-log" method="GET">
                     <input type="hidden" name="action" value="statistics">
                     <div class="row">
                         <div class="col-md-4">

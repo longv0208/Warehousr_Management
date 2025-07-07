@@ -70,25 +70,25 @@
                     <div class="card-body">
                         <div class="row">
                             <div class="col-md-3">
-                                <a href="${pageContext.request.contextPath}/activity-logs?action=list" 
+                                <a href="${pageContext.request.contextPath}/admin/activity-log?action=list" 
                                    class="btn btn-primary w-100 mb-2">
                                     <i class="bi bi-list"></i> Tất cả logs
                                 </a>
                             </div>
                             <div class="col-md-3">
-                                <a href="${pageContext.request.contextPath}/activity-logs?action=statistics" 
+                                <a href="${pageContext.request.contextPath}/admin/activity-log?action=statistics" 
                                    class="btn btn-outline-info w-100 mb-2">
                                     <i class="bi bi-chart-bar"></i> Thống kê
                                 </a>
                             </div>
                             <div class="col-md-3">
-                                <a href="${pageContext.request.contextPath}/activity-logs?action=suspicious" 
+                                <a href="${pageContext.request.contextPath}/admin/activity-log?action=suspicious" 
                                    class="btn btn-outline-warning w-100 mb-2">
                                     <i class="bi bi-exclamation-triangle"></i> Hoạt động đáng nghi
                                 </a>
                             </div>
                             <div class="col-md-3">
-                                <a href="${pageContext.request.contextPath}/activity-logs?action=login-history" 
+                                <a href="${pageContext.request.contextPath}/admin/activity-log?action=login-history" 
                                    class="btn btn-outline-success w-100 mb-2">
                                     <i class="bi bi-clock-history"></i> Lịch sử đăng nhập
                                 </a>
@@ -107,7 +107,7 @@
                 </h5>
             </div>
             <div class="card-body">
-                <form action="${pageContext.request.contextPath}/activity-logs" method="GET">
+                <form action="${pageContext.request.contextPath}/admin/activity-log" method="GET">
                     <input type="hidden" name="action" value="list">
                     <div class="row">
                         <div class="col-md-2">
@@ -270,7 +270,7 @@
                     <c:if test="${totalPages > 1}">
                         <nav aria-label="Phân trang nhật ký hoạt động" class="mt-4">
                             <ul class="pagination justify-content-center">
-                                <c:url value="/activity-logs" var="paginationUrl">
+                                <c:url value="/admin/activity-log" var="paginationUrl">
                                     <c:param name="action" value="list" />
                                     <c:if test="${not empty selectedUserId}">
                                         <c:param name="userId" value="${selectedUserId}" />
@@ -320,7 +320,7 @@
                         <h5 class="text-muted">Không tìm thấy nhật ký hoạt động</h5>
                         <p class="text-muted">Thử điều chỉnh tiêu chí lọc của bạn.</p>
                         <div class="mt-3">
-                            <a href="${pageContext.request.contextPath}/activity-logs?action=list" 
+                            <a href="${pageContext.request.contextPath}/admin/activity-log?action=list" 
                                class="btn btn-primary">
                                 <i class="bi bi-arrow-clockwise"></i> Làm mới
                             </a>

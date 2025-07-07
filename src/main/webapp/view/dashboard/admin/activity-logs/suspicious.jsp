@@ -81,7 +81,7 @@
                             <a href="${pageContext.request.contextPath}/dashboard" class="text-white-50">Dashboard</a>
                         </li>
                         <li class="breadcrumb-item">
-                            <a href="${pageContext.request.contextPath}/activity-logs" class="text-white-50">Activity Logs</a>
+                            <a href="${pageContext.request.contextPath}/admin/activity-log" class="text-white-50">Activity Logs</a>
                         </li>
                         <li class="breadcrumb-item active text-white">Hoạt động đáng nghi</li>
                     </ol>
@@ -96,25 +96,25 @@
                     <div class="card-body">
                         <div class="row">
                             <div class="col-md-3">
-                                <a href="${pageContext.request.contextPath}/activity-logs?action=list" 
+                                <a href="${pageContext.request.contextPath}/admin/activity-log?action=list" 
                                    class="btn btn-outline-primary w-100 mb-2">
                                     <i class="bi bi-list"></i> Tất cả logs
                                 </a>
                             </div>
                             <div class="col-md-3">
-                                <a href="${pageContext.request.contextPath}/activity-logs?action=statistics" 
+                                <a href="${pageContext.request.contextPath}/admin/activity-log?action=statistics" 
                                    class="btn btn-outline-info w-100 mb-2">
                                     <i class="bi bi-chart-bar"></i> Thống kê
                                 </a>
                             </div>
                             <div class="col-md-3">
-                                <a href="${pageContext.request.contextPath}/activity-logs?action=suspicious" 
+                                <a href="${pageContext.request.contextPath}/admin/activity-log?action=suspicious" 
                                    class="btn btn-warning w-100 mb-2">
                                     <i class="bi bi-exclamation-triangle"></i> Hoạt động đáng nghi
                                 </a>
                             </div>
                             <div class="col-md-3">
-                                <a href="${pageContext.request.contextPath}/activity-logs?action=login-history" 
+                                <a href="${pageContext.request.contextPath}/admin/activity-log?action=login-history" 
                                    class="btn btn-outline-success w-100 mb-2">
                                     <i class="bi bi-clock-history"></i> Lịch sử đăng nhập
                                 </a>
@@ -133,7 +133,7 @@
                 </h5>
             </div>
             <div class="card-body">
-                <form action="${pageContext.request.contextPath}/activity-logs" method="GET">
+                <form action="${pageContext.request.contextPath}/admin/activity-log" method="GET">
                     <input type="hidden" name="action" value="suspicious">
                     <div class="row">
                         <div class="col-md-4">
@@ -271,11 +271,11 @@
                                     </div>
                                     <div class="col-md-4">
                                         <div class="d-grid gap-2">
-                                            <a href="${pageContext.request.contextPath}/activity-logs?action=list&actionType=ADJUST&startDate=${startDate}&endDate=${endDate}" 
+                                            <a href="${pageContext.request.contextPath}/admin/activity-log?action=list&actionType=ADJUST&startDate=${startDate}&endDate=${endDate}" 
                                                class="btn btn-outline-primary btn-sm">
                                                 <i class="bi bi-eye"></i> Xem chi tiết
                                             </a>
-                                            <a href="${pageContext.request.contextPath}/activity-logs?action=list" 
+                                            <a href="${pageContext.request.contextPath}/admin/activity-log?action=list" 
                                                class="btn btn-outline-info btn-sm">
                                                 <i class="bi bi-person"></i> Tất cả hoạt động
                                             </a>
@@ -291,7 +291,7 @@
                             <h5 class="text-success">Không phát hiện hoạt động đáng nghi</h5>
                             <p class="text-muted">Tất cả hoạt động trong khoảng thời gian này đều bình thường.</p>
                             <div class="mt-3">
-                                <a href="${pageContext.request.contextPath}/activity-logs?action=list" 
+                                <a href="${pageContext.request.contextPath}/admin/activity-log?action=list" 
                                    class="btn btn-primary">
                                     <i class="bi bi-list"></i> Xem tất cả logs
                                 </a>
@@ -313,7 +313,7 @@
                     </div>
                     <div class="card-body">
                         <p class="text-muted">Kiểm tra các hoạt động diễn ra ngoài giờ làm việc (8h-18h)</p>
-                        <a href="${pageContext.request.contextPath}/activity-logs?action=after-hours" 
+                        <a href="${pageContext.request.contextPath}/admin/activity-log?action=after-hours" 
                            class="btn btn-outline-warning w-100">
                             <i class="bi bi-moon"></i> Xem hoạt động ngoài giờ
                         </a>
@@ -329,7 +329,7 @@
                     </div>
                     <div class="card-body">
                         <p class="text-muted">Xem thống kê và xu hướng hoạt động của nhân viên</p>
-                        <a href="${pageContext.request.contextPath}/activity-logs?action=statistics" 
+                        <a href="${pageContext.request.contextPath}/admin/activity-log?action=statistics" 
                            class="btn btn-outline-info w-100">
                             <i class="bi bi-chart-line"></i> Xem thống kê
                         </a>
