@@ -10,6 +10,7 @@
     <meta charset="UTF-8" />
     <title>Quản Lý Kho Hàng - Báo Cáo Sản Phẩm Sắp Hết Hàng</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono&display=swap" rel="stylesheet"/>
     <link href="./styles/index.css" rel="stylesheet"/>
     <style>
@@ -30,6 +31,13 @@
         }
         .stats-card {
             border-left: 4px solid #dc3545;
+        }
+        .warehouse-badge {
+            font-size: 0.8rem;
+            padding: 0.4rem 0.6rem;
+        }
+        .table th:nth-child(3), .table td:nth-child(3) {
+            background-color: rgba(108, 117, 125, 0.1);
         }
     </style>
 </head>
@@ -110,6 +118,7 @@
                                 <select name="sortBy" class="form-select">
                                     <option value="quantity" ${currentSortBy == 'quantity' ? 'selected' : ''}>Số lượng tăng dần</option>
                                     <option value="product_name" ${currentSortBy == 'product_name' ? 'selected' : ''}>Tên sản phẩm A-Z</option>
+                                    <option value="warehouse_name" ${currentSortBy == 'warehouse_name' ? 'selected' : ''}>Kho hàng A-Z</option>
                                     <option value="threshold" ${currentSortBy == 'threshold' ? 'selected' : ''}>Ngưỡng cảnh báo</option>
                                 </select>
                                 <button type="submit" class="btn btn-outline-secondary">
@@ -151,6 +160,7 @@
                         <tr>
                             <th>Mã sản phẩm</th>
                             <th>Tên sản phẩm</th>
+                            <th>Kho hàng</th>
                             <th>Đơn vị</th>
                             <th>Số lượng hiện tại</th>
                             <th>Ngưỡng cảnh báo</th>
@@ -170,6 +180,20 @@
                                     <c:if test="${not empty product.description}">
                                         <br><small class="text-muted">${product.description}</small>
                                     </c:if>
+                                </td>
+                                <td>
+                                    <c:choose>
+                                        <c:when test="${not empty product.warehouseName}">
+                                            <span class="badge bg-info warehouse-badge">
+                                                <i class="bi bi-building me-1"></i>${product.warehouseName}
+                                            </span>
+                                        </c:when>
+                                        <c:otherwise>
+                                            <span class="text-muted">
+                                                <i class="bi bi-building me-1"></i>Chưa có kho
+                                            </span>
+                                        </c:otherwise>
+                                    </c:choose>
                                 </td>
                                 <td>${product.unit}</td>
                                 <td>

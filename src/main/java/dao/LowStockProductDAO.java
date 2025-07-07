@@ -23,10 +23,11 @@ public class LowStockProductDAO extends DBContext {
         
         String sql = "SELECT p.product_id, p.product_code, p.product_name, p.description, " +
                     "p.unit, p.purchase_price, p.sale_price, p.low_stock_threshold, " +
-                    "i.quantity_on_hand, s.supplier_name " +
+                    "i.quantity_on_hand, s.supplier_name, i.warehouse_id, w.warehouse_name " +
                     "FROM products p " +
                     "INNER JOIN inventory i ON p.product_id = i.product_id " +
                     "LEFT JOIN suppliers s ON p.supplier_id = s.supplier_id " +
+                    "LEFT JOIN warehouses w ON i.warehouse_id = w.warehouse_id " +
                     "WHERE p.is_active = true AND i.quantity_on_hand <= p.low_stock_threshold ";
         
         // Thêm sắp xếp
@@ -34,6 +35,8 @@ public class LowStockProductDAO extends DBContext {
             sql += "ORDER BY i.quantity_on_hand ASC";
         } else if ("product_name".equals(sortBy)) {
             sql += "ORDER BY p.product_name ASC";
+        } else if ("warehouse_name".equals(sortBy)) {
+            sql += "ORDER BY w.warehouse_name ASC";
         } else if ("threshold".equals(sortBy)) {
             sql += "ORDER BY p.low_stock_threshold ASC";
         } else {
@@ -64,6 +67,7 @@ public class LowStockProductDAO extends DBContext {
     public int getTotalLowStockProducts() {
         String sql = "SELECT COUNT(*) as total FROM products p " +
                     "INNER JOIN inventory i ON p.product_id = i.product_id " +
+                    "LEFT JOIN warehouses w ON i.warehouse_id = w.warehouse_id " +
                     "WHERE p.is_active = true AND i.quantity_on_hand <= p.low_stock_threshold";
         
         try {
@@ -92,10 +96,11 @@ public class LowStockProductDAO extends DBContext {
         
         String sql = "SELECT p.product_id, p.product_code, p.product_name, p.description, " +
                     "p.unit, p.purchase_price, p.sale_price, p.low_stock_threshold, " +
-                    "i.quantity_on_hand, s.supplier_name " +
+                    "i.quantity_on_hand, s.supplier_name, i.warehouse_id, w.warehouse_name " +
                     "FROM products p " +
                     "INNER JOIN inventory i ON p.product_id = i.product_id " +
                     "LEFT JOIN suppliers s ON p.supplier_id = s.supplier_id " +
+                    "LEFT JOIN warehouses w ON i.warehouse_id = w.warehouse_id " +
                     "WHERE p.is_active = true AND i.quantity_on_hand = 0 " +
                     "ORDER BY p.product_name ASC";
         
@@ -131,6 +136,8 @@ public class LowStockProductDAO extends DBContext {
                 .lowStockThreshold(rs.getInt("low_stock_threshold"))
                 .quantityOnHand(rs.getInt("quantity_on_hand"))
                 .supplierName(rs.getString("supplier_name"))
+                .warehouseId(rs.getInt("warehouse_id"))
+                .warehouseName(rs.getString("warehouse_name"))
                 .build();
     }
 } 
