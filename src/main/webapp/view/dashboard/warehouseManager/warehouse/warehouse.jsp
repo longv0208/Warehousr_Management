@@ -22,24 +22,13 @@
         <main class="col-md-10 ms-sm-auto col-lg-10 px-md-4 py-4">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h3>Danh sách Kho hàng</h3>
-                <c:if test="${userRole == 'admin' || userRole == 'warehouse_manager'}">
-                    <div>
-                        <a href="${pageContext.request.contextPath}/admin/manage-warehouse?action=create" class="btn btn-success">+ Thêm Kho hàng</a>
-                    </div>
-                </c:if>
+                <div>
+                    <a href="${pageContext.request.contextPath}/warehouse-manager/manage-warehouse?action=create" class="btn btn-success">+ Thêm Kho hàng</a>
+                </div>
             </div>
 
-            <!-- Information for non-privileged users -->
-            <c:if test="${userRole != 'admin' && userRole != 'warehouse_manager'}">
-                <div class="alert alert-info alert-dismissible fade show" role="alert">
-                    <i class="fas fa-info-circle"></i> 
-                    Bạn chỉ có quyền xem danh sách kho hàng. Để thêm, sửa hoặc xóa kho hàng, vui lòng liên hệ quản trị viên hoặc quản lý kho.
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-            </c:if>
-
             <!-- Filter Form -->
-            <form action="${pageContext.request.contextPath}/admin/manage-warehouse" method="GET" class="row g-3 mb-4">
+            <form action="${pageContext.request.contextPath}/warehouse-manager/manage-warehouse" method="GET" class="row g-3 mb-4">
                 <input type="hidden" name="action" value="list">
                 <div class="col-md-4">
                     <input type="text" id="searchInput" name="search" class="form-control" placeholder="Tìm theo tên kho hoặc địa chỉ..." value="${searchTerm}"/>
@@ -59,9 +48,7 @@
                             <th>Tên Kho hàng</th>
                             <th>Địa chỉ</th>
                             <th>Ngày tạo</th>
-                            <c:if test="${userRole == 'admin' || userRole == 'warehouse_manager'}">
-                                <th>Hành động</th>
-                            </c:if>
+                            <th>Hành động</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -78,19 +65,17 @@
                                                 <fmt:formatDate value="${warehouse.createdAt}" pattern="dd/MM/yyyy HH:mm"/>
                                             </c:if>
                                         </td>
-                                        <c:if test="${userRole == 'admin' || userRole == 'warehouse_manager'}">
-                                            <td>
-                                                <a href="${pageContext.request.contextPath}/admin/manage-warehouse?action=view&id=${warehouse.warehouseId}" class="btn btn-info btn-sm">Xem</a>
-                                                <a href="${pageContext.request.contextPath}/admin/manage-warehouse?action=edit&id=${warehouse.warehouseId}" class="btn btn-warning btn-sm">Sửa</a>
-                                                <button class="btn btn-sm btn-danger" onclick="confirmDelete('${warehouse.warehouseId}', '${warehouse.warehouseName}')">Xóa</button>
-                                            </td>
-                                        </c:if>
+                                        <td>
+                                            <a href="${pageContext.request.contextPath}/warehouse-manager/manage-warehouse?action=view&id=${warehouse.warehouseId}" class="btn btn-info btn-sm">Xem</a>
+                                            <a href="${pageContext.request.contextPath}/warehouse-manager/manage-warehouse?action=edit&id=${warehouse.warehouseId}" class="btn btn-warning btn-sm">Sửa</a>
+                                            <button class="btn btn-sm btn-danger" onclick="confirmDelete('${warehouse.warehouseId}', '${warehouse.warehouseName}')">Xóa</button>
+                                        </td>
                                     </tr>
                                 </c:forEach>
                             </c:when>
                             <c:otherwise>
                                 <tr>
-                                    <td colspan="${userRole == 'admin' || userRole == 'warehouse_manager' ? '6' : '5'}" class="text-center">
+                                    <td colspan="6" class="text-center">
                                         <c:choose>
                                             <c:when test="${not empty searchTerm}">
                                                 Không tìm thấy kho hàng nào phù hợp với từ khóa "<c:out value="${searchTerm}"/>".
@@ -121,7 +106,7 @@
 <script>
     function confirmDelete(warehouseId, warehouseName) {
         if (confirm('Bạn có chắc chắn muốn xóa kho hàng "' + warehouseName + '"? Hành động này không thể hoàn tác.')) {
-            window.location.href = '${pageContext.request.contextPath}/admin/manage-warehouse?action=delete&id=' + warehouseId;
+            window.location.href = '${pageContext.request.contextPath}/warehouse-manager/manage-warehouse?action=delete&id=' + warehouseId;
         }
     }
 

@@ -33,7 +33,7 @@
                 </div>
             </c:if>
             
-            <form action="${pageContext.request.contextPath}/admin/manage-warehouse" method="POST" id="warehouseForm" novalidate>
+            <form action="${pageContext.request.contextPath}/warehouse-manager/manage-warehouse" method="POST" id="warehouseForm" novalidate>
                 <input type="hidden" name="action" value="create">
 
                 <div class="row mb-3">
@@ -58,7 +58,7 @@
                 </div>
 
                 <button type="submit" class="btn btn-success">Lưu Kho hàng</button>
-                <a href="${pageContext.request.contextPath}/admin/manage-warehouse?action=list" class="btn btn-secondary">Hủy</a>
+                <a href="${pageContext.request.contextPath}/warehouse-manager/manage-warehouse?action=list" class="btn btn-secondary">Hủy</a>
             </form>
         </main>
     </div>
