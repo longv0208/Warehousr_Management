@@ -18,12 +18,12 @@ import java.util.*;
 import java.util.stream.Collectors;
 import utils.PasswordUtil;
 
-@WebServlet(name = "UserServlet", urlPatterns = {
-        "/UserServlet",
-        "/UserServlet/AddUserServlet",
-        "/UserServlet/EditUserServlet",
-        "/UserServlet/InactiveUserServlet",
-        "/UserServlet/ResetPasswordServlet"
+@WebServlet(name = "ManageUserController", urlPatterns = {
+        "/admin/manage-user",
+        "/admin/manage-user/add",
+        "/admin/manage-user/edit", 
+        "/admin/manage-user/inactive",
+        "/admin/manage-user/reset-password"
 })
 public class ManageUserController extends HttpServlet {
 
@@ -41,17 +41,17 @@ public class ManageUserController extends HttpServlet {
         String path = req.getServletPath();
         try {
             switch (path) {
-                case "/UserServlet":
+                case "/admin/manage-user":
                     listUsers(req, resp);
                     break;
-                case "/UserServlet/AddUserServlet":
+                case "/admin/manage-user/add":
                     showUserForm(req, resp, null);
                     break;
-                case "/UserServlet/EditUserServlet":
+                case "/admin/manage-user/edit":
                     showEditForm(req, resp);
                     break;
                 default:
-                    resp.sendRedirect(req.getContextPath() + "/UserServlet");
+                    resp.sendRedirect(req.getContextPath() + "/admin/manage-user");
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -64,17 +64,17 @@ public class ManageUserController extends HttpServlet {
         String path = req.getServletPath();
         try {
             switch (path) {
-                case "/UserServlet/AddUserServlet":
+                case "/admin/manage-user/add":
                     addUser(req, resp);
                     break;
-                case "/UserServlet/EditUserServlet":
+                case "/admin/manage-user/edit":
                     editUser(req, resp);
                     break;
-                case "/UserServlet/InactiveUserServlet":
+                case "/admin/manage-user/inactive":
                     inactiveUser(req, resp);
                     break;
                 default:
-                    resp.sendRedirect(req.getContextPath() + "/UserServlet");
+                    resp.sendRedirect(req.getContextPath() + "/admin/manage-user");
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -142,14 +142,14 @@ public class ManageUserController extends HttpServlet {
     private void showEditForm(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException, SQLException {
         String param = req.getParameter("userId");
         if (param == null) {
-            resp.sendRedirect(req.getContextPath() + "/UserServlet");
+            resp.sendRedirect(req.getContextPath() + "/admin/manage-user");
             return;
         }
 
         int userId = Integer.parseInt(param);
         User user = userDAO.getUserById(userId);
         if (user == null) {
-            resp.sendRedirect(req.getContextPath() + "/UserServlet");
+            resp.sendRedirect(req.getContextPath() + "/admin/manage-user");
             return;
         }
 
@@ -196,7 +196,7 @@ public class ManageUserController extends HttpServlet {
     boolean success = userDAO.add(user);
 
     if (success) {
-        resp.sendRedirect(req.getContextPath() + "/UserServlet");
+        resp.sendRedirect(req.getContextPath() + "/admin/manage-user");
     } else {
         showUserForm(req, resp, "Username đã tồn tại.");
     }
@@ -207,7 +207,7 @@ public class ManageUserController extends HttpServlet {
     int userId = Integer.parseInt(req.getParameter("userId"));
     User user = userDAO.getUserById(userId);
     if (user == null) {
-        resp.sendRedirect(req.getContextPath() + "/UserServlet");
+        resp.sendRedirect(req.getContextPath() + "/admin/manage-user");
         return;
     }
 
@@ -234,7 +234,7 @@ public class ManageUserController extends HttpServlet {
 
     boolean success = userDAO.update(user);
     if (success) {
-        resp.sendRedirect(req.getContextPath() + "/UserServlet");
+        resp.sendRedirect(req.getContextPath() + "/admin/manage-user");
     } else {
         req.setAttribute("error", "Cập nhật thất bại.");
         listUsers(req, resp);
@@ -246,7 +246,7 @@ public class ManageUserController extends HttpServlet {
         boolean success = userDAO.inactive(userId);
         HttpSession session = req.getSession();
         session.setAttribute("message", success ? "Vô hiệu hóa thành công." : "Không thể vô hiệu hóa.");
-        resp.sendRedirect(req.getContextPath() + "/UserServlet");
+        resp.sendRedirect(req.getContextPath() + "/admin/manage-user");
     }
 
 }

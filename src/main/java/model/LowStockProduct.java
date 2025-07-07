@@ -27,6 +27,8 @@ public class LowStockProduct {
     private Integer quantityOnHand;
     private String supplierName;
     private String status; // "LOW_STOCK" hoặc "OUT_OF_STOCK"
+    private Integer warehouseId;
+    private String warehouseName;
     
     public String getStatusDisplay() {
         if (quantityOnHand == null || quantityOnHand <= 0) {
