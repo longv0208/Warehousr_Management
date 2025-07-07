@@ -114,8 +114,9 @@ public class StockTakeController extends HttpServlet {
             if (warehouseIdFilter != null) {
                 stockTakes = stockTakeDAO.findByStatus(statusFilter);
                 // Filter by warehouse if needed (có thể cần thêm method mới trong DAO)
+                Integer finalWarehouseIdFilter = warehouseIdFilter;
                 stockTakes = stockTakes.stream()
-                    .filter(st -> warehouseIdFilter.equals(st.getWarehouseId()))
+                    .filter(st -> finalWarehouseIdFilter.equals(st.getWarehouseId()))
                     .toList();
             } else {
                 stockTakes = stockTakeDAO.findByStatus(statusFilter);
@@ -208,6 +209,22 @@ public class StockTakeController extends HttpServlet {
                 response.sendRedirect(request.getContextPath() + "/warehouse-manager/stock-take");
                 return;
             }
+
+            // >> LOGIC MỚI: Kiểm tra xem có phiếu mới hơn đã được đối soát chưa
+            if (stockTake.getWarehouseId() != null) {
+                boolean hasNewer = stockTakeDAO.hasNewerReconciledStockTake(
+                    stockTake.getWarehouseId(),
+                    stockTake.getCreatedAt()
+                );
+                if (hasNewer) {
+                    session.setAttribute("errorMessage", 
+                        "Không thể đối soát phiếu này vì đã có một phiếu kiểm kê mới hơn cho cùng kho hàng (" 
+                        + stockTake.getWarehouseName() + ") đã được đối soát. Vui lòng kiểm tra lại.");
+                    response.sendRedirect(request.getContextPath() + "/warehouse-manager/stock-take?action=approve-view&id=" + stockTakeId);
+                    return;
+                }
+            }
+            // << KẾT THÚC LOGIC MỚI
 
             // Lấy danh sách tất cả chi tiết kiểm kê đã được kiểm đếm
             List<StockTakeDetail> allDetails = stockTakeDetailDAO.findByStockTakeId(stockTakeId);

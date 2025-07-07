@@ -1,6 +1,7 @@
 package controller.dashboard.admin;
 
 import dao.WarehouseDAO;
+import dao.InventoryDAO;
 import model.Warehouse;
 import model.User;
 import utils.SessionUtil;
@@ -37,8 +38,10 @@ public class ManageWarehouseController extends HttpServlet {
             action = "list"; // Default action
         }
 
-        // Check permissions for admin-only actions
-        if (!action.equals("list") && !"admin".equals(currentUser.getRoleId())) {
+        // Check permissions - allow both admin and warehouse manager
+        String userRole = currentUser.getRoleId();
+        if (!action.equals("list") && !action.equals("view") && 
+            !"admin".equals(userRole) && !"warehouse_manager".equals(userRole)) {
             request.getSession().setAttribute("toastMessage", "Bạn không có quyền thực hiện thao tác này!");
             request.getSession().setAttribute("toastType", "error");
             response.sendRedirect(request.getContextPath() + "/admin/manage-warehouse?action=list");
@@ -58,6 +61,9 @@ public class ManageWarehouseController extends HttpServlet {
             case "delete":
                 deleteWarehouse(request, response);
                 break;
+            case "view":
+                viewWarehouse(request, response);
+                break;
             default:
                 listWarehouses(request, response);
                 break;
@@ -66,14 +72,16 @@ public class ManageWarehouseController extends HttpServlet {
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        // Check if user is logged in and is admin
+        // Check if user is logged in
         User currentUser = SessionUtil.getUserFromSession(request);
         if (currentUser == null) {
             response.sendRedirect(request.getContextPath() + "/login");
             return;
         }
 
-        if (!"admin".equals(currentUser.getRoleId())) {
+        // Check permissions - allow both admin and warehouse manager
+        String userRole = currentUser.getRoleId();
+        if (!"admin".equals(userRole) && !"warehouse_manager".equals(userRole)) {
             request.getSession().setAttribute("toastMessage", "Bạn không có quyền thực hiện thao tác này!");
             request.getSession().setAttribute("toastType", "error");
             response.sendRedirect(request.getContextPath() + "/admin/manage-warehouse?action=list");
@@ -296,5 +304,33 @@ public class ManageWarehouseController extends HttpServlet {
         }
         
         response.sendRedirect(request.getContextPath() + "/admin/manage-warehouse?action=list");
+    }
+
+    private void viewWarehouse(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        String idStr = request.getParameter("id");
+        if (idStr == null || idStr.isEmpty()) {
+            response.sendRedirect(request.getContextPath() + "/admin/manage-warehouse?action=list");
+            return;
+        }
+
+        try {
+            int warehouseId = Integer.parseInt(idStr);
+            Warehouse warehouse = warehouseDAO.findById(warehouseId);
+            if (warehouse == null) {
+                request.getSession().setAttribute("toastMessage", "Không tìm thấy kho hàng!");
+                request.getSession().setAttribute("toastType", "error");
+                response.sendRedirect(request.getContextPath() + "/admin/manage-warehouse?action=list");
+                return;
+            }
+
+            InventoryDAO inventoryDAO = new InventoryDAO();
+            List<model.InventoryWithProduct> productsInWarehouse = inventoryDAO.findAllWithProductInfoByWarehouseId(warehouseId);
+
+            request.setAttribute("warehouse", warehouse);
+            request.setAttribute("productsInWarehouse", productsInWarehouse);
+            request.getRequestDispatcher("/view/dashboard/admin/warehouse/view-warehouse.jsp").forward(request, response);
+        } catch (NumberFormatException e) {
+            response.sendRedirect(request.getContextPath() + "/admin/manage-warehouse?action=list");
+        }
     }
 } 

@@ -328,4 +328,35 @@ public class StockTakeDAO extends DBContext implements I_DAO<StockTake> {
             close();
         }
     }
+
+    /**
+     * Checks if a newer stock take has already been reconciled for the same warehouse.
+     * This prevents reconciling an old stock take after a newer one has been processed,
+     * which would lead to data inconsistency.
+     *
+     * @param warehouseId The ID of the warehouse.
+     * @param currentStockTakeTimestamp The creation timestamp of the stock take being checked.
+     * @return true if a newer, reconciled stock take exists; false otherwise.
+     */
+    public boolean hasNewerReconciledStockTake(Integer warehouseId, Timestamp currentStockTakeTimestamp) {
+        String sql = "SELECT COUNT(*) FROM stocktakes " +
+                     "WHERE warehouse_id = ? " +
+                     "AND status = 'reconciled' " +
+                     "AND created_at > ?";
+        try {
+            conn = getConnection();
+            statement = conn.prepareStatement(sql);
+            statement.setInt(1, warehouseId);
+            statement.setTimestamp(2, currentStockTakeTimestamp);
+            resultSet = statement.executeQuery();
+            if (resultSet.next()) {
+                return resultSet.getInt(1) > 0;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            close();
+        }
+        return false;
+    }
 }

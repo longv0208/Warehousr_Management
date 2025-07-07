@@ -292,17 +292,14 @@ public class InventoryDAO extends DBContext implements I_DAO<Inventory> {
      * Count products with inventory in a specific warehouse
      */
     public int countProductsInWarehouse(Integer warehouseId) {
-        String sql = "SELECT COUNT(DISTINCT i.product_id) as product_count " +
-                    "FROM inventory i " +
-                    "JOIN products p ON i.product_id = p.product_id " +
-                    "WHERE i.warehouse_id = ? AND i.quantity_on_hand > 0 AND p.is_active = 1";
+        String sql = "SELECT COUNT(DISTINCT product_id) FROM inventory WHERE warehouse_id = ?";
         try {
             conn = getConnection();
             statement = conn.prepareStatement(sql);
             statement.setInt(1, warehouseId);
             resultSet = statement.executeQuery();
             if (resultSet.next()) {
-                return resultSet.getInt("product_count");
+                return resultSet.getInt(1);
             }
         } catch (SQLException ex) {
             LOGGER.log(Level.SEVERE, "Error counting products in warehouse ID: " + warehouseId, ex);
@@ -323,36 +320,74 @@ public class InventoryDAO extends DBContext implements I_DAO<Inventory> {
      * Find all inventory with product and warehouse information
      */
     public List<InventoryWithProduct> findAllWithProductInfo() {
-        List<InventoryWithProduct> inventories = new ArrayList<>();
-        String sql = "SELECT i.*, p.product_name, p.product_code, p.unit, w.warehouse_name " +
-                    "FROM inventory i " +
-                    "LEFT JOIN products p ON i.product_id = p.product_id " +
-                    "LEFT JOIN warehouses w ON i.warehouse_id = w.warehouse_id " +
-                    "ORDER BY w.warehouse_name, p.product_name";
+        List<InventoryWithProduct> list = new ArrayList<>();
+        String sql = "SELECT i.inventory_id, i.product_id, i.quantity_on_hand, i.last_updated, i.warehouse_id, "
+                + "p.product_name, p.product_code, p.unit, w.warehouse_name "
+                + "FROM inventory i "
+                + "JOIN products p ON i.product_id = p.product_id "
+                + "JOIN warehouses w ON i.warehouse_id = w.warehouse_id";
         try {
             conn = getConnection();
             statement = conn.prepareStatement(sql);
             resultSet = statement.executeQuery();
             while (resultSet.next()) {
-                InventoryWithProduct inventory = InventoryWithProduct.builder()
-                    .inventoryId(resultSet.getInt("inventory_id"))
-                    .productId(resultSet.getInt("product_id"))
-                    .quantityOnHand(resultSet.getInt("quantity_on_hand"))
-                    .lastUpdated(resultSet.getTimestamp("last_updated"))
-                    .warehouseId(resultSet.getInt("warehouse_id"))
-                    .productName(resultSet.getString("product_name"))
-                    .productCode(resultSet.getString("product_code"))
-                    .unit(resultSet.getString("unit"))
-                    .warehouseName(resultSet.getString("warehouse_name"))
-                    .build();
-                inventories.add(inventory);
+                list.add(getInventoryWithProductFromResultSet(resultSet));
             }
         } catch (SQLException ex) {
-            LOGGER.log(Level.SEVERE, "Error getting all inventories with product info", ex);
+            LOGGER.log(Level.SEVERE, "Error finding all inventory with product info", ex);
         } finally {
             close();
         }
-        return inventories;
+        return list;
+    }
+
+    public List<InventoryWithProduct> findAllWithProductInfoByWarehouseId(Integer warehouseId) {
+        List<InventoryWithProduct> list = new ArrayList<>();
+        String sql = "SELECT i.inventory_id, i.product_id, i.quantity_on_hand, i.last_updated, i.warehouse_id, "
+                + "p.product_name, p.product_code, p.unit, w.warehouse_name "
+                + "FROM inventory i "
+                + "JOIN products p ON i.product_id = p.product_id "
+                + "JOIN warehouses w ON i.warehouse_id = w.warehouse_id "
+                + "WHERE i.warehouse_id = ?";
+        try {
+            conn = getConnection();
+            statement = conn.prepareStatement(sql);
+            statement.setInt(1, warehouseId);
+            resultSet = statement.executeQuery();
+            while (resultSet.next()) {
+                InventoryWithProduct item = InventoryWithProduct.builder()
+                        .inventoryId(resultSet.getInt("inventory_id"))
+                        .productId(resultSet.getInt("product_id"))
+                        .quantityOnHand(resultSet.getInt("quantity_on_hand"))
+                        .lastUpdated(resultSet.getTimestamp("last_updated"))
+                        .warehouseId(resultSet.getInt("warehouse_id"))
+                        .productName(resultSet.getString("product_name"))
+                        .productCode(resultSet.getString("product_code"))
+                        .unit(resultSet.getString("unit"))
+                        .warehouseName(resultSet.getString("warehouse_name"))
+                        .build();
+                list.add(item);
+            }
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Error finding all inventory with product info by warehouse ID: " + warehouseId, ex);
+        } finally {
+            close();
+        }
+        return list;
+    }
+
+    private InventoryWithProduct getInventoryWithProductFromResultSet(ResultSet rs) throws SQLException {
+        return InventoryWithProduct.builder()
+                .inventoryId(rs.getInt("inventory_id"))
+                .productId(rs.getInt("product_id"))
+                .quantityOnHand(rs.getInt("quantity_on_hand"))
+                .lastUpdated(rs.getTimestamp("last_updated"))
+                .warehouseId(rs.getInt("warehouse_id"))
+                .productName(rs.getString("product_name"))
+                .productCode(rs.getString("product_code"))
+                .unit(rs.getString("unit"))
+                .warehouseName(rs.getString("warehouse_name"))
+                .build();
     }
 
     /**
@@ -451,20 +486,20 @@ public class InventoryDAO extends DBContext implements I_DAO<Inventory> {
 
     public Inventory getInventoryByProductAndWarehouse(int productId, int warehouseId) {
         String sql = "SELECT * FROM inventory WHERE product_id = ? AND warehouse_id = ?";
-        try (
-            java.sql.Connection c = getConnection(); 
-            java.sql.PreparedStatement st = c.prepareStatement(sql)
-        ) {
-            st.setInt(1, productId);
-            st.setInt(2, warehouseId);
-            try (ResultSet rs = st.executeQuery()) {
-                if (rs.next()) {
-                    return getFromResultSet(rs);
-                }
+        try {
+            conn = getConnection();
+            statement = conn.prepareStatement(sql);
+            statement.setInt(1, productId);
+            statement.setInt(2, warehouseId);
+            resultSet = statement.executeQuery();
+            if (resultSet.next()) {
+                return getFromResultSet(resultSet);
             }
-        } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, "Error getting inventory for product " + productId + " in warehouse " + warehouseId, e);
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Error finding inventory for product: " + productId + " and warehouse: " + warehouseId, ex);
+        } finally {
+            close();
         }
-        return null; 
+        return null;
     }
 } 
