@@ -16,7 +16,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-@WebServlet(name = "ManageNotificationController", urlPatterns = {"/admin/notifications"})
+@WebServlet(name = "ManageNotificationController", urlPatterns = {"/admin/manage-notification"})
 public class ManageNotificationController extends HttpServlet {
     
     private UserNotificationDAO notificationDAO;
