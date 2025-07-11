@@ -16,7 +16,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-@WebServlet(name = "ManageNotificationController", urlPatterns = {"/admin/manage-notification"})
+@WebServlet(name = "ManageNotificationController", urlPatterns = {
+        "/admin/manage-notification",
+        "/admin/notifications"
+})
 public class ManageNotificationController extends HttpServlet {
     
     private UserNotificationDAO notificationDAO;
@@ -206,7 +209,7 @@ public class ManageNotificationController extends HttpServlet {
         
         String notificationIdStr = request.getParameter("id");
         if (notificationIdStr == null) {
-            response.sendRedirect("notifications");
+            response.sendRedirect(request.getContextPath() + "/admin/notifications");
             return;
         }
         
@@ -224,7 +227,7 @@ public class ManageNotificationController extends HttpServlet {
             request.getRequestDispatcher("/view/dashboard/admin/notification/view-notification.jsp").forward(request, response);
             
         } catch (NumberFormatException e) {
-            response.sendRedirect("notifications");
+            response.sendRedirect(request.getContextPath() + "/admin/notifications");
         }
     }
 } 
