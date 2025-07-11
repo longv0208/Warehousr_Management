@@ -14,7 +14,10 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.sql.Date;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @WebServlet(name = "PurchasingController", urlPatterns = {"/purchasing"})
 public class PurchasingController extends HttpServlet {
@@ -562,14 +565,140 @@ public class PurchasingController extends HttpServlet {
     // Other required methods...
     private void handleShowEditRfq(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        // Implementation for editing RFQ
-        response.sendRedirect("purchasing?action=list-rfq");
+        try {
+            int rfqId = Integer.parseInt(request.getParameter("id"));
+            Rfq rfq = rfqDAO.findById(rfqId);
+            
+            if (rfq == null) {
+                HttpSession session = request.getSession();
+                session.setAttribute("toastMessage", "RFQ not found!");
+                session.setAttribute("toastType", "error");
+                response.sendRedirect("purchasing?action=list-rfq");
+                return;
+            }
+            
+            // Check if RFQ can be edited (only pending status)
+            if (!"pending".equals(rfq.getStatus())) {
+                HttpSession session = request.getSession();
+                session.setAttribute("toastMessage", "RFQ can only be edited when status is pending!");
+                session.setAttribute("toastType", "error");
+                response.sendRedirect("purchasing?action=view-rfq&id=" + rfqId);
+                return;
+            }
+            
+            // Check if current user is the requester
+            User currentUser = SessionUtil.getUserFromSession(request);
+            if (currentUser == null || !rfq.getUserIdRequester().equals(currentUser.getUserId())) {
+                HttpSession session = request.getSession();
+                session.setAttribute("toastMessage", "You can only edit your own RFQs!");
+                session.setAttribute("toastType", "error");
+                response.sendRedirect("purchasing?action=list-rfq");
+                return;
+            }
+            
+            List<RfqDetail> rfqDetails = rfqDetailDAO.findByRfqId(rfqId);
+            List<Supplier> suppliers = supplierDAO.findAll();
+            List<Warehouse> warehouses = warehouseDAO.findAll();
+            List<Product> products = productDAO.findAll();
+
+            request.setAttribute("rfq", rfq);
+            request.setAttribute("rfqDetails", rfqDetails);
+            request.setAttribute("suppliers", suppliers);
+            request.setAttribute("warehouses", warehouses);
+            request.setAttribute("products", products);
+            
+            request.getRequestDispatcher("view/dashboard/purchasingStaff/rfq/edit-rfq.jsp").forward(request, response);
+            
+        } catch (NumberFormatException e) {
+            HttpSession session = request.getSession();
+            session.setAttribute("toastMessage", "Invalid RFQ ID!");
+            session.setAttribute("toastType", "error");
+            response.sendRedirect("purchasing?action=list-rfq");
+        }
     }
 
     private void handleUpdateRfq(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        // Implementation for updating RFQ
-        response.sendRedirect("purchasing?action=list-rfq");
+        try {
+            HttpSession session = request.getSession();
+            User currentUser = SessionUtil.getUserFromSession(request);
+            
+            int rfqId = Integer.parseInt(request.getParameter("rfqId"));
+            Rfq existingRfq = rfqDAO.findById(rfqId);
+            
+            if (existingRfq == null) {
+                session.setAttribute("toastMessage", "RFQ not found!");
+                session.setAttribute("toastType", "error");
+                response.sendRedirect("purchasing?action=list-rfq");
+                return;
+            }
+            
+            // Check if RFQ can be edited (only pending status)
+            if (!"pending".equals(existingRfq.getStatus())) {
+                session.setAttribute("toastMessage", "RFQ can only be edited when status is pending!");
+                session.setAttribute("toastType", "error");
+                response.sendRedirect("purchasing?action=view-rfq&id=" + rfqId);
+                return;
+            }
+            
+            // Check if current user is the requester
+            if (currentUser == null || !existingRfq.getUserIdRequester().equals(currentUser.getUserId())) {
+                session.setAttribute("toastMessage", "You can only edit your own RFQs!");
+                session.setAttribute("toastType", "error");
+                response.sendRedirect("purchasing?action=list-rfq");
+                return;
+            }
+
+            // Update RFQ
+            Rfq rfq = Rfq.builder()
+                    .rfqId(rfqId)
+                    .rfqCode(existingRfq.getRfqCode()) // Keep original code
+                    .expectedDeliveryDate(Date.valueOf(request.getParameter("expectedDeliveryDate")))
+                    .providerId(Integer.valueOf(request.getParameter("providerId")))
+                    .warehouseId(Integer.valueOf(request.getParameter("warehouseId")))
+                    .userIdRequester(currentUser.getUserId())
+                    .status("pending") // Keep status as pending
+                    .note(request.getParameter("note"))
+                    .build();
+
+            boolean success = rfqDAO.update(rfq);
+
+            if (success) {
+                // Delete existing RFQ details
+                rfqDetailDAO.deleteByRfqId(rfqId);
+                
+                // Create new RFQ Details
+                String[] productIds = request.getParameterValues("productId");
+                String[] quantities = request.getParameterValues("quantity");
+
+                if (productIds != null && quantities != null) {
+                    for (int i = 0; i < productIds.length; i++) {
+                        if (!productIds[i].isEmpty() && !quantities[i].isEmpty()) {
+                            RfqDetail detail = RfqDetail.builder()
+                                    .rfqId(rfqId)
+                                    .productId(Integer.valueOf(productIds[i]))
+                                    .quantity(Integer.valueOf(quantities[i]))
+                                    .build();
+                            rfqDetailDAO.insert(detail);
+                        }
+                    }
+                }
+
+                session.setAttribute("toastMessage", "RFQ updated successfully!");
+                session.setAttribute("toastType", "success");
+                response.sendRedirect("purchasing?action=view-rfq&id=" + rfqId);
+            } else {
+                session.setAttribute("toastMessage", "Failed to update RFQ!");
+                session.setAttribute("toastType", "error");
+                response.sendRedirect("purchasing?action=edit-rfq&id=" + rfqId);
+            }
+
+        } catch (Exception e) {
+            HttpSession session = request.getSession();
+            session.setAttribute("toastMessage", "Error updating RFQ: " + e.getMessage());
+            session.setAttribute("toastType", "error");
+            response.sendRedirect("purchasing?action=list-rfq");
+        }
     }
 
     private void handleShowEditPo(HttpServletRequest request, HttpServletResponse response)
@@ -603,9 +732,40 @@ public class PurchasingController extends HttpServlet {
         List<Product> products = productDAO.findAll();
         List<Warehouse> warehouses = warehouseDAO.findAll();
         
-        request.setAttribute("products", products);
-        request.setAttribute("warehouses", warehouses);
-        request.setAttribute("inventoryDAO", inventoryDAO);
+        // Pre-compute inventory data to avoid calling DAO in JSP
+        List<Map<String, Object>> inventoryData = new ArrayList<>();
+        
+        for (Product product : products) {
+            for (Warehouse warehouse : warehouses) {
+                Integer quantity = inventoryDAO.getQuantityOnHand(product.getProductId(), warehouse.getWarehouseId());
+                
+                Map<String, Object> inventoryItem = new HashMap<>();
+                inventoryItem.put("productCode", product.getProductCode());
+                inventoryItem.put("productName", product.getProductName());
+                inventoryItem.put("warehouseName", warehouse.getWarehouseName());
+                inventoryItem.put("quantity", quantity);
+                inventoryItem.put("unit", product.getUnit());
+                inventoryItem.put("lowStockThreshold", product.getLowStockThreshold());
+                
+                // Determine status
+                String status;
+                String statusClass;
+                if (quantity <= product.getLowStockThreshold()) {
+                    status = "Low Stock";
+                    statusClass = "bg-danger";
+                } else {
+                    status = "In Stock";
+                    statusClass = "bg-success";
+                }
+                inventoryItem.put("status", status);
+                inventoryItem.put("statusClass", statusClass);
+                
+                inventoryData.add(inventoryItem);
+            }
+        }
+        
+        request.setAttribute("inventoryData", inventoryData);
+        request.setAttribute("warehouses", warehouses);  // Add warehouse list for filter
         request.getRequestDispatcher("view/dashboard/purchasingStaff/inventory-list.jsp").forward(request, response);
     }
 } 

@@ -170,6 +170,13 @@ public class InventoryDAO extends DBContext implements I_DAO<Inventory> {
     }
 
     /**
+     * Alias method for JSP compatibility - Get quantity on hand for product in warehouse
+     */
+    public Integer getQuantityOnHand(Integer productId, Integer warehouseId) {
+        return getQuantityByProductIdAndWarehouse(productId, warehouseId);
+    }
+
+    /**
      * Find inventory record by product ID
      */
     public Inventory findByProductId(Integer productId) {
