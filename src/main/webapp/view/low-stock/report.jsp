@@ -36,9 +36,6 @@
             font-size: 0.8rem;
             padding: 0.4rem 0.6rem;
         }
-        .table th:nth-child(3), .table td:nth-child(3) {
-            background-color: rgba(108, 117, 125, 0.1);
-        }
     </style>
 </head>
 <body>
