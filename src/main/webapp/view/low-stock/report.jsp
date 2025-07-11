@@ -184,7 +184,7 @@
                                 <td>
                                     <c:choose>
                                         <c:when test="${not empty product.warehouseName}">
-                                            <span class="badge bg-info warehouse-badge">
+                                            <span class="badge bg-primary warehouse-badge">
                                                 <i class="bi bi-building me-1"></i>${product.warehouseName}
                                             </span>
                                         </c:when>

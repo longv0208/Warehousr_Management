@@ -155,7 +155,7 @@
                                         <td><code>${item.productCode}</code></td>
                                         <td class="fw-medium">${item.productName}</td>
                                             <td>
-                                            <span class="badge bg-info text-dark">${item.warehouseName}</span>
+                                            <span class="badge bg-primary">${item.warehouseName}</span>
                                             </td>
                                         <td class="text-end fw-bold">
                                                 <c:choose>

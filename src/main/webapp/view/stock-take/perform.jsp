@@ -63,7 +63,7 @@
                     <p class="text-muted mb-0">
                         Phiếu: ${stockTake.stockTakeCode} - 
                         Ngày: <fmt:formatDate value="${stockTake.stockTakeDate}" pattern="dd/MM/yyyy" /> - 
-                        Kho: <span class="badge bg-info">${stockTake.warehouseName != null ? stockTake.warehouseName : 'N/A'}</span>
+                        Kho: <span class="badge bg-primary">${stockTake.warehouseName != null ? stockTake.warehouseName : 'N/A'}</span>
                     </p>
                 </div>
                 <a href="${pageContext.request.contextPath}/stock-take" class="btn btn-secondary">Quay lại</a>

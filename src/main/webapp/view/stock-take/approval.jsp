@@ -87,7 +87,7 @@
                                 </div>
                                 <div class="col-md-2">
                                     <h6 class="text-light">Kho hàng:</h6>
-                                    <h5><span class="badge bg-info fs-6">${stockTake.warehouseName != null ? stockTake.warehouseName : 'N/A'}</span></h5>
+                                    <h5><span class="badge bg-primary fs-6">${stockTake.warehouseName != null ? stockTake.warehouseName : 'N/A'}</span></h5>
                                 </div>
                                 <div class="col-md-2">
                                     <h6 class="text-light">Trạng thái:</h6>

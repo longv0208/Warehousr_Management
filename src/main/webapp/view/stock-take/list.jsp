@@ -101,7 +101,7 @@
                                 <td><fmt:formatDate value="${stockTake.stockTakeDate}" pattern="dd/MM/yyyy" /></td>
                                 <td>${stockTake.userFullName}</td>
                                 <td>
-                                    <span class="badge bg-info">${stockTake.warehouseName != null ? stockTake.warehouseName : 'N/A'}</span>
+                                    <span class="badge bg-primary">${stockTake.warehouseName != null ? stockTake.warehouseName : 'N/A'}</span>
                                 </td>
                                 <td>
                                     <c:choose>

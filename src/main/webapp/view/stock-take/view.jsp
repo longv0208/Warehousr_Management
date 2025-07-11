@@ -43,7 +43,7 @@
                                 </div>
                                 <div class="col-md-6">
                                     <p><strong>Kho hàng:</strong> 
-                                        <span class="badge bg-info">${stockTake.warehouseName != null ? stockTake.warehouseName : 'N/A'}</span>
+                                        <span class="badge bg-primary">${stockTake.warehouseName != null ? stockTake.warehouseName : 'N/A'}</span>
                                     </p>
                                     <p><strong>Trạng thái:</strong> 
                                         <c:choose>
