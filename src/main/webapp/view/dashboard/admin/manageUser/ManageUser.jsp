@@ -30,7 +30,7 @@
                         <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addUserModal">+ Thêm người dùng</button>
                     </div>
 
-                    <form method="get" action="UserServlet" class="mb-3 d-flex align-items-center gap-2">
+                    <form method="get" action="${pageContext.request.contextPath}/UserServlet" class="mb-3 d-flex align-items-center gap-2">
                         <input type="text" name="keyword" placeholder="Tìm kiếm username, email, họ tên..."
                                value="${param.keyword != null ? param.keyword : ''}"
                                class="form-control" style="max-width: 300px;" />
@@ -117,7 +117,7 @@
                                     totalPages = 1;
                                 }
 
-                                String baseUrl = "UserServlet?page=";
+                                String baseUrl = request.getContextPath() + "/UserServlet?page=";
                             %>
                             <li class="page-item <%= currentPage == 1 ? "disabled" : ""%>">
                                 <a class="page-link" href="<%= currentPage > 1 ? baseUrl + (currentPage - 1) : "#"%>">Prev</a>

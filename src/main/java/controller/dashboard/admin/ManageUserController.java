@@ -20,6 +20,7 @@ import utils.PasswordUtil;
 
 @WebServlet(name = "ManageUserController", urlPatterns = {
         "/admin/manage-user",
+        "/UserServlet",
         "/UserServlet/AddUserServlet",
         "/UserServlet/EditUserServlet", 
         "/UserServlet/InactiveUserServlet"
@@ -41,6 +42,9 @@ public class ManageUserController extends HttpServlet {
         try {
             switch (path) {
                 case "/admin/manage-user":
+                    listUsers(req, resp);
+                    break;
+                case "/UserServlet":
                     listUsers(req, resp);
                     break;
                 case "/UserServlet/AddUserServlet":
