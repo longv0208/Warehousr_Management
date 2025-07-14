@@ -4,6 +4,8 @@ import context.DBContext;
 import model.Product;
 import model.Supplier;
 import model.Category;
+import model.User;
+import utils.SessionUtil;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -22,6 +24,19 @@ public class DashBoardServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+
+        // Check authentication and authorization - only admins can access this page
+        User currentUser = SessionUtil.getUserFromSession(request);
+        if (currentUser == null) {
+            response.sendRedirect(request.getContextPath() + "/login");
+            return;
+        }
+        if (!"admin".equals(currentUser.getRoleId())) {
+            request.getSession().setAttribute("toastMessage", "Bạn không có quyền truy cập trang này!");
+            request.getSession().setAttribute("toastType", "error");
+            response.sendRedirect(request.getContextPath() + "/profile");
+            return;
+        }
 
         int totalProducts = 0;
         int totalReceivedToday = 0;
