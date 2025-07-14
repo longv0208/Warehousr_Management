@@ -105,17 +105,23 @@
                         <div class="col-md-3">
                             <label for="startDate" class="form-label">Từ ngày</label>
                             <input type="date" class="form-control" id="startDate" name="startDate" 
-                                   value="${startDate}">
+                                   value="${selectedStartDate}">
                         </div>
                         <div class="col-md-3">
                             <label for="endDate" class="form-label">Đến ngày</label>
                             <input type="date" class="form-control" id="endDate" name="endDate" 
-                                   value="${endDate}">
+                                   value="${selectedEndDate}">
                         </div>
                         <div class="col-md-3">
-                            <label for="userFilter" class="form-label">Người dùng</label>
-                            <input type="text" class="form-control" id="userFilter" name="userFilter" 
-                                   value="${userFilter}" placeholder="Tên người dùng...">
+                            <label for="userId" class="form-label">Người dùng</label>
+                            <select class="form-select" id="userId" name="userId">
+                                <option value="">Tất cả người dùng</option>
+                                <c:forEach var="user" items="${users}">
+                                    <option value="${user.userId}" <c:if test="${selectedUserId == user.userId}">selected</c:if>>
+                                        ${user.fullName}
+                                    </option>
+                                </c:forEach>
+                            </select>
                         </div>
                         <div class="col-md-3">
                             <label class="form-label">&nbsp;</label>
