@@ -21,6 +21,9 @@
                     <c:if test="${not empty error}">
                         <div class="alert alert-danger">${error}</div>
                     </c:if>
+                    <c:if test="${not empty success}">
+                        <div class="alert alert-success">${success}</div>
+                    </c:if>
 
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <h3>Quản lý Tài khoản</h3>
@@ -148,28 +151,28 @@
                     </div>
                     <div class="modal-body">
                         <label class="form-label">Username</label>
-                        <input name="username" class="form-control mb-2" required/>
+                        <input name="username" class="form-control mb-2" value="${formUsername}" required/>
 
                         <label class="form-label">Mật khẩu</label>
                         <input type="password" name="password" class="form-control mb-2" required/>
 
                         <label class="form-label">Họ tên</label>
-                        <input name="fullName" class="form-control mb-2" required/>
+                        <input name="fullName" class="form-control mb-2" value="${formFullName}" required/>
 
                         <label class="form-label">Email</label>
-                        <input type="email" name="email" class="form-control mb-2" required/>
+                        <input type="email" name="email" class="form-control mb-2" value="${formEmail}" required/>
 
                         <label class="form-label">Vai trò</label>
                         <select name="roleId" class="form-select mb-2" required>
-                            <% for (Role r : roleList) {%>
-                            <option value="<%= r.getRoleId()%>"><%= r.getRoleName()%></option>
+                            <% for (Role r : roleList) { %>
+                            <option value="<%= r.getRoleId() %>" <%= request.getAttribute("formRoleId") != null && request.getAttribute("formRoleId").equals(r.getRoleId()) ? "selected" : "" %>><%= r.getRoleName() %></option>
                             <% } %>
                         </select>
 
                         <label class="form-label">Trạng thái</label>
                         <select name="isActive" class="form-select" required>
-                            <option value="true">Hoạt động</option>
-                            <option value="false">Không hoạt động</option>
+                            <option value="true" ${formIsActive == 'true' ? 'selected' : ''}>Hoạt động</option>
+                            <option value="false" ${formIsActive == 'false' ? 'selected' : ''}>Không hoạt động</option>
                         </select>
                     </div>
                     <div class="modal-footer">
@@ -268,5 +271,13 @@
                 form.appendChild(resetInput);
             }
         </script>
+        <% if (request.getAttribute("showAddForm") != null) { %>
+<script>
+    window.addEventListener('load', function () {
+        var addModal = new bootstrap.Modal(document.getElementById('addUserModal'));
+        addModal.show();
+    });
+</script>
+<% } %>
     </body>
 </html>

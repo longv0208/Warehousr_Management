@@ -122,7 +122,7 @@
         background-color: #0d6efd;
         color: white !important;
     }
-    
+
     .inactive {
         color: gray;
         background-color: #f0f0f0;
@@ -166,6 +166,9 @@
         <!-- ============================================================== -->
         <% if ("admin".equals(userRole)) { %>
         <li class="nav-item">
+            <a href="${pageContext.request.contextPath}/dashboard" class="nav-link"><i class="bi bi-people"></i><span class="link-text">Dashboard</span></a>
+        </li>
+        <li class="nav-item">
             <a href="${pageContext.request.contextPath}/admin/manage-user" class="nav-link"><i class="bi bi-people"></i><span class="link-text">Người dùng</span></a>
         </li>
         <li class="nav-item">
@@ -184,7 +187,7 @@
                     </li>
                     <li class="nav-item">
                         <a href="${pageContext.request.contextPath}/admin/activity-log?action=after-hours" class="nav-link">
-                             <span class="link-text">Đăng nhập ngoài giờ</span>
+                            <span class="link-text">Đăng nhập ngoài giờ</span>
                         </a>
                     </li>
                 </ul>
@@ -213,9 +216,9 @@
         <li class="nav-item">
             <a href="${pageContext.request.contextPath}/admin/manage-supplier" class="nav-link"><i class="bi bi-truck"></i><span class="link-text">Nhà cung cấp</span></a>
         </li>
-<!--        <li class="nav-item">
-            <a href="${pageContext.request.contextPath}/admin/manage-sales-order" class="nav-link"><i class="bi bi-receipt"></i><span class="link-text">Đơn bán hàng</span></a>
-        </li>-->
+        <!--        <li class="nav-item">
+                    <a href="${pageContext.request.contextPath}/admin/manage-sales-order" class="nav-link"><i class="bi bi-receipt"></i><span class="link-text">Đơn bán hàng</span></a>
+                </li>-->
         <li class="nav-item">
             <a href="${pageContext.request.contextPath}/stock-take" class="nav-link"><i class="bi bi-clipboard-check"></i><span class="link-text">Kiểm kê kho</span></a>
         </li>
