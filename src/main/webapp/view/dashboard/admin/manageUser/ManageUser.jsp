@@ -21,36 +21,58 @@
 
                     <%-- Xóa alert cũ, thay bằng toast --%>
                     <c:remove var="error"/>
-                    <c:remove var="success"/>
-                    <c:if test="${not empty sessionScope.toastMessage and fn:trim(sessionScope.toastMessage) != ''}">
-                        <div aria-live="polite" aria-atomic="true" class="position-fixed top-0 end-0 p-3" style="z-index: 1080; min-width: 300px;">
-                            <div id="liveToast" class="toast align-items-center text-bg-${sessionScope.toastType == 'success' ? 'success' : (sessionScope.toastType == 'error' ? 'danger' : (sessionScope.toastType == 'warning' ? 'warning' : 'info'))} border-0 show" role="alert" aria-live="assertive" aria-atomic="true">
-                                <div class="d-flex">
-                                    <div class="toast-body">
-                                        ${sessionScope.toastMessage}
+                    <c:choose>
+                        <c:when test="${not empty error and fn:trim(error) != ''}">
+                            <div aria-live="polite" aria-atomic="true" class="position-fixed top-0 end-0 p-3" style="z-index: 1080; min-width: 300px;">
+                                <div id="liveToast" class="toast align-items-center text-bg-danger border-0 show" role="alert" aria-live="assertive" aria-atomic="true">
+                                    <div class="d-flex">
+                                        <div class="toast-body">
+                                            ${error}
+                                        </div>
+                                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
                                     </div>
-                                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
                                 </div>
                             </div>
-                        </div>
-                        <script>
-                        document.addEventListener('DOMContentLoaded', function () {
-                            var toastEl = document.getElementById('liveToast');
-                            if (toastEl) {
-                                var toast = new bootstrap.Toast(toastEl, { delay: 4000 });
-                                toast.show();
-                                toastEl.addEventListener('hidden.bs.toast', function () {
-                                    fetch('${pageContext.request.contextPath}/remove-toast', {
-                                        method: 'POST',
-                                        headers: {
-                                            'Content-Type': 'application/x-www-form-urlencoded',
-                                        },
+                            <script>
+                            document.addEventListener('DOMContentLoaded', function () {
+                                var toastEl = document.getElementById('liveToast');
+                                if (toastEl) {
+                                    var toast = new bootstrap.Toast(toastEl, { delay: 4000 });
+                                    toast.show();
+                                }
+                            });
+                            </script>
+                        </c:when>
+                        <c:when test="${not empty sessionScope.toastMessage and fn:trim(sessionScope.toastMessage) != ''}">
+                            <div aria-live="polite" aria-atomic="true" class="position-fixed top-0 end-0 p-3" style="z-index: 1080; min-width: 300px;">
+                                <div id="liveToast" class="toast align-items-center text-bg-${sessionScope.toastType == 'success' ? 'success' : (sessionScope.toastType == 'error' ? 'danger' : (sessionScope.toastType == 'warning' ? 'warning' : 'info'))} border-0 show" role="alert" aria-live="assertive" aria-atomic="true">
+                                    <div class="d-flex">
+                                        <div class="toast-body">
+                                            ${sessionScope.toastMessage}
+                                        </div>
+                                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                                    </div>
+                                </div>
+                            </div>
+                            <script>
+                            document.addEventListener('DOMContentLoaded', function () {
+                                var toastEl = document.getElementById('liveToast');
+                                if (toastEl) {
+                                    var toast = new bootstrap.Toast(toastEl, { delay: 4000 });
+                                    toast.show();
+                                    toastEl.addEventListener('hidden.bs.toast', function () {
+                                        fetch('${pageContext.request.contextPath}/remove-toast', {
+                                            method: 'POST',
+                                            headers: {
+                                                'Content-Type': 'application/x-www-form-urlencoded',
+                                            },
+                                        });
                                     });
-                                });
-                            }
-                        });
-                        </script>
-                    </c:if>
+                                }
+                            });
+                            </script>
+                        </c:when>
+                    </c:choose>
 
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <h3>Quản lý Tài khoản</h3>
@@ -239,7 +261,7 @@
                             <option value="false">Không hoạt động</option>
                         </select>
 
-                        <button type="button" class="btn btn-warning" onclick="resetPassword()">Đặt lại mật khẩu</button>
+                        <!--<button type="button" class="btn btn-warning" onclick="resetPassword()">Đặt lại mật khẩu</button>-->
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
