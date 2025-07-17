@@ -238,11 +238,13 @@
         <!-- ============================================================== -->
         <!-- Chức năng chung -->
         <!-- ============================================================== -->
+        <% if (!"admin".equals(userRole)) { %>
         <li class="nav-item">
             <a href="${pageContext.request.contextPath}/notifications" class="nav-link">
                 <i class="bi bi-bell-fill"></i><span class="link-text">Thông báo của bạn</span>
             </a>
         </li>
+        <% } %>
 
         <!-- ============================================================== -->
         <!-- Purchasing Staff -->
