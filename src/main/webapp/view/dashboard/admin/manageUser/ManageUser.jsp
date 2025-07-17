@@ -2,6 +2,7 @@
 <%@page import="model.Role"%>
 <%@page import="java.util.List"%>
 <%@page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 <!DOCTYPE html>
 <html lang="vi">
     <head>
@@ -21,7 +22,7 @@
                     <%-- Xóa alert cũ, thay bằng toast --%>
                     <c:remove var="error"/>
                     <c:remove var="success"/>
-                    <c:if test="${not empty sessionScope.toastMessage}">
+                    <c:if test="${not empty sessionScope.toastMessage and fn:trim(sessionScope.toastMessage) != ''}">
                         <div aria-live="polite" aria-atomic="true" class="position-fixed top-0 end-0 p-3" style="z-index: 1080; min-width: 300px;">
                             <div id="liveToast" class="toast align-items-center text-bg-${sessionScope.toastType == 'success' ? 'success' : (sessionScope.toastType == 'error' ? 'danger' : (sessionScope.toastType == 'warning' ? 'warning' : 'info'))} border-0 show" role="alert" aria-live="assertive" aria-atomic="true">
                                 <div class="d-flex">
@@ -49,8 +50,6 @@
                             }
                         });
                         </script>
-                        <c:remove var="toastMessage" scope="session"/>
-                        <c:remove var="toastType" scope="session"/>
                     </c:if>
 
                     <div class="d-flex justify-content-between align-items-center mb-3">
