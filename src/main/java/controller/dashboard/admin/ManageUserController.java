@@ -236,9 +236,10 @@ public class ManageUserController extends HttpServlet {
 
     boolean success = userDAO.add(user);
 
+    HttpSession session = req.getSession();
     if (success) {
-        HttpSession session = req.getSession();
-        session.setAttribute("success", "Thêm người dùng thành công.");
+        session.setAttribute("toastMessage", "Thêm người dùng thành công.");
+        session.setAttribute("toastType", "success");
         resp.sendRedirect(req.getContextPath() + "/admin/manage-user");
     } else {
         showUserFormWithError(req, resp, "Username đã tồn tại.");
@@ -283,9 +284,10 @@ public class ManageUserController extends HttpServlet {
     }
 
     boolean success = userDAO.update(user);
+    HttpSession session = req.getSession();
     if (success) {
-        HttpSession session = req.getSession();
-        session.setAttribute("success", "Cập nhật người dùng thành công.");
+        session.setAttribute("toastMessage", "Cập nhật người dùng thành công.");
+        session.setAttribute("toastType", "success");
         resp.sendRedirect(req.getContextPath() + "/admin/manage-user");
     } else {
         req.setAttribute("error", "Cập nhật thất bại.");
@@ -297,7 +299,8 @@ public class ManageUserController extends HttpServlet {
         int userId = Integer.parseInt(req.getParameter("userId"));
         boolean success = userDAO.inactive(userId);
         HttpSession session = req.getSession();
-        session.setAttribute("success", success ? "Vô hiệu hóa thành công." : "Không thể vô hiệu hóa.");
+        session.setAttribute("toastMessage", success ? "Vô hiệu hóa thành công." : "Không thể vô hiệu hóa.");
+        session.setAttribute("toastType", success ? "success" : "error");
         resp.sendRedirect(req.getContextPath() + "/admin/manage-user");
     }
 

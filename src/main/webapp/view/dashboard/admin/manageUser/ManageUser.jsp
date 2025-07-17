@@ -18,11 +18,39 @@
             <div class="row">
                 <main class="col-md-10 ms-sm-auto col-lg-10 px-md-4 py-4">
 
-                    <c:if test="${not empty error}">
-                        <div class="alert alert-danger">${error}</div>
-                    </c:if>
-                    <c:if test="${not empty success}">
-                        <div class="alert alert-success">${success}</div>
+                    <%-- Xóa alert cũ, thay bằng toast --%>
+                    <c:remove var="error"/>
+                    <c:remove var="success"/>
+                    <c:if test="${not empty sessionScope.toastMessage}">
+                        <div aria-live="polite" aria-atomic="true" class="position-fixed top-0 end-0 p-3" style="z-index: 1080; min-width: 300px;">
+                            <div id="liveToast" class="toast align-items-center text-bg-${sessionScope.toastType == 'success' ? 'success' : (sessionScope.toastType == 'error' ? 'danger' : (sessionScope.toastType == 'warning' ? 'warning' : 'info'))} border-0 show" role="alert" aria-live="assertive" aria-atomic="true">
+                                <div class="d-flex">
+                                    <div class="toast-body">
+                                        ${sessionScope.toastMessage}
+                                    </div>
+                                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                                </div>
+                            </div>
+                        </div>
+                        <script>
+                        document.addEventListener('DOMContentLoaded', function () {
+                            var toastEl = document.getElementById('liveToast');
+                            if (toastEl) {
+                                var toast = new bootstrap.Toast(toastEl, { delay: 4000 });
+                                toast.show();
+                                toastEl.addEventListener('hidden.bs.toast', function () {
+                                    fetch('${pageContext.request.contextPath}/remove-toast', {
+                                        method: 'POST',
+                                        headers: {
+                                            'Content-Type': 'application/x-www-form-urlencoded',
+                                        },
+                                    });
+                                });
+                            }
+                        });
+                        </script>
+                        <c:remove var="toastMessage" scope="session"/>
+                        <c:remove var="toastType" scope="session"/>
                     </c:if>
 
                     <div class="d-flex justify-content-between align-items-center mb-3">
