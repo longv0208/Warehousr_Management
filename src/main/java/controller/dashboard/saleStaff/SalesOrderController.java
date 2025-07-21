@@ -267,25 +267,37 @@ public class SalesOrderController extends HttpServlet {
             salesOrder.setNotes(notes);
             salesOrder.setWarehouseId(warehouseId);
 
-            List<SalesOrderDetail> details = new ArrayList<>();
-            for (int i = 0; i < productIds.length; i++) {
-                // Skip empty rows that might be submitted
-                if (productIds[i] == null || productIds[i].isEmpty()) {
-                    continue;
+            // Use a map to handle product aggregation and prevent duplicates from form submission
+            Map<Integer, SalesOrderDetail> productMap = new HashMap<>();
+            if (productIds != null) {
+                for (int i = 0; i < productIds.length; i++) {
+                    // Trim the product ID to handle whitespace and check if it's genuinely empty
+                    String productIdStr = (productIds[i] != null) ? productIds[i].trim() : "";
+                    if (productIdStr.isEmpty() || 
+                        quantities[i] == null || quantities[i].trim().isEmpty() || 
+                        unitPrices[i] == null || unitPrices[i].trim().isEmpty()) {
+                        continue;
+                    }
+
+                    int productId = Integer.parseInt(productIdStr);
+                    
+                    // If a product is added more than once, we only take the first entry.
+                    if (productMap.containsKey(productId)) {
+                        continue; 
+                    }
+
+                    int quantity = Integer.parseInt(quantities[i]);
+                    BigDecimal unitPrice = new BigDecimal(unitPrices[i]);
+
+                    SalesOrderDetail detail = new SalesOrderDetail();
+                    detail.setProductId(productId);
+                    detail.setQuantityOrdered(quantity);
+                    detail.setUnitSalePrice(unitPrice);
+                    productMap.put(productId, detail);
                 }
-
-                int productId = Integer.parseInt(productIds[i]);
-                int quantity = Integer.parseInt(quantities[i]);
-                BigDecimal unitPrice = new BigDecimal(unitPrices[i]);
-
-                // Optional: Server-side validation for stock can be added here if needed
-
-                SalesOrderDetail detail = new SalesOrderDetail();
-                detail.setProductId(productId);
-                detail.setQuantityOrdered(quantity);
-                detail.setUnitSalePrice(unitPrice);
-                details.add(detail);
             }
+
+            List<SalesOrderDetail> details = new ArrayList<>(productMap.values());
 
             if (details.isEmpty()) {
                 session.setAttribute("toastMessage", "Đơn hàng không có sản phẩm nào hợp lệ.");
@@ -294,17 +306,21 @@ public class SalesOrderController extends HttpServlet {
                 return;
             }
 
-            salesOrder.setDetails(details);
-
-            // Insert into DB
+            // To prevent cascading saves from the persistence layer causing duplicates,
+            // we first insert the SalesOrder without its details to get an ID.
             int salesOrderId = salesOrderDAO.insert(salesOrder);
 
             if (salesOrderId != -1) {
-                // Insert details
-                for (SalesOrderDetail detail : salesOrder.getDetails()) {
+                // Now, assign the retrieved ID to each detail and insert them manually.
+                // This ensures details are saved exactly once and prevents duplication.
+                for (SalesOrderDetail detail : details) {
                     detail.setSalesOrderId(salesOrderId);
                     salesOrderDetailDAO.insert(detail);
                 }
+                
+                // After saving, we can associate the details with the order object if needed,
+                // though it's not strictly necessary here as we are redirecting.
+                salesOrder.setDetails(details);
 
                 session.setAttribute("toastMessage", "Tạo đơn hàng thành công!");
                 session.setAttribute("toastType", "success");
@@ -499,45 +515,66 @@ public class SalesOrderController extends HttpServlet {
             boolean orderUpdated = salesOrderDAO.update(existingOrder);
 
             if (orderUpdated) {
-                // Delete existing order details
-                salesOrderDetailDAO.deleteBySalesOrderId(orderId);
-
-                // Add new order details
+                // Get new order details
                 String[] productIds = request.getParameterValues("productId[]");
                 String[] quantities = request.getParameterValues("quantity[]");
                 String[] unitPrices = request.getParameterValues("unitPrice[]");
 
-                List<SalesOrderDetail> orderDetails = new ArrayList<>();
+                // Only proceed with detail updates if product data was submitted
+                if (productIds != null) {
+                    // Delete existing order details first
+                    salesOrderDetailDAO.deleteBySalesOrderId(orderId);
 
-                if (productIds != null && quantities != null && unitPrices != null) {
-                    for (int i = 0; i < productIds.length; i++) {
-                        if (productIds[i] != null && !productIds[i].isEmpty() &&
-                                quantities[i] != null && !quantities[i].isEmpty() &&
-                                unitPrices[i] != null && !unitPrices[i].isEmpty()) {
+                    // NOTE: If new products added on the edit page are not being saved,
+                    // the issue is likely in the frontend JavaScript. The script that adds new rows
+                    // to the product table must ensure the new <input> fields have the correct `name`
+                    // attributes (e.g., "productId[]", "quantity[]") so they are included in the form submission.
+
+                    // Use a map to handle product aggregation and prevent duplicates
+                    Map<Integer, SalesOrderDetail> productMap = new HashMap<>();
+                    if (quantities != null && unitPrices != null) {
+                        for (int i = 0; i < productIds.length; i++) {
+                            String productIdStr = (productIds[i] != null) ? productIds[i].trim() : "";
+                            if (productIdStr.isEmpty() ||
+                                    quantities[i] == null || quantities[i].trim().isEmpty() ||
+                                    unitPrices[i] == null || unitPrices[i].trim().isEmpty()) {
+                                continue;
+                            }
+                            
+                            int productId = Integer.parseInt(productIdStr);
+                            
+                            // Skip duplicates to ensure data integrity
+                            if (productMap.containsKey(productId)) {
+                                continue;
+                            }
 
                             SalesOrderDetail detail = new SalesOrderDetail();
                             detail.setSalesOrderId(orderId);
-                            detail.setProductId(Integer.parseInt(productIds[i]));
+                            detail.setProductId(productId);
                             detail.setQuantityOrdered(Integer.parseInt(quantities[i]));
                             detail.setUnitSalePrice(new BigDecimal(unitPrices[i]));
-
-                            orderDetails.add(detail);
+                            productMap.put(productId, detail);
                         }
                     }
-                }
+                    List<SalesOrderDetail> orderDetails = new ArrayList<>(productMap.values());
 
-                if (!orderDetails.isEmpty()) {
-                    boolean detailsInserted = salesOrderDetailDAO.insertDetails(orderDetails);
-                    if (detailsInserted) {
+                    if (!orderDetails.isEmpty()) {
+                        // Insert details one-by-one for consistency and easier debugging
+                        for (SalesOrderDetail detail : orderDetails) {
+                            salesOrderDetailDAO.insert(detail);
+                        }
                         session.setAttribute("toastMessage", "Đơn bán hàng đã được cập nhật thành công!");
                         session.setAttribute("toastType", "success");
                     } else {
-                        session.setAttribute("toastMessage", "Lỗi khi cập nhật chi tiết đơn hàng!");
-                        session.setAttribute("toastType", "error");
+                        // This means the user submitted an empty product list, so all items are removed.
+                        session.setAttribute("toastMessage", "Đơn hàng được cập nhật và tất cả sản phẩm đã được xóa.");
+                        session.setAttribute("toastType", "success");
                     }
                 } else {
-                    session.setAttribute("toastMessage", "Đơn hàng đã được cập nhật nhưng không có sản phẩm nào!");
-                    session.setAttribute("toastType", "warning");
+                    // If productIds is null, it means the product section of the form wasn't submitted.
+                    // We assume the user only intended to update the order's header information.
+                    session.setAttribute("toastMessage", "Thông tin đơn hàng đã được cập nhật (sản phẩm không thay đổi).");
+                    session.setAttribute("toastType", "success");
                 }
             } else {
                 session.setAttribute("toastMessage", "Lỗi khi cập nhật đơn bán hàng!");
