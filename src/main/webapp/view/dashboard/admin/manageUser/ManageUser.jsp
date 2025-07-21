@@ -239,7 +239,7 @@
                             <option value="false">Không hoạt động</option>
                         </select>
 
-                        <button type="button" class="btn btn-warning" onclick="resetPassword()">Đặt lại mật khẩu</button>
+                        <button type="button" class="btn btn-warning" id="resetPasswordBtn">Đặt lại mật khẩu</button>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
@@ -296,9 +296,17 @@
                 resetInput.name = 'resetPassword';
                 resetInput.value = 'true';
                 form.appendChild(resetInput);
+                form.submit(); // Submit the form after adding the hidden input
             }
+
+            document.addEventListener('DOMContentLoaded', function() {
+                var resetBtn = document.getElementById('resetPasswordBtn');
+                if (resetBtn) {
+                    resetBtn.addEventListener('click', resetPassword);
+                }
+            });
         </script>
-        <% if (request.getAttribute("showAddForm") != null) { %>
+<% if (request.getAttribute("showAddForm") != null) { %>
 <script>
     window.addEventListener('load', function () {
         var addModal = new bootstrap.Modal(document.getElementById('addUserModal'));

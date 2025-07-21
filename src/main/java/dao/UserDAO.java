@@ -354,7 +354,7 @@ public class UserDAO extends DBContext implements I_DAO<User> {
         try {
             conn = getConnection();
             statement = conn.prepareStatement(sql);
-            statement.setString(1, "123");
+            statement.setString(1, hashedPassword);
             statement.setInt(2, userId);
             int rows = statement.executeUpdate();
             return rows > 0;

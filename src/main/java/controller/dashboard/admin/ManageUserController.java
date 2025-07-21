@@ -276,23 +276,33 @@ public class ManageUserController extends HttpServlet {
         String defaultPassword = "123456";
         String hashedPassword = PasswordUtil.hashPassword(defaultPassword); 
         boolean resetSuccess = userDAO.resetPassword(userId, hashedPassword);
+        HttpSession session = req.getSession();
         if (!resetSuccess) {
-            req.setAttribute("error", "Đặt lại mật khẩu thất bại.");
-            showEditFormWithError(req, resp, user);
+            session.setAttribute("toastMessage", "Đặt lại mật khẩu thất bại.");
+            session.setAttribute("toastType", "error");
+            resp.sendRedirect(req.getContextPath() + "/admin/manage-user");
             return;
+        } else {
+            session.setAttribute("toastMessage", "Đặt lại mật khẩu thành công. Mật khẩu mặc định: 123456");
+            session.setAttribute("toastType", "success");
+            user.setPasswordHash(hashedPassword); // Update the user object in memory
         }
     }
 
-    boolean success = userDAO.update(user);
-    HttpSession session = req.getSession();
-    if (success) {
-        session.setAttribute("toastMessage", "Cập nhật người dùng thành công.");
-        session.setAttribute("toastType", "success");
-        resp.sendRedirect(req.getContextPath() + "/admin/manage-user");
-    } else {
-        req.setAttribute("error", "Cập nhật thất bại.");
-        showEditFormWithError(req, resp, user);
+    boolean success = userDAO.update(user); // Now this update will use the new password hash
+    HttpSession session = req.getSession(); // Re-get session in case it was a new one
+
+    // Only set a general update toast if a password reset was not specifically handled and succeeded
+    if (resetPassword == null || !"true".equals(resetPassword)) {
+        if (success) {
+            session.setAttribute("toastMessage", "Cập nhật người dùng thành công.");
+            session.setAttribute("toastType", "success");
+        } else {
+            session.setAttribute("toastMessage", "Cập nhật thất bại.");
+            session.setAttribute("toastType", "error");
+        }
     }
+    resp.sendRedirect(req.getContextPath() + "/admin/manage-user");
 }
 
     private void inactiveUser(HttpServletRequest req, HttpServletResponse resp) throws IOException {
