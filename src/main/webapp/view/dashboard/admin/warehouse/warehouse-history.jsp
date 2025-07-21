@@ -9,10 +9,15 @@
                 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
                 <title>Xem Nhật Ký Hàng Tồn Kho</title>
                 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+                <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+                <!-- DataTables CSS & JS -->
+                <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/jquery.dataTables.min.css"/>
+                <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
                 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
                     rel="stylesheet" />
                 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono&display=swap" rel="stylesheet" />
                 <link href="${pageContext.request.contextPath}/css/index.css" rel="stylesheet" />
+                
                 <%@include file="../../../common/head.jsp" %>
                     <style>
                         .search-section {
@@ -149,10 +154,17 @@
                                         </div>
 
                                         <div class="filter-group">
-                                            <button type="submit" class="btn btn-export"
-                                                formaction="${pageContext.request.contextPath}/admin/manage-warehouse?action=export_history&id=${warehouse.warehouseId}">
-                                                <i class="fas fa-file-excel"></i> Xuất Excel
-                                            </button>
+                                            <form method="get" action="${pageContext.request.contextPath}/admin/manage-warehouse">
+                                                <input type="hidden" name="action" value="export_history"/>
+                                                <input type="hidden" name="id" value="${warehouse.warehouseId}"/>
+                                                <input type="hidden" name="productCode" value="${filterProductCode}"/>
+                                                <input type="hidden" name="transactionType" value="${filterTransactionType}"/>
+                                                <input type="hidden" name="fromDate" value="${filterFromDate}"/>
+                                                <input type="hidden" name="toDate" value="${filterToDate}"/>
+                                                <button type="submit" class="btn btn-export">
+                                                    <i class="fas fa-file-excel"></i> Xuất Excel
+                                                </button>
+                                            </form>
                                         </div>
                                     </div>
                                 </form>
@@ -264,21 +276,7 @@
 
                 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
                 <%@include file="../../../common/foot.jsp" %>
-
-                    <script>
-                        $(document).ready(function () {
-                            // Initialize DataTable with Vietnamese language
-                            $('#historyTable').DataTable({
-                                "language": {
-                                    "url": "//cdn.datatables.net/plug-ins/1.10.21/i18n/Vietnamese.json"
-                                },
-                                "order": [[6, "desc"]], // Sort by date descending
-                                "pageLength": 25,
-                                "responsive": true
-                            });
-
-                        });
-                    </script>
+                <script src="${pageContext.request.contextPath}/js/warehouse-history.js"></script>
             </body>
 
             </html>
