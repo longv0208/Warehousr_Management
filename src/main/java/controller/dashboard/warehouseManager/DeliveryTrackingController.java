@@ -38,7 +38,7 @@ public class DeliveryTrackingController extends HttpServlet {
 
         // Role check
         User currentUser = SessionUtil.getUserFromSession(request);
-        if (currentUser == null || !"warehouse_manager".equals(currentUser.getRoleId())) {
+        if (currentUser == null || !"sales_staff".equals(currentUser.getRoleId())) {
             response.sendError(HttpServletResponse.SC_FORBIDDEN, "You are not authorized to access this page.");
             return;
         }
@@ -62,7 +62,7 @@ public class DeliveryTrackingController extends HttpServlet {
 
         // Role check
         User currentUser = SessionUtil.getUserFromSession(request);
-        if (currentUser == null || !"warehouse_manager".equals(currentUser.getRoleId())) {
+        if (currentUser == null || !"sales_staff".equals(currentUser.getRoleId())) {
             response.sendError(HttpServletResponse.SC_FORBIDDEN, "You are not authorized to perform this action.");
             return;
         }
