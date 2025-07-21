@@ -149,7 +149,8 @@
                                         </div>
 
                                         <div class="filter-group">
-                                            <button type="button" class="btn btn-export">
+                                            <button type="submit" class="btn btn-export"
+                                                formaction="${pageContext.request.contextPath}/admin/manage-warehouse?action=export_history&id=${warehouse.warehouseId}">
                                                 <i class="fas fa-file-excel"></i> Xuất Excel
                                             </button>
                                         </div>
@@ -276,11 +277,6 @@
                                 "responsive": true
                             });
 
-                            // Export to Excel functionality
-                            $('.btn-export').click(function () {
-                                // Implementation for Excel export
-                                alert('Chức năng xuất Excel sẽ được phát triển sau');
-                            });
                         });
                     </script>
             </body>

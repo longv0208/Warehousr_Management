@@ -25,6 +25,10 @@ import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
+import java.io.OutputStream;
+import java.text.SimpleDateFormat;
+import java.time.format.DateTimeFormatter;
+import java.util.Date;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.stream.Collectors;
@@ -93,6 +97,9 @@ public class ManageWarehouseController extends HttpServlet {
                 break;
             case "history":
                 viewWarehouseHistory(request, response);
+                break;
+            case "export_history":
+                exportWarehouseHistoryToExcel(request, response);
                 break;
             default:
                 listWarehouses(request, response);
@@ -531,5 +538,180 @@ public class ManageWarehouseController extends HttpServlet {
         } catch (NumberFormatException e) {
             response.sendRedirect(request.getContextPath() + "/admin/manage-warehouse?action=list");
         }
+    }
+
+    private void exportWarehouseHistoryToExcel(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        String idStr = request.getParameter("id");
+        if (idStr == null || idStr.isEmpty()) {
+            response.sendRedirect(request.getContextPath() + "/admin/manage-warehouse?action=list");
+            return;
+        }
+
+        try {
+            int warehouseId = Integer.parseInt(idStr);
+            Warehouse warehouse = warehouseDAO.findById(warehouseId);
+            if (warehouse == null) {
+                request.getSession().setAttribute("toastMessage", "Không tìm thấy kho hàng!");
+                request.getSession().setAttribute("toastType", "error");
+                response.sendRedirect(request.getContextPath() + "/admin/manage-warehouse?action=list");
+                return;
+            }
+
+            String productCode = request.getParameter("productCode");
+            String transactionType = request.getParameter("transactionType");
+            String fromDateStr = request.getParameter("fromDate");
+            String toDateStr = request.getParameter("toDate");
+
+            List<WarehouseTransaction> transactions = getFilteredWarehouseTransactions(warehouseId, productCode,
+                    transactionType, fromDateStr, toDateStr);
+
+            response.setContentType("text/csv; charset=UTF-8");
+            String fileName = "LichSuTonKho_" + warehouse.getWarehouseName().replaceAll("\\s+", "_") + "_"
+                    + new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date()) + ".csv";
+            response.setHeader("Content-Disposition", "attachment; filename=\"" + fileName + "\"");
+
+            try (OutputStream out = response.getOutputStream()) {
+                StringBuilder csvContent = new StringBuilder();
+                csvContent.append("\uFEFF"); // UTF-8 BOM
+
+                // Header
+                csvContent.append(
+                        "\"Mã Sản Phẩm\",\"Tên Sản Phẩm\",\"Loại Giao Dịch\",\"Số Lượng\",\"Số Lượng Tồn\",\"Đơn Vị\",\"Ngày Giao Dịch\",\"Mã Phiếu\",\"Ghi Chú\"\n");
+
+                // Data
+                DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
+                for (WarehouseTransaction t : transactions) {
+                    csvContent.append("\"").append(escapeCSV(t.getProductCode())).append("\",");
+                    csvContent.append("\"").append(escapeCSV(t.getProductName())).append("\",");
+                    csvContent.append("\"")
+                            .append(escapeCSV("inward".equals(t.getTransactionType()) ? "Nhập Kho" : "Xuất Kho"))
+                            .append("\",");
+                    csvContent.append(t.getQuantity()).append(",");
+                    csvContent.append(t.getRemainingQuantity()).append(",");
+                    csvContent.append("\"").append(escapeCSV(t.getUnit())).append("\",");
+                    csvContent.append("\"").append(escapeCSV(t.getTransactionDate().format(dtf))).append("\",");
+                    csvContent.append("\"").append(escapeCSV(t.getTransactionCode())).append("\",");
+                    csvContent.append("\"").append(escapeCSV(t.getNotes())).append("\"\n");
+                }
+
+                out.write(csvContent.toString().getBytes("UTF-8"));
+                out.flush();
+            }
+
+        } catch (NumberFormatException e) {
+            request.getSession().setAttribute("toastMessage", "ID kho hàng không hợp lệ!");
+            request.getSession().setAttribute("toastType", "error");
+            response.sendRedirect(request.getContextPath() + "/admin/manage-warehouse?action=list");
+        }
+    }
+
+    private String escapeCSV(String value) {
+        if (value == null)
+            return "";
+        return value.replace("\"", "\"\"");
+    }
+
+    private List<WarehouseTransaction> getFilteredWarehouseTransactions(int warehouseId, String productCode,
+            String transactionType, String fromDateStr, String toDateStr) {
+        // This method refactors the data fetching and filtering logic from
+        // viewWarehouseHistory
+        List<WarehouseTransaction> transactions = new ArrayList<>();
+
+        // Get stock inward transactions
+        List<StockInward> stockInwards = stockInwardDAO.findAll();
+        for (StockInward inward : stockInwards) {
+            if (inward.getWarehouseId() == warehouseId) {
+                List<StockInwardDetail> details = stockInwardDetailDAO.findByStockInwardId(inward.getStockInwardId());
+                for (StockInwardDetail detail : details) {
+                    Product product = productDAO.findById(detail.getProductId());
+                    if (product != null) {
+                        WarehouseTransaction transaction = new WarehouseTransaction();
+                        transaction.setTransactionId(
+                                "SI-" + inward.getStockInwardId() + "-" + detail.getInwardDetailId());
+                        transaction.setTransactionCode(inward.getInwardCode());
+                        transaction.setTransactionType("inward");
+                        transaction.setProductCode(product.getProductCode());
+                        transaction.setProductName(product.getProductName());
+                        transaction.setQuantity(detail.getQuantityReceived() != null ? detail.getQuantityReceived() : 0);
+                        transaction
+                                .setRemainingQuantity(detail.getQuantityReceived() != null ? detail.getQuantityReceived() : 0);
+                        transaction.setUnit(product.getUnit() != null ? product.getUnit() : "-");
+                        transaction.setTransactionDate(inward.getInwardDate());
+                        transaction.setNotes(inward.getNotes() != null ? inward.getNotes() : "-");
+                        transactions.add(transaction);
+                    }
+                }
+            }
+        }
+
+        // Get stock outward transactions
+        List<StockOutward> stockOutwards = stockOutwardDAO.findAll();
+        for (StockOutward outward : stockOutwards) {
+            if (outward.getWarehouseId() == warehouseId) {
+                List<StockOutwardDetail> details = stockOutwardDetailDAO
+                        .findByStockOutwardId(outward.getStockOutwardId());
+                for (StockOutwardDetail detail : details) {
+                    Product product = productDAO.findById(detail.getProductId());
+                    if (product != null) {
+                        WarehouseTransaction transaction = new WarehouseTransaction();
+                        transaction.setTransactionId(
+                                "SO-" + outward.getStockOutwardId() + "-" + detail.getOutwardDetailId());
+                        transaction.setTransactionCode(outward.getOutwardCode());
+                        transaction.setTransactionType("outward");
+                        transaction.setProductCode(product.getProductCode());
+                        transaction.setProductName(product.getProductName());
+                        transaction.setQuantity(detail.getQuantityShipped() != null ? detail.getQuantityShipped() : 0);
+                        transaction.setRemainingQuantity(0);
+                        transaction.setUnit(product.getUnit() != null ? product.getUnit() : "-");
+                        if (outward.getOutwardDate() instanceof java.sql.Timestamp) {
+                            transaction
+                                    .setTransactionDate(((java.sql.Timestamp) outward.getOutwardDate()).toLocalDateTime());
+                        } else {
+                            transaction.setTransactionDate(LocalDateTime.now());
+                        }
+                        transaction.setNotes(outward.getNotes() != null ? outward.getNotes() : "-");
+                        transactions.add(transaction);
+                    }
+                }
+            }
+        }
+
+        // Apply filters
+        if (transactionType != null && !transactionType.trim().isEmpty()) {
+            transactions = transactions.stream()
+                    .filter(t -> t.getTransactionType().equals(transactionType))
+                    .collect(Collectors.toList());
+        }
+        if (fromDateStr != null && !fromDateStr.trim().isEmpty()) {
+            try {
+                LocalDate fromDate = LocalDate.parse(fromDateStr);
+                transactions = transactions.stream()
+                        .filter(t -> !t.getTransactionDate().toLocalDate().isBefore(fromDate))
+                        .collect(Collectors.toList());
+            } catch (DateTimeParseException e) { /* Ignore */
+            }
+        }
+        if (toDateStr != null && !toDateStr.trim().isEmpty()) {
+            try {
+                LocalDate toDate = LocalDate.parse(toDateStr);
+                transactions = transactions.stream()
+                        .filter(t -> !t.getTransactionDate().toLocalDate().isAfter(toDate))
+                        .collect(Collectors.toList());
+            } catch (DateTimeParseException e) { /* Ignore */
+            }
+        }
+        if (productCode != null && !productCode.trim().isEmpty()) {
+            String searchCode = productCode.trim().toLowerCase();
+            transactions = transactions.stream()
+                    .filter(t -> t.getProductCode().toLowerCase().contains(searchCode) ||
+                            t.getTransactionCode().toLowerCase().contains(searchCode))
+                    .collect(Collectors.toList());
+        }
+
+        // Sort by transaction date descending
+        transactions.sort((t1, t2) -> t2.getTransactionDate().compareTo(t1.getTransactionDate()));
+
+        return transactions;
     }
 }
