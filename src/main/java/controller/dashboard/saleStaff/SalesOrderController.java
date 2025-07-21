@@ -154,10 +154,10 @@ public class SalesOrderController extends HttpServlet {
                     // Create a map with product info only
                     Map<String, Object> productWithInventory = new HashMap<>();
                     productWithInventory.put("productId", p.getProductId());
-                    productWithInventory.put("productCode", p.getProductCode());
-                    productWithInventory.put("productName", p.getProductName());
-                    productWithInventory.put("description", p.getDescription());
-                    productWithInventory.put("unit", p.getUnit());
+                    productWithInventory.put("productCode", escapeForJavaScriptStringLiteral(p.getProductCode()));
+                    productWithInventory.put("productName", escapeForJavaScriptStringLiteral(p.getProductName()));
+                    productWithInventory.put("description", escapeForJavaScriptStringLiteral(p.getDescription()));
+                    productWithInventory.put("unit", escapeForJavaScriptStringLiteral(p.getUnit()));
                     productWithInventory.put("purchasePrice", p.getPurchasePrice());
                     productWithInventory.put("salePrice", p.getSalePrice());
                     productWithInventory.put("supplierId", p.getSupplierId());
@@ -438,10 +438,10 @@ public class SalesOrderController extends HttpServlet {
                         // Create a map with product and inventory info
                         Map<String, Object> productWithInventory = new HashMap<>();
                         productWithInventory.put("productId", p.getProductId());
-                        productWithInventory.put("productCode", p.getProductCode());
-                        productWithInventory.put("productName", p.getProductName());
-                        productWithInventory.put("description", p.getDescription());
-                        productWithInventory.put("unit", p.getUnit());
+                        productWithInventory.put("productCode", escapeForJavaScriptStringLiteral(p.getProductCode()));
+                        productWithInventory.put("productName", escapeForJavaScriptStringLiteral(p.getProductName()));
+                        productWithInventory.put("description", escapeForJavaScriptStringLiteral(p.getDescription()));
+                        productWithInventory.put("unit", escapeForJavaScriptStringLiteral(p.getUnit()));
                         productWithInventory.put("purchasePrice", p.getPurchasePrice());
                         productWithInventory.put("salePrice", p.getSalePrice());
                         productWithInventory.put("supplierId", p.getSupplierId());
@@ -715,5 +715,42 @@ public class SalesOrderController extends HttpServlet {
         }
 
         return total;
+    }
+
+    // Helper method to escape strings for direct embedding into JavaScript string literals
+    private String escapeForJavaScriptStringLiteral(String text) {
+        if (text == null) {
+            return "";
+        }
+        StringBuilder escaped = new StringBuilder();
+        for (int i = 0; i < text.length(); i++) {
+            char c = text.charAt(i);
+            switch (c) {
+                case '\\':
+                    escaped.append("\\\\");
+                    break;
+                case '"':
+                    escaped.append("\\\"");
+                    break;
+                case '\'':
+                    escaped.append("\\'");
+                    break;
+                case '\n':
+                    escaped.append("\\n");
+                    break;
+                case '\r':
+                    escaped.append("\\r");
+                    break;
+                case '\u2028': // Line Separator
+                    escaped.append("\\u2028");
+                    break;
+                case '\u2029': // Paragraph Separator
+                    escaped.append("\\u2029");
+                    break;
+                default:
+                    escaped.append(c);
+            }
+        }
+        return escaped.toString();
     }
 }

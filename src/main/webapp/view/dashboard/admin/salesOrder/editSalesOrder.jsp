@@ -1,6 +1,7 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
+<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -56,7 +57,7 @@
         </small>
       </div>
 
-      <form action="${pageContext.request.contextPath}/admin/manage-sales-order" method="POST">
+      <form action="${pageContext.request.contextPath}/sale-staff/sales-order" method="POST">
         <input type="hidden" name="action" value="edit">
         <input type="hidden" name="id" value="${order.salesOrderId}">
 
@@ -149,7 +150,7 @@
                     <div class="product-row">
                       <div class="row align-items-center">
                         <div class="col-md-3">
-                          <select class="form-select" name="productId" required onchange="updateProductInfoAdmin(this)">
+                          <select class="form-select" name="productId[]" required onchange="updateProductInfoAdmin(this)">
                             <option value="">-- Chọn sản phẩm --</option>
                             <c:forEach var="p" items="${products}">
                               <option value="${p.productId}" 
@@ -163,14 +164,14 @@
                           </select>
                         </div>
                         <div class="col-md-2">
-                          <input type="number" class="form-control" name="quantity" min="1" 
+                          <input type="number" class="form-control" name="quantity[]" min="1" 
                                  value="${detail.quantityOrdered}" required 
                                  title="Số lượng tồn kho: ${detail.availableQuantity}"
                                  oninput="calculateRowTotalAdmin(this)" onchange="calculateRowTotalAdmin(this)">
                           <small class="text-muted">Tồn: ${detail.availableQuantity}</small>
                         </div>
                         <div class="col-md-2">
-                          <input type="number" class="form-control" name="unitPrice" step="0.01" min="0" 
+                          <input type="number" class="form-control" name="unitPrice[]" step="0.01" min="0" 
                                  value="${detail.unitSalePrice}" required
                                  oninput="calculateRowTotalAdmin(this)" onchange="calculateRowTotalAdmin(this)">
                         </div>
@@ -227,18 +228,7 @@
 
 <!-- Products data for JavaScript -->
 <script type="text/javascript">
-  const productsData = [
-    <c:forEach var="p" items="${products}" varStatus="status">
-    {
-      id: ${p.productId},
-      code: '${p.productCode}',
-      name: '${p.productName}',
-      unit: '${p.unit}',
-      price: ${p.salePrice},
-      quantity: ${p.quantity}
-    }<c:if test="${!status.last}">,</c:if>
-    </c:forEach>
-  ];
+  const productsData = JSON.parse('[<c:forEach var="p" items="${products}" varStatus="status">{"id": ${p.productId == null ? 'null' : p.productId},"code": "${p.productCode}", "name": "${p.productName}", "unit": "${p.unit}", "price": ${p.salePrice == null ? 0 : p.salePrice}, "quantity": ${p.quantity == null ? 0 : p.quantity}}<c:if test="${!status.last}">,</c:if></c:forEach>]');
   
   // Set products data when page loads
   if (typeof setProductsData === 'function') {
@@ -288,4 +278,4 @@
 </c:if>
 
 </body>
-</html> 
+</html>

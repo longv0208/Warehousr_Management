@@ -9,16 +9,16 @@ function addProductRowEdit() {
   row.className = 'row mb-2 product-row';
   row.innerHTML = `
     <div class="col-md-3">
-      <select class="form-select" name="productId" onchange="updateProductInfoEdit(this)" required>
+      <select class="form-select" name="productId[]" onchange="updateProductInfoEdit(this)" required>
         ${document.querySelector('#productContainer select').innerHTML}
       </select>
     </div>
     <div class="col-md-2">
-      <input type="number" class="form-control" name="quantity" min="1" value="1" 
+      <input type="number" class="form-control" name="quantity[]" min="1" value="1" 
              oninput="calculateRowTotalEdit(this)" onchange="calculateRowTotalEdit(this)" required>
     </div>
     <div class="col-md-2">
-      <input type="number" class="form-control" name="unitPrice" step="0.01" min="0" value="0" 
+      <input type="number" class="form-control" name="unitPrice[]" step="0.01" min="0" value="0" 
              oninput="calculateRowTotalEdit(this)" onchange="calculateRowTotalEdit(this)" required>
     </div>
     <div class="col-md-2">
@@ -43,7 +43,7 @@ function removeProductRowEdit(button) {
 function updateProductInfoEdit(selectElement) {
   const selectedOption = selectElement.options[selectElement.selectedIndex];
   const row = selectElement.closest('.product-row');
-  const priceInput = row.querySelector('input[name="unitPrice"]');
+  const priceInput = row.querySelector('input[name="unitPrice[]"]');
   const unitDisplay = row.querySelector('.unit-display');
   
   if (!selectedOption || !selectedOption.value) {
@@ -66,8 +66,8 @@ function calculateRowTotalEdit(element) {
   const row = element.closest('.product-row');
   if (!row) return;
   
-  const quantityInput = row.querySelector('input[name="quantity"]');
-  const unitPriceInput = row.querySelector('input[name="unitPrice"]');
+  const quantityInput = row.querySelector('input[name="quantity[]"]');
+  const unitPriceInput = row.querySelector('input[name="unitPrice[]"]');
   const rowTotalEl = row.querySelector('.row-total');
   
   if (!quantityInput || !unitPriceInput || !rowTotalEl) return;
@@ -85,8 +85,8 @@ function calculateTotalEdit() {
   const rows = document.querySelectorAll('.product-row');
   
   rows.forEach(row => {
-    const quantityInput = row.querySelector('input[name="quantity"]');
-    const unitPriceInput = row.querySelector('input[name="unitPrice"]');
+    const quantityInput = row.querySelector('input[name="quantity[]"]');
+    const unitPriceInput = row.querySelector('input[name="unitPrice[]"]');
     
     if (quantityInput && unitPriceInput) {
       const quantity = parseFloat(quantityInput.value) || 0;
@@ -103,4 +103,4 @@ function calculateTotalEdit() {
 
 function formatCurrencyEdit(amount) {
   return new Intl.NumberFormat('vi-VN').format(amount) + ' đ';
-} 
+}

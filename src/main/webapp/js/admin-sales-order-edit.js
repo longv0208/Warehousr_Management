@@ -31,16 +31,16 @@ function addProductRow() {
   row.innerHTML = 
     '<div class="row align-items-center">' +
       '<div class="col-md-3">' +
-        '<select class="form-select" name="productId" required onchange="updateProductInfoAdmin(this)">' +
+        '<select class="form-select" name="productId[]" required onchange="updateProductInfoAdmin(this)">' +
           productOptions +
         '</select>' +
       '</div>' +
       '<div class="col-md-2">' +
-        '<input type="number" class="form-control" name="quantity" min="1" value="1" required oninput="calculateRowTotalAdmin(this)" onchange="calculateRowTotalAdmin(this)">' +
+        '<input type="number" class="form-control" name="quantity[]" min="1" value="1" required oninput="calculateRowTotalAdmin(this)" onchange="calculateRowTotalAdmin(this)">' +
         '<small class="text-muted">Tồn: <span class="stock-info">0</span></small>' +
       '</div>' +
       '<div class="col-md-2">' +
-        '<input type="number" class="form-control" name="unitPrice" step="0.01" min="0" value="0" required oninput="calculateRowTotalAdmin(this)" onchange="calculateRowTotalAdmin(this)">' +
+        '<input type="number" class="form-control" name="unitPrice[]" step="0.01" min="0" value="0" required oninput="calculateRowTotalAdmin(this)" onchange="calculateRowTotalAdmin(this)">' +
       '</div>' +
       '<div class="col-md-2">' +
         '<div class="form-control-plaintext fw-bold text-success row-total">0 đ</div>' +
@@ -198,4 +198,4 @@ function validateForm() {
   }
   
   return true;
-} 
+}
