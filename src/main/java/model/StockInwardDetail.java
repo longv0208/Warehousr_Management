@@ -23,9 +23,10 @@ public class StockInwardDetail {
     private Integer productId;
     private Integer quantityReceived;
     private BigDecimal unitPurchasePrice;
-    
+    private BigDecimal actualPrice; // Giá thực tế nhận được
+
     // Thông tin chi tiết để hiển thị (không có trong DB)
     private String productCode;
     private String productName;
     private String unit;
-} 
+}

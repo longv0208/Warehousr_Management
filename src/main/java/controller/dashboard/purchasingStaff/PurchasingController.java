@@ -19,7 +19,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@WebServlet(name = "PurchasingController", urlPatterns = {"/purchasing"})
+@WebServlet(name = "PurchasingController", urlPatterns = { "/purchasing" })
 public class PurchasingController extends HttpServlet {
 
     private RfqDAO rfqDAO;
@@ -116,6 +116,9 @@ public class PurchasingController extends HttpServlet {
             case "send-rfq":
                 handleSendRfq(request, response);
                 break;
+            case "update-actual-price":
+                handleUpdateActualPrice(request, response);
+                break;
             case "create-po":
                 handleCreatePo(request, response);
                 break;
@@ -137,9 +140,8 @@ public class PurchasingController extends HttpServlet {
     // RFQ Management Methods
     private void handleListRfq(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        HttpSession session = request.getSession();
         User currentUser = SessionUtil.getUserFromSession(request);
-        
+
         List<Rfq> rfqs = rfqDAO.findByUserId(currentUser.getUserId());
         List<Supplier> suppliers = supplierDAO.findAll();
         List<Warehouse> warehouses = warehouseDAO.findAll();
@@ -185,30 +187,45 @@ public class PurchasingController extends HttpServlet {
                 // Create RFQ Details
                 String[] productIds = request.getParameterValues("productId");
                 String[] quantities = request.getParameterValues("quantity");
+                String[] suggestedPrices = request.getParameterValues("suggestedPrice");
 
                 if (productIds != null && quantities != null) {
                     for (int i = 0; i < productIds.length; i++) {
                         if (!productIds[i].isEmpty() && !quantities[i].isEmpty()) {
+                            // Parse suggested price, default to null if empty
+                            BigDecimal suggestedPrice = null;
+                            if (suggestedPrices != null && i < suggestedPrices.length &&
+                                    !suggestedPrices[i].isEmpty()) {
+                                try {
+                                    suggestedPrice = new BigDecimal(suggestedPrices[i]);
+                                } catch (NumberFormatException e) {
+                                    // Log error but continue with null price
+                                    System.out.println("Invalid suggested price: " + suggestedPrices[i]);
+                                }
+                            }
+
                             RfqDetail detail = RfqDetail.builder()
                                     .rfqId(rfqId)
                                     .productId(Integer.valueOf(productIds[i]))
                                     .quantity(Integer.valueOf(quantities[i]))
+                                    .suggestPrice(suggestedPrice)
+                                    .actualPrice(null) // Will be set later by supplier
                                     .build();
                             rfqDetailDAO.insert(detail);
                         }
                     }
                 }
 
-                session.setAttribute("toastMessage", "RFQ created successfully!");
+                session.setAttribute("toastMessage", "Tạo yêu cầu báo giá thành công!");
                 session.setAttribute("toastType", "success");
             } else {
-                session.setAttribute("toastMessage", "Failed to create RFQ!");
+                session.setAttribute("toastMessage", "Tạo yêu cầu báo giá thất bại!");
                 session.setAttribute("toastType", "error");
             }
 
         } catch (Exception e) {
             HttpSession session = request.getSession();
-            session.setAttribute("toastMessage", "Error creating RFQ: " + e.getMessage());
+            session.setAttribute("toastMessage", "Lỗi khi tạo yêu cầu báo giá: " + e.getMessage());
             session.setAttribute("toastType", "error");
         }
 
@@ -220,11 +237,11 @@ public class PurchasingController extends HttpServlet {
         int rfqId = Integer.parseInt(request.getParameter("id"));
         Rfq rfq = rfqDAO.findById(rfqId);
         List<RfqDetail> rfqDetails = rfqDetailDAO.findByRfqId(rfqId);
-        
+
         // Get related data
         Supplier supplier = supplierDAO.findById(rfq.getProviderId());
         Warehouse warehouse = warehouseDAO.findById(rfq.getWarehouseId());
-        
+
         // Get products for details
         for (RfqDetail detail : rfqDetails) {
             Product product = productDAO.findById(detail.getProductId());
@@ -240,7 +257,7 @@ public class PurchasingController extends HttpServlet {
         request.setAttribute("warehouse", warehouse);
         request.setAttribute("existingPO", existingPO);
         request.setAttribute("products", productDAO.findAll());
-        
+
         request.getRequestDispatcher("view/dashboard/purchasingStaff/rfq/view-rfq.jsp").forward(request, response);
     }
 
@@ -248,21 +265,21 @@ public class PurchasingController extends HttpServlet {
             throws ServletException, IOException {
         int rfqId = Integer.parseInt(request.getParameter("id"));
         Rfq rfq = rfqDAO.findById(rfqId);
-        
+
         if (rfq != null && "pending".equals(rfq.getStatus())) {
             rfq.setStatus("sent");
             boolean success = rfqDAO.update(rfq);
-            
+
             HttpSession session = request.getSession();
             if (success) {
-                session.setAttribute("toastMessage", "RFQ sent successfully!");
+                session.setAttribute("toastMessage", "Gửi yêu cầu báo giá thành công!");
                 session.setAttribute("toastType", "success");
             } else {
-                session.setAttribute("toastMessage", "Failed to send RFQ!");
+                session.setAttribute("toastMessage", "Gửi yêu cầu báo giá thất bại!");
                 session.setAttribute("toastType", "error");
             }
         }
-        
+
         response.sendRedirect("purchasing?action=view-rfq&id=" + rfqId);
     }
 
@@ -272,7 +289,7 @@ public class PurchasingController extends HttpServlet {
         int rfqId = Integer.parseInt(request.getParameter("rfqId"));
         Rfq rfq = rfqDAO.findById(rfqId);
         List<RfqDetail> rfqDetails = rfqDetailDAO.findByRfqId(rfqId);
-        
+
         Supplier supplier = supplierDAO.findById(rfq.getProviderId());
         Warehouse warehouse = warehouseDAO.findById(rfq.getWarehouseId());
         List<Product> products = productDAO.findAll();
@@ -282,7 +299,7 @@ public class PurchasingController extends HttpServlet {
         request.setAttribute("supplier", supplier);
         request.setAttribute("warehouse", warehouse);
         request.setAttribute("products", products);
-        
+
         request.getRequestDispatcher("view/dashboard/purchasingStaff/po/create-po.jsp").forward(request, response);
     }
 
@@ -330,16 +347,16 @@ public class PurchasingController extends HttpServlet {
                 rfqDAO.update(rfq);
 
                 HttpSession session = request.getSession();
-                session.setAttribute("toastMessage", "Purchase Order created successfully!");
+                session.setAttribute("toastMessage", "Tạo đơn mua hàng thành công!");
                 session.setAttribute("toastType", "success");
-                
+
                 response.sendRedirect("purchasing?action=view-po&id=" + poId);
                 return;
             }
 
         } catch (Exception e) {
             HttpSession session = request.getSession();
-            session.setAttribute("toastMessage", "Error creating PO: " + e.getMessage());
+            session.setAttribute("toastMessage", "Lỗi khi tạo đơn mua hàng: " + e.getMessage());
             session.setAttribute("toastType", "error");
         }
 
@@ -363,7 +380,7 @@ public class PurchasingController extends HttpServlet {
         int poId = Integer.parseInt(request.getParameter("id"));
         PurchaseOrder po = purchaseOrderDAO.findById(poId);
         List<PurchaseOrderDetail> poDetails = purchaseOrderDetailDAO.findByPoId(poId);
-        
+
         Supplier supplier = supplierDAO.findById(po.getProviderId());
         Warehouse warehouse = warehouseDAO.findById(po.getWarehouseId());
         List<Product> products = productDAO.findAll();
@@ -377,8 +394,9 @@ public class PurchasingController extends HttpServlet {
         request.setAttribute("warehouse", warehouse);
         request.setAttribute("products", products);
         request.setAttribute("existingStockInward", existingStockInward);
-        
-        request.getRequestDispatcher("view/dashboard/purchasingStaff/purchase-order/view-po.jsp").forward(request, response);
+
+        request.getRequestDispatcher("view/dashboard/purchasingStaff/purchase-order/view-po.jsp").forward(request,
+                response);
     }
 
     // Stock Inward Management Methods
@@ -387,7 +405,7 @@ public class PurchasingController extends HttpServlet {
         int poId = Integer.parseInt(request.getParameter("poId"));
         PurchaseOrder po = purchaseOrderDAO.findById(poId);
         List<PurchaseOrderDetail> poDetails = purchaseOrderDetailDAO.findByPoId(poId);
-        
+
         Supplier supplier = supplierDAO.findById(po.getProviderId());
         Warehouse warehouse = warehouseDAO.findById(po.getWarehouseId());
         List<Product> products = productDAO.findAll();
@@ -397,8 +415,9 @@ public class PurchasingController extends HttpServlet {
         request.setAttribute("supplier", supplier);
         request.setAttribute("warehouse", warehouse);
         request.setAttribute("products", products);
-        
-        request.getRequestDispatcher("view/dashboard/purchasingStaff/stock-inward/create-stock-inward.jsp").forward(request, response);
+
+        request.getRequestDispatcher("view/dashboard/purchasingStaff/stock-inward/create-stock-inward.jsp")
+                .forward(request, response);
     }
 
     private void handleCreateStockInward(HttpServletRequest request, HttpServletResponse response)
@@ -406,7 +425,7 @@ public class PurchasingController extends HttpServlet {
         try {
             HttpSession session = request.getSession();
             User currentUser = SessionUtil.getUserFromSession(request);
-            
+
             int poId = Integer.parseInt(request.getParameter("poId"));
             PurchaseOrder po = purchaseOrderDAO.findById(poId);
 
@@ -443,16 +462,16 @@ public class PurchasingController extends HttpServlet {
                     }
                 }
 
-                session.setAttribute("toastMessage", "Stock Inward created successfully!");
+                session.setAttribute("toastMessage", "Tạo nhập kho thành công!");
                 session.setAttribute("toastType", "success");
-                
+
                 response.sendRedirect("purchasing?action=view-stock-inward&id=" + stockInwardId);
                 return;
             }
 
         } catch (Exception e) {
             HttpSession session = request.getSession();
-            session.setAttribute("toastMessage", "Error creating Stock Inward: " + e.getMessage());
+            session.setAttribute("toastMessage", "Lỗi khi tạo nhập kho: " + e.getMessage());
             session.setAttribute("toastType", "error");
         }
 
@@ -464,7 +483,7 @@ public class PurchasingController extends HttpServlet {
         try {
             HttpSession session = request.getSession();
             User currentUser = SessionUtil.getUserFromSession(request);
-            
+
             int poId = Integer.parseInt(request.getParameter("poId"));
             PurchaseOrder po = purchaseOrderDAO.findById(poId);
             Rfq rfq = rfqDAO.findById(po.getRfqId());
@@ -500,10 +519,10 @@ public class PurchasingController extends HttpServlet {
                             stockInwardDetailDAO.insert(detail);
 
                             // Update inventory
-                            inventoryDAO.updateQuantityOnHand(Integer.valueOf(productIds[i]), 
-                                                   po.getWarehouseId(), 
-                                                   Integer.valueOf(quantities[i]),
-                                                   "add");
+                            inventoryDAO.updateQuantityOnHand(Integer.valueOf(productIds[i]),
+                                    po.getWarehouseId(),
+                                    Integer.valueOf(quantities[i]),
+                                    "add");
                         }
                     }
                 }
@@ -511,20 +530,21 @@ public class PurchasingController extends HttpServlet {
                 // Update all statuses to completed
                 rfq.setStatus("completed");
                 rfqDAO.update(rfq);
-                
+
                 po.setStatus("completed");
                 purchaseOrderDAO.update(po);
 
-                session.setAttribute("toastMessage", "Stock Inward created and completed successfully! Inventory updated.");
+                session.setAttribute("toastMessage",
+                        "Tạo và hoàn thành nhập kho thành công! Tồn kho đã được cập nhật.");
                 session.setAttribute("toastType", "success");
-                
+
                 response.sendRedirect("purchasing?action=view-stock-inward&id=" + stockInwardId);
                 return;
             }
 
         } catch (Exception e) {
             HttpSession session = request.getSession();
-            session.setAttribute("toastMessage", "Error creating and completing Stock Inward: " + e.getMessage());
+            session.setAttribute("toastMessage", "Lỗi khi tạo và hoàn thành nhập kho: " + e.getMessage());
             session.setAttribute("toastType", "error");
         }
 
@@ -540,7 +560,8 @@ public class PurchasingController extends HttpServlet {
         request.setAttribute("stockInwards", stockInwards);
         request.setAttribute("suppliers", suppliers);
         request.setAttribute("warehouses", warehouses);
-        request.getRequestDispatcher("view/dashboard/purchasingStaff/stock-inward/stock-inward-list.jsp").forward(request, response);
+        request.getRequestDispatcher("view/dashboard/purchasingStaff/stock-inward/stock-inward-list.jsp")
+                .forward(request, response);
     }
 
     private void handleViewStockInward(HttpServletRequest request, HttpServletResponse response)
@@ -548,7 +569,7 @@ public class PurchasingController extends HttpServlet {
         int stockInwardId = Integer.parseInt(request.getParameter("id"));
         StockInward stockInward = stockInwardDAO.findById(stockInwardId);
         List<StockInwardDetail> stockInwardDetails = stockInwardDetailDAO.findByStockInwardId(stockInwardId);
-        
+
         Supplier supplier = supplierDAO.findById(stockInward.getSupplierId());
         Warehouse warehouse = warehouseDAO.findById(stockInward.getWarehouseId());
         List<Product> products = productDAO.findAll();
@@ -558,8 +579,9 @@ public class PurchasingController extends HttpServlet {
         request.setAttribute("supplier", supplier);
         request.setAttribute("warehouse", warehouse);
         request.setAttribute("products", products);
-        
-        request.getRequestDispatcher("view/dashboard/purchasingStaff/stock-inward/view-stock-inward.jsp").forward(request, response);
+
+        request.getRequestDispatcher("view/dashboard/purchasingStaff/stock-inward/view-stock-inward.jsp")
+                .forward(request, response);
     }
 
     // Other required methods...
@@ -568,34 +590,34 @@ public class PurchasingController extends HttpServlet {
         try {
             int rfqId = Integer.parseInt(request.getParameter("id"));
             Rfq rfq = rfqDAO.findById(rfqId);
-            
+
             if (rfq == null) {
                 HttpSession session = request.getSession();
-                session.setAttribute("toastMessage", "RFQ not found!");
+                session.setAttribute("toastMessage", "Không tìm thấy yêu cầu báo giá!");
                 session.setAttribute("toastType", "error");
                 response.sendRedirect("purchasing?action=list-rfq");
                 return;
             }
-            
+
             // Check if RFQ can be edited (only pending status)
             if (!"pending".equals(rfq.getStatus())) {
                 HttpSession session = request.getSession();
-                session.setAttribute("toastMessage", "RFQ can only be edited when status is pending!");
+                session.setAttribute("toastMessage", "YCB chỉ có thể chỉnh sửa khi trạng thái là CHỜ XỬ LÝ!");
                 session.setAttribute("toastType", "error");
                 response.sendRedirect("purchasing?action=view-rfq&id=" + rfqId);
                 return;
             }
-            
+
             // Check if current user is the requester
             User currentUser = SessionUtil.getUserFromSession(request);
             if (currentUser == null || !rfq.getUserIdRequester().equals(currentUser.getUserId())) {
                 HttpSession session = request.getSession();
-                session.setAttribute("toastMessage", "You can only edit your own RFQs!");
+                session.setAttribute("toastMessage", "Bạn chỉ có thể chỉnh sửa YCB của chính mình!");
                 session.setAttribute("toastType", "error");
                 response.sendRedirect("purchasing?action=list-rfq");
                 return;
             }
-            
+
             List<RfqDetail> rfqDetails = rfqDetailDAO.findByRfqId(rfqId);
             List<Supplier> suppliers = supplierDAO.findAll();
             List<Warehouse> warehouses = warehouseDAO.findAll();
@@ -606,12 +628,12 @@ public class PurchasingController extends HttpServlet {
             request.setAttribute("suppliers", suppliers);
             request.setAttribute("warehouses", warehouses);
             request.setAttribute("products", products);
-            
+
             request.getRequestDispatcher("view/dashboard/purchasingStaff/rfq/edit-rfq.jsp").forward(request, response);
-            
+
         } catch (NumberFormatException e) {
             HttpSession session = request.getSession();
-            session.setAttribute("toastMessage", "Invalid RFQ ID!");
+            session.setAttribute("toastMessage", "Mã YCB không hợp lệ!");
             session.setAttribute("toastType", "error");
             response.sendRedirect("purchasing?action=list-rfq");
         }
@@ -622,28 +644,28 @@ public class PurchasingController extends HttpServlet {
         try {
             HttpSession session = request.getSession();
             User currentUser = SessionUtil.getUserFromSession(request);
-            
+
             int rfqId = Integer.parseInt(request.getParameter("rfqId"));
             Rfq existingRfq = rfqDAO.findById(rfqId);
-            
+
             if (existingRfq == null) {
-                session.setAttribute("toastMessage", "RFQ not found!");
+                session.setAttribute("toastMessage", "Không tìm thấy yêu cầu báo giá!");
                 session.setAttribute("toastType", "error");
                 response.sendRedirect("purchasing?action=list-rfq");
                 return;
             }
-            
+
             // Check if RFQ can be edited (only pending status)
             if (!"pending".equals(existingRfq.getStatus())) {
-                session.setAttribute("toastMessage", "RFQ can only be edited when status is pending!");
+                session.setAttribute("toastMessage", "YCB chỉ có thể chỉnh sửa khi trạng thái là CHỜ XỬ LÝ!");
                 session.setAttribute("toastType", "error");
                 response.sendRedirect("purchasing?action=view-rfq&id=" + rfqId);
                 return;
             }
-            
+
             // Check if current user is the requester
             if (currentUser == null || !existingRfq.getUserIdRequester().equals(currentUser.getUserId())) {
-                session.setAttribute("toastMessage", "You can only edit your own RFQs!");
+                session.setAttribute("toastMessage", "Bạn chỉ có thể chỉnh sửa YCB của chính mình!");
                 session.setAttribute("toastType", "error");
                 response.sendRedirect("purchasing?action=list-rfq");
                 return;
@@ -666,36 +688,51 @@ public class PurchasingController extends HttpServlet {
             if (success) {
                 // Delete existing RFQ details
                 rfqDetailDAO.deleteByRfqId(rfqId);
-                
+
                 // Create new RFQ Details
                 String[] productIds = request.getParameterValues("productId");
                 String[] quantities = request.getParameterValues("quantity");
+                String[] suggestedPrices = request.getParameterValues("suggestedPrice");
 
                 if (productIds != null && quantities != null) {
                     for (int i = 0; i < productIds.length; i++) {
                         if (!productIds[i].isEmpty() && !quantities[i].isEmpty()) {
+                            // Parse suggested price, default to null if empty
+                            BigDecimal suggestedPrice = null;
+                            if (suggestedPrices != null && i < suggestedPrices.length &&
+                                    !suggestedPrices[i].isEmpty()) {
+                                try {
+                                    suggestedPrice = new BigDecimal(suggestedPrices[i]);
+                                } catch (NumberFormatException e) {
+                                    // Log error but continue with null price
+                                    System.out.println("Invalid suggested price: " + suggestedPrices[i]);
+                                }
+                            }
+
                             RfqDetail detail = RfqDetail.builder()
                                     .rfqId(rfqId)
                                     .productId(Integer.valueOf(productIds[i]))
                                     .quantity(Integer.valueOf(quantities[i]))
+                                    .suggestPrice(suggestedPrice)
+                                    .actualPrice(null) // Will be set later by supplier
                                     .build();
                             rfqDetailDAO.insert(detail);
                         }
                     }
                 }
 
-                session.setAttribute("toastMessage", "RFQ updated successfully!");
+                session.setAttribute("toastMessage", "Cập nhật yêu cầu báo giá thành công!");
                 session.setAttribute("toastType", "success");
                 response.sendRedirect("purchasing?action=view-rfq&id=" + rfqId);
             } else {
-                session.setAttribute("toastMessage", "Failed to update RFQ!");
+                session.setAttribute("toastMessage", "Cập nhật yêu cầu báo giá thất bại!");
                 session.setAttribute("toastType", "error");
                 response.sendRedirect("purchasing?action=edit-rfq&id=" + rfqId);
             }
 
         } catch (Exception e) {
             HttpSession session = request.getSession();
-            session.setAttribute("toastMessage", "Error updating RFQ: " + e.getMessage());
+            session.setAttribute("toastMessage", "Lỗi khi cập nhật YCB: " + e.getMessage());
             session.setAttribute("toastType", "error");
             response.sendRedirect("purchasing?action=list-rfq");
         }
@@ -723,7 +760,8 @@ public class PurchasingController extends HttpServlet {
         request.setAttribute("purchaseOrders", approvedPOs);
         request.setAttribute("suppliers", suppliers);
         request.setAttribute("warehouses", warehouses);
-        request.getRequestDispatcher("view/dashboard/purchasingStaff/purchase-order/po-list-for-stock-inward.jsp").forward(request, response);
+        request.getRequestDispatcher("view/dashboard/purchasingStaff/purchase-order/po-list-for-stock-inward.jsp")
+                .forward(request, response);
     }
 
     // Inventory Management Methods
@@ -731,14 +769,14 @@ public class PurchasingController extends HttpServlet {
             throws ServletException, IOException {
         List<Product> products = productDAO.findAll();
         List<Warehouse> warehouses = warehouseDAO.findAll();
-        
+
         // Pre-compute inventory data to avoid calling DAO in JSP
         List<Map<String, Object>> inventoryData = new ArrayList<>();
-        
+
         for (Product product : products) {
             for (Warehouse warehouse : warehouses) {
                 Integer quantity = inventoryDAO.getQuantityOnHand(product.getProductId(), warehouse.getWarehouseId());
-                
+
                 Map<String, Object> inventoryItem = new HashMap<>();
                 inventoryItem.put("productCode", product.getProductCode());
                 inventoryItem.put("productName", product.getProductName());
@@ -746,7 +784,7 @@ public class PurchasingController extends HttpServlet {
                 inventoryItem.put("quantity", quantity);
                 inventoryItem.put("unit", product.getUnit());
                 inventoryItem.put("lowStockThreshold", product.getLowStockThreshold());
-                
+
                 // Determine status
                 String status;
                 String statusClass;
@@ -759,13 +797,54 @@ public class PurchasingController extends HttpServlet {
                 }
                 inventoryItem.put("status", status);
                 inventoryItem.put("statusClass", statusClass);
-                
+
                 inventoryData.add(inventoryItem);
             }
         }
-        
+
         request.setAttribute("inventoryData", inventoryData);
-        request.setAttribute("warehouses", warehouses);  // Add warehouse list for filter
+        request.setAttribute("warehouses", warehouses); // Add warehouse list for filter
         request.getRequestDispatcher("view/dashboard/purchasingStaff/inventory-list.jsp").forward(request, response);
     }
-} 
+
+    // Handle AJAX request to update actual price
+    private void handleUpdateActualPrice(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+
+        try {
+            int rfqDetailId = Integer.parseInt(request.getParameter("rfqDetailId"));
+            String actualPriceStr = request.getParameter("actualPrice");
+
+            if (actualPriceStr == null || actualPriceStr.trim().isEmpty()) {
+                response.getWriter().write("{\"success\": false, \"message\": \"Giá không được để trống\"}");
+                return;
+            }
+
+            BigDecimal actualPrice = new BigDecimal(actualPriceStr);
+
+            // Get the existing RFQ detail
+            RfqDetail rfqDetail = rfqDetailDAO.findById(rfqDetailId);
+            if (rfqDetail == null) {
+                response.getWriter().write("{\"success\": false, \"message\": \"Không tìm thấy chi tiết YCB\"}");
+                return;
+            }
+
+            // Update the actual price
+            rfqDetail.setActualPrice(actualPrice);
+            boolean success = rfqDetailDAO.update(rfqDetail);
+
+            if (success) {
+                response.getWriter().write("{\"success\": true, \"message\": \"Đã cập nhật giá thực tế\"}");
+            } else {
+                response.getWriter().write("{\"success\": false, \"message\": \"Không thể cập nhật giá thực tế\"}");
+            }
+
+        } catch (NumberFormatException e) {
+            response.getWriter().write("{\"success\": false, \"message\": \"Giá không hợp lệ\"}");
+        } catch (Exception e) {
+            response.getWriter().write("{\"success\": false, \"message\": \"Lỗi hệ thống: " + e.getMessage() + "\"}");
+        }
+    }
+}

@@ -22,6 +22,7 @@ public class StockInwardDetailDAO extends DBContext implements I_DAO<StockInward
                 .productId(rs.getInt("product_id"))
                 .quantityReceived(rs.getInt("quantity_received"))
                 .unitPurchasePrice(rs.getBigDecimal("unit_purchase_price"))
+                .actualPrice(rs.getBigDecimal("actual_price"))
                 // Thông tin join
                 .productCode(rs.getString("product_code"))
                 .productName(rs.getString("product_name"))
@@ -55,7 +56,7 @@ public class StockInwardDetailDAO extends DBContext implements I_DAO<StockInward
     @Override
     public int insert(StockInwardDetail detail) {
         String sql = "INSERT INTO stockinwarddetails (stock_inward_id, product_id, quantity_received, " +
-                "unit_purchase_price) VALUES (?, ?, ?, ?)";
+                "unit_purchase_price, actual_price) VALUES (?, ?, ?, ?, ?)";
 
         try {
             conn = getConnection();
@@ -64,6 +65,7 @@ public class StockInwardDetailDAO extends DBContext implements I_DAO<StockInward
             statement.setInt(2, detail.getProductId());
             statement.setInt(3, detail.getQuantityReceived());
             statement.setBigDecimal(4, detail.getUnitPurchasePrice());
+            statement.setBigDecimal(5, detail.getActualPrice());
 
             int affectedRows = statement.executeUpdate();
             if (affectedRows == 0) {
@@ -86,14 +88,15 @@ public class StockInwardDetailDAO extends DBContext implements I_DAO<StockInward
 
     @Override
     public boolean update(StockInwardDetail detail) {
-        String sql = "UPDATE stockinwarddetails SET quantity_received = ?, unit_purchase_price = ? " +
+        String sql = "UPDATE stockinwarddetails SET quantity_received = ?, unit_purchase_price = ?, actual_price = ? " +
                 "WHERE inward_detail_id = ?";
         try {
             conn = getConnection();
             statement = conn.prepareStatement(sql);
             statement.setInt(1, detail.getQuantityReceived());
             statement.setBigDecimal(2, detail.getUnitPurchasePrice());
-            statement.setInt(3, detail.getInwardDetailId());
+            statement.setBigDecimal(3, detail.getActualPrice());
+            statement.setInt(4, detail.getInwardDetailId());
             return statement.executeUpdate() > 0;
         } catch (SQLException ex) {
             LOGGER.log(Level.SEVERE, "Error updating stock inward detail: " + detail.toString(), ex);
@@ -168,26 +171,28 @@ public class StockInwardDetailDAO extends DBContext implements I_DAO<StockInward
 
     public boolean insertDetails(List<StockInwardDetail> details) {
         String sql = "INSERT INTO stockinwarddetails (stock_inward_id, product_id, quantity_received, " +
-                "unit_purchase_price) VALUES (?, ?, ?, ?)";
+                "unit_purchase_price, actual_price) VALUES (?, ?, ?, ?, ?)";
         try {
             conn = getConnection();
             conn.setAutoCommit(false);
             statement = conn.prepareStatement(sql);
-            
+
             for (StockInwardDetail detail : details) {
                 statement.setInt(1, detail.getStockInwardId());
                 statement.setInt(2, detail.getProductId());
                 statement.setInt(3, detail.getQuantityReceived());
                 statement.setBigDecimal(4, detail.getUnitPurchasePrice());
+                statement.setBigDecimal(5, detail.getActualPrice());
                 statement.addBatch();
             }
-            
+
             statement.executeBatch();
             conn.commit();
             return true;
         } catch (SQLException ex) {
             try {
-                if (conn != null) conn.rollback();
+                if (conn != null)
+                    conn.rollback();
             } catch (SQLException rollbackEx) {
                 LOGGER.log(Level.SEVERE, "Error rolling back transaction", rollbackEx);
             }
@@ -197,4 +202,4 @@ public class StockInwardDetailDAO extends DBContext implements I_DAO<StockInward
             close();
         }
     }
-} 
+}

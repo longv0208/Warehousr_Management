@@ -96,7 +96,7 @@ public class PasswordUtil {
                     System.out.print("Nhập mật khẩu cần hash: ");
                     String passwordToHash = scanner.nextLine();
                     
-                    if (isValidPassword(passwordToHash)) {
+                    if (true) {
                         String hashedPassword = hashPassword(passwordToHash);
                         System.out.println("Mật khẩu gốc: " + passwordToHash);
                         System.out.println("Mật khẩu đã hash: " + hashedPassword);

@@ -1,19 +1,19 @@
 let productRowIndex = 0;
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
   console.log('Sales Order Create JS loaded');
-  
+
   // Add first product row if products are available
   if (typeof hasProducts !== 'undefined' && hasProducts) {
     addProductRow();
   } else {
     showError('Không có sản phẩm nào có sẵn để tạo đơn hàng.');
   }
-  
+
   // Add event listener for warehouse selection
   const warehouseSelect = document.getElementById('warehouseId');
   if (warehouseSelect) {
-    warehouseSelect.addEventListener('change', function() {
+    warehouseSelect.addEventListener('change', function () {
       updateAllStockQuantities();
     });
   }
@@ -40,7 +40,7 @@ function addProductRow() {
       <div class="col-md-2">
           <label class="form-label d-md-none">Số lượng</label>
           <input type="number" class="form-control" name="quantity[]" min="1" value="1" oninput="calculateRowTotal(${rowIndex})" onchange="calculateRowTotal(${rowIndex})" required>
-          <small class="text-muted">Tồn: <span id="stockQuantity${rowIndex}">0</span></small>
+          <small class="text-muted">Tồn: <span id="stockQuantity${rowIndex}" class="text-muted">Chọn SP</span></small>
       </div>
       <div class="col-md-2">
           <label class="form-label d-md-none">Đơn giá</label>
@@ -61,11 +61,11 @@ function addProductRow() {
   const selectElement = rowWrapper.querySelector('select[name="productId[]"]');
   const optionsFragment = document.importNode(tpl.content, true);
   selectElement.appendChild(optionsFragment);
-  
+
   // Trigger warehouse check for the new row if a warehouse is already selected
   const warehouseId = document.getElementById('warehouseId').value;
   if (warehouseId) {
-      updateProductInfo(selectElement, rowIndex);
+    updateProductInfo(selectElement, rowIndex);
   }
 }
 
@@ -80,11 +80,26 @@ function removeProductRow(index) {
 function updateAllStockQuantities() {
   const productRows = document.querySelectorAll('.product-row');
   productRows.forEach(row => {
-      const select = row.querySelector('select[name^="productId"]');
-      if (select && select.value) {
-          const index = parseInt(row.id.replace('productRow', ''));
-          fetchInventory(select.value, index);
+    const select = row.querySelector('select[name^="productId"]');
+    if (select && select.value) {
+      const index = parseInt(row.id.replace('productRow', ''));
+      // Clear current stock display first
+      const stockSpan = document.getElementById('stockQuantity' + index);
+      if (stockSpan) {
+        stockSpan.textContent = '...';
+        stockSpan.className = 'text-muted';
       }
+      // Fetch new inventory data
+      fetchInventory(select.value, index);
+    } else {
+      // If no product selected, show appropriate message
+      const index = parseInt(row.id.replace('productRow', ''));
+      const stockSpan = document.getElementById('stockQuantity' + index);
+      if (stockSpan) {
+        stockSpan.textContent = 'Chọn SP';
+        stockSpan.className = 'text-muted';
+      }
+    }
   });
 }
 
@@ -94,105 +109,133 @@ function updateProductInfo(selectElement, index) {
   const priceInput = row.querySelector('input[name^="unitPrice"]');
   const quantityInput = row.querySelector('input[name^="quantity"]');
   const rowTotalDiv = row.querySelector('#rowTotal' + index);
+  const stockSpan = document.getElementById('stockQuantity' + index);
 
   if (!selectedOption || !selectedOption.value) {
-      if (priceInput) priceInput.value = '';
-      if (quantityInput) quantityInput.value = '';
-      if (rowTotalDiv) rowTotalDiv.textContent = '0 đ';
-      const stockSpan = document.getElementById('stockQuantity' + index);
-      if (stockSpan) stockSpan.textContent = '0';
-      calculateTotal();
-      return;
+    // Reset everything when no product is selected
+    if (priceInput) priceInput.value = '';
+    if (quantityInput) quantityInput.value = '1';
+    if (rowTotalDiv) rowTotalDiv.textContent = '0 đ';
+    if (stockSpan) {
+      stockSpan.textContent = 'Chọn SP';
+      stockSpan.className = 'text-muted';
+    }
+    // Remove quantity constraints
+    if (quantityInput) quantityInput.removeAttribute('max');
+    calculateTotal();
+    return;
   }
-  
+
+  // Set price from product data
   const price = selectedOption.getAttribute('data-price');
   if (priceInput) priceInput.value = price || '0';
   if (quantityInput && !quantityInput.value) quantityInput.value = '1';
-  
+
+  // Fetch inventory for the selected product and warehouse
   fetchInventory(selectElement.value, index);
   calculateRowTotal(index);
 }
 
 function fetchInventory(productId, index) {
-    const warehouseId = document.getElementById('warehouseId').value;
-    const stockSpan = document.getElementById('stockQuantity' + index);
-    const quantityInput = document.getElementById('productRow' + index).querySelector('input[name^="quantity"]');
+  const warehouseId = document.getElementById('warehouseId').value;
+  const stockSpan = document.getElementById('stockQuantity' + index);
+  const quantityInput = document.getElementById('productRow' + index).querySelector('input[name^="quantity"]');
 
-    if (!warehouseId) {
-        stockSpan.textContent = 'Chọn kho';
-        stockSpan.className = 'text-danger';
-        quantityInput.removeAttribute('max');
-        return;
-    }
-    if (!productId) {
-        stockSpan.textContent = '0';
-        quantityInput.removeAttribute('max');
-        return;
-    }
-
-    stockSpan.textContent = '...';
+  if (!warehouseId) {
+    stockSpan.textContent = 'Chọn kho';
+    stockSpan.className = 'text-warning fw-bold';
+    quantityInput.removeAttribute('max');
+    return;
+  }
+  if (!productId) {
+    stockSpan.textContent = 'Chọn SP';
     stockSpan.className = 'text-muted';
+    quantityInput.removeAttribute('max');
+    return;
+  }
 
-    // Build URL without template literals to avoid JSP conflicts
-    const contextPath = document.querySelector('meta[name="context-path"]') ? 
-                       document.querySelector('meta[name="context-path"]').content : '';
-    const url = contextPath + '/sale-staff/sales-order?action=get-inventory&productId=' + productId + '&warehouseId=' + warehouseId;
+  // Show loading state
+  stockSpan.textContent = '...';
+  stockSpan.className = 'text-muted';
 
-    fetch(url)
-        .then(response => {
-            if (!response.ok) throw new Error('Network response was not ok');
-            return response.json();
-        })
-        .then(data => {
-            if (data.error) throw new Error(data.error);
-            
-            const stock = data.quantity || 0;
-            stockSpan.textContent = stock;
-            quantityInput.max = stock;
+  // Build URL without template literals to avoid JSP conflicts
+  const contextPath = document.querySelector('meta[name="context-path"]') ?
+    document.querySelector('meta[name="context-path"]').content : '';
+  const url = contextPath + '/sale-staff/sales-order?action=get-inventory&productId=' + productId + '&warehouseId=' + warehouseId;
 
-            quantityInput.addEventListener('input', function() {
-                if (parseInt(quantityInput.value, 10) > stock) {
-                    stockSpan.classList.add('text-danger', 'fw-bold');
-                } else {
-                    stockSpan.classList.remove('text-danger', 'fw-bold');
-                }
-            });
-        })
-        .catch(error => {
-            console.error('Error fetching inventory:', error);
-            stockSpan.textContent = 'Lỗi';
-            stockSpan.className = 'text-danger';
-        });
+  fetch(url)
+    .then(response => {
+      if (!response.ok) throw new Error('Network response was not ok');
+      return response.json();
+    })
+    .then(data => {
+      if (data.error) throw new Error(data.error);
+
+      const stock = data.quantity || 0;
+      stockSpan.textContent = stock;
+
+      // Set visual feedback based on stock level
+      if (stock <= 0) {
+        stockSpan.className = 'text-danger fw-bold';
+      } else if (stock <= 10) {
+        stockSpan.className = 'text-warning fw-bold';
+      } else {
+        stockSpan.className = 'text-success';
+      }
+
+      // Set max constraint for quantity input
+      quantityInput.max = stock;
+
+      // Add real-time validation for quantity input
+      quantityInput.addEventListener('input', function () {
+        const currentQty = parseInt(quantityInput.value, 10) || 0;
+        if (currentQty > stock) {
+          stockSpan.classList.remove('text-success', 'text-warning');
+          stockSpan.classList.add('text-danger', 'fw-bold');
+        } else if (stock <= 0) {
+          stockSpan.className = 'text-danger fw-bold';
+        } else if (stock <= 10) {
+          stockSpan.className = 'text-warning fw-bold';
+        } else {
+          stockSpan.className = 'text-success';
+        }
+      });
+    })
+    .catch(error => {
+      console.error('Error fetching inventory:', error);
+      stockSpan.textContent = 'Lỗi';
+      stockSpan.className = 'text-danger fw-bold';
+    });
 }
 
 function calculateRowTotal(index) {
   const row = document.getElementById('productRow' + index);
   if (!row) return;
-  
+
   const quantityInput = row.querySelector('input[name^="quantity"]');
   const unitPriceInput = row.querySelector('input[name^="unitPrice"]');
   const rowTotalEl = document.getElementById('rowTotal' + index);
-  
+
   if (!quantityInput || !unitPriceInput || !rowTotalEl) return;
-  
+
   const quantity = parseFloat(quantityInput.value) || 0;
   const unitPrice = parseFloat(unitPriceInput.value) || 0;
   const total = quantity * unitPrice;
-  
+
   // Format currency in Vietnamese style
   rowTotalEl.textContent = formatCurrency(total);
-  
+
   calculateTotal();
 }
 
 function calculateTotal() {
   let totalAmount = 0;
   const rows = document.querySelectorAll('.product-row');
-  
+
   rows.forEach(row => {
     const quantityInput = row.querySelector('input[name^="quantity"]');
     const unitPriceInput = row.querySelector('input[name^="unitPrice"]');
-    
+
     if (quantityInput && unitPriceInput) {
       const quantity = parseFloat(quantityInput.value) || 0;
       const unitPrice = parseFloat(unitPriceInput.value) || 0;

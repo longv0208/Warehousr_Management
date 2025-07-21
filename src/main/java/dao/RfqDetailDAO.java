@@ -31,6 +31,8 @@ public class RfqDetailDAO extends DBContext implements I_DAO<RfqDetail> {
         rfqDetail.setRfqId(rs.getInt("rfq_id"));
         rfqDetail.setProductId(rs.getInt("product_id"));
         rfqDetail.setQuantity(rs.getInt("quantity"));
+        rfqDetail.setSuggestPrice(rs.getBigDecimal("suggest_price"));
+        rfqDetail.setActualPrice(rs.getBigDecimal("actual_price"));
         return rfqDetail;
     }
 
@@ -80,7 +82,7 @@ public class RfqDetailDAO extends DBContext implements I_DAO<RfqDetail> {
 
     @Override
     public int insert(RfqDetail rfqDetail) {
-        String sql = "INSERT INTO rfq_details (rfq_id, product_id, quantity) VALUES (?, ?, ?)";
+        String sql = "INSERT INTO rfq_details (rfq_id, product_id, quantity, suggest_price, actual_price) VALUES (?, ?, ?, ?, ?)";
         
         try {
             conn = getConnection();
@@ -88,6 +90,8 @@ public class RfqDetailDAO extends DBContext implements I_DAO<RfqDetail> {
             statement.setInt(1, rfqDetail.getRfqId());
             statement.setInt(2, rfqDetail.getProductId());
             statement.setInt(3, rfqDetail.getQuantity());
+            statement.setBigDecimal(4, rfqDetail.getSuggestPrice());
+            statement.setBigDecimal(5, rfqDetail.getActualPrice());
             
             int affectedRows = statement.executeUpdate();
             
@@ -111,7 +115,7 @@ public class RfqDetailDAO extends DBContext implements I_DAO<RfqDetail> {
 
     @Override
     public boolean update(RfqDetail rfqDetail) {
-        String sql = "UPDATE rfq_details SET rfq_id = ?, product_id = ?, quantity = ? WHERE rfq_detail_id = ?";
+        String sql = "UPDATE rfq_details SET rfq_id = ?, product_id = ?, quantity = ?, suggest_price = ?, actual_price = ? WHERE rfq_detail_id = ?";
         
         try {
             conn = getConnection();
@@ -119,7 +123,9 @@ public class RfqDetailDAO extends DBContext implements I_DAO<RfqDetail> {
             statement.setInt(1, rfqDetail.getRfqId());
             statement.setInt(2, rfqDetail.getProductId());
             statement.setInt(3, rfqDetail.getQuantity());
-            statement.setInt(4, rfqDetail.getRfqDetailId());
+            statement.setBigDecimal(4, rfqDetail.getSuggestPrice());
+            statement.setBigDecimal(5, rfqDetail.getActualPrice());
+            statement.setInt(6, rfqDetail.getRfqDetailId());
             
             int rowsAffected = statement.executeUpdate();
             return rowsAffected > 0;
