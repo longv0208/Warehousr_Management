@@ -46,7 +46,7 @@ public class Role {
                 break;
             case "warehouse_manager":
                 role.setRoleId("warehouse_staff");
-                role.setRoleName("Warehouse Staff");
+                role.setRoleName("Warehouse Manager");
                 break;
             default:
                 throw new IllegalArgumentException("Vai trò không hợp lệ: " + roleId);

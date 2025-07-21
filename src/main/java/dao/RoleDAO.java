@@ -14,8 +14,8 @@ public class RoleDAO extends DBContext implements I_DAO<Role> {
         
         // Since roles are stored as enum in users table, we'll return predefined roles
         // that match the database enum values: 'admin','warehouse_staff','sales_staff','purchasing_staff'
-        String[] roleIds = {"admin", "warehouse_staff", "sales_staff", "purchasing_staff"};
-        String[] roleNames = {"Administrator", "Warehouse Staff", "Sales Staff", "Purchasing Staff"};
+        String[] roleIds = {"admin", "warehouse_staff", "sales_staff", "purchasing_staff", "warehouse_manager"};
+        String[] roleNames = {"Administrator", "Warehouse Staff", "Sales Staff", "Purchasing Staff", "Warehouse Manager"};
         
         for (int i = 0; i < roleIds.length; i++) {
             Role role = new Role();
