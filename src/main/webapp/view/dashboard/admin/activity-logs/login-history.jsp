@@ -319,10 +319,12 @@
                                     </div>
                                     <div class="col-md-4">
                                         <div class="d-grid gap-2">
-                                            <a href="${pageContext.request.contextPath}/admin/activity-log?action=list&userId=${activity.userId}&actionType=${activity.actionType}&startDate=${activity.timestamp}&endDate=${activity.timestamp}" 
-                                               class="btn btn-outline-primary btn-sm">
-                                                <i class="bi bi-eye"></i> Xem session
-                                            </a>
+                                            <c:if test="${activity.actionType == 'LOGIN'}">
+                                                <a href="${pageContext.request.contextPath}/admin/activity-log?action=view-session&userId=${activity.userId}&timestamp=${activity.timestamp.time}" 
+                                                   class="btn btn-outline-primary btn-sm">
+                                                    <i class="bi bi-eye"></i> Xem session
+                                                </a>
+                                            </c:if>
                                             <small class="text-muted text-center">
                                                 ID: ${activity.userId}
                                             </small>
@@ -456,4 +458,4 @@
         updateTime(); // Initial call
     </script>
 </body>
-</html> 
+</html>

@@ -435,4 +435,62 @@ public class ActivityLogDAO extends DBContext implements I_DAO<ActivityLog> {
         }
         return 0;
     }
-} 
+
+    public List<ActivityLog> getActivitiesForSession(int userId, Timestamp loginTimestamp) {
+        List<ActivityLog> sessionActivities = new ArrayList<>();
+        Timestamp sessionEndTime = null;
+
+        // 1. Find the corresponding LOGOUT or next LOGIN to determine session end time
+        String findSessionEndSql = "SELECT timestamp, action_type FROM activity_logs " +
+                                   "WHERE user_id = ? AND timestamp > ? " +
+                                   "AND (action_type = 'LOGOUT' OR action_type = 'LOGIN') " +
+                                   "ORDER BY timestamp ASC LIMIT 1";
+        try {
+            conn = getConnection();
+            PreparedStatement sessionEndStatement = conn.prepareStatement(findSessionEndSql);
+            sessionEndStatement.setInt(1, userId);
+            sessionEndStatement.setTimestamp(2, loginTimestamp);
+            ResultSet rs = sessionEndStatement.executeQuery();
+
+            if (rs.next()) {
+                sessionEndTime = rs.getTimestamp("timestamp");
+            } else {
+                // If no LOGOUT or next LOGIN found, assume session is ongoing till now
+                sessionEndTime = new Timestamp(System.currentTimeMillis());
+            }
+        } catch (SQLException ex) {
+            System.out.println("Error finding session end time: " + ex.getMessage());
+            close(); // Close connection in case of error
+            return sessionActivities;
+        } finally {
+            // Ensure connection is closed even if an exception occurs during ResultSet processing
+            try { if (resultSet != null) resultSet.close(); } catch (SQLException e) { /* ignore */ }
+            try { if (statement != null) statement.close(); } catch (SQLException e) { /* ignore */ }
+            // Do not close the main connection here, as it will be used by the next query
+        }
+
+
+        // 2. Retrieve all activities within the session timeframe
+        String getSessionActivitiesSql = "SELECT * FROM activity_logs " +
+                                         "WHERE user_id = ? AND timestamp >= ? AND timestamp <= ? " +
+                                         "ORDER BY timestamp ASC";
+
+        try {
+            conn = getConnection(); // Re-obtain connection if it was closed or for safety
+            statement = conn.prepareStatement(getSessionActivitiesSql);
+            statement.setInt(1, userId);
+            statement.setTimestamp(2, loginTimestamp);
+            statement.setTimestamp(3, sessionEndTime);
+            resultSet = statement.executeQuery();
+
+            while (resultSet.next()) {
+                sessionActivities.add(getFromResultSet(resultSet));
+            }
+        } catch (SQLException ex) {
+            System.out.println("Error getting activities for session: " + ex.getMessage());
+        } finally {
+            close();
+        }
+        return sessionActivities;
+    }
+}

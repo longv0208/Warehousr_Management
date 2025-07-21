@@ -42,6 +42,9 @@ public class ActivityLogController extends HttpServlet {
             case "login-history":
                 handleLoginHistory(request, response);
                 break;
+            case "view-session":
+                handleViewSession(request, response);
+                break;    
             default:
                 handleLoginHistory(request, response);
                 break;
@@ -54,6 +57,35 @@ public class ActivityLogController extends HttpServlet {
         // Since filtering is part of doGet, doPost can redirect or handle other actions if needed.
         // For now, redirecting to default view.
         handleLoginHistory(request, response);
+    }
+
+    private void handleViewSession(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        // This method will be implemented in the next steps.
+        // For now, it will simply redirect back to the login history or show an empty page.
+        // We need userId and loginTimestamp to identify a session.
+        int userId = 0;
+        long timestampParam = 0; // This will be the login timestamp
+
+        try {
+            userId = Integer.parseInt(request.getParameter("userId"));
+            timestampParam = Long.parseLong(request.getParameter("timestamp"));
+        } catch (NumberFormatException e) {
+            // Handle error, maybe redirect to an error page or back to login history
+            System.out.println("Error parsing userId or timestamp for view-session: " + e.getMessage());
+            response.sendRedirect(request.getContextPath() + "/admin/activity-log?action=login-history");
+            return;
+        }
+
+        java.sql.Timestamp loginTimestamp = new java.sql.Timestamp(timestampParam);
+        
+        List<ActivityLog> sessionActivities = activityLogDAO.getActivitiesForSession(userId, loginTimestamp);
+        
+        request.setAttribute("sessionActivities", sessionActivities);
+        request.setAttribute("sessionUserId", userId);
+        request.setAttribute("sessionLoginTimestamp", loginTimestamp);
+
+        request.getRequestDispatcher("/view/dashboard/admin/activity-logs/view-session.jsp").forward(request, response);
     }
 
     private void handleAfterHoursActivities(HttpServletRequest request, HttpServletResponse response)
@@ -143,4 +175,4 @@ public class ActivityLogController extends HttpServlet {
 
         request.getRequestDispatcher("/view/dashboard/admin/activity-logs/login-history.jsp").forward(request, response);
     }
-} 
+}
