@@ -25,6 +25,19 @@ public class RfqEmailService {
     private static final String EMAIL_PASSWORD = "bsjd uezf mhsy pzqw";
     private static final String FROM_EMAIL = "bangtxhe163986@fpt.edu.vn";
     private static final String FROM_NAME = "Hệ Thống Quản Lý Kho Hàng - Phòng Mua Hàng";
+    
+    // Server configuration - adjust these based on your deployment
+    private static final String SERVER_HOST = "localhost";
+    private static final String SERVER_PORT = "9999"; // Updated to match your Tomcat server
+    private static final String CONTEXT_PATH = "ClotheWareHouse"; // Updated to match your actual deployment
+    
+    /**
+     * Generate quote URL for supplier
+     */
+    private static String generateQuoteUrl(int rfqId, int supplierId) {
+        return String.format("http://%s:%s/%s/supplier-quote?rfqId=%d&supplierId=%d", 
+                SERVER_HOST, SERVER_PORT, CONTEXT_PATH, rfqId, supplierId);
+    }
 
     /**
      * Send RFQ email to supplier
@@ -209,7 +222,7 @@ public class RfqEmailService {
                 + "<div class='quote-section'>"
                 + "<h3 style='color: #28a745; margin-bottom: 15px;'>BAN MUON BAO GIA?</h3>"
                 + "<p style='margin-bottom: 20px;'>Nhan vao nut ben duoi de truy cap trang bao gia va dien gia cho cac san pham:</p>"
-                + "<a href='http://localhost:8080/ClotheWareHouse/supplier-quote?rfqId=" + rfq.getRfqId() + "&supplierId=" + supplier.getSupplierId() + "' class='quote-button'>BAO GIA NGAY</a>"
+                + "<a href='" + generateQuoteUrl(rfq.getRfqId(), supplier.getSupplierId()) + "' class='quote-button'>BAO GIA NGAY</a>"
                 + "<p style='font-size: 14px; color: #666; margin-top: 15px;'>Link nay chi danh cho nha cung cap " + supplier.getSupplierName() + "</p>"
                 + "</div>"
                 + (rfq.getNote() != null && !rfq.getNote().trim().isEmpty()
