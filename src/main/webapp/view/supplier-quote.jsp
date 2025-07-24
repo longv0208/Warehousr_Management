@@ -274,12 +274,13 @@
                                 <td>
                                     <input type="number" 
                                            name="price_${detail.rfqDetailId}" 
+                                           id="price_${status.index}"
                                            class="price-input" 
                                            placeholder="Nhập đơn giá..."
                                            value="${detail.price != null ? detail.price : ''}"
                                            step="0.01" 
                                            min="0"
-                                           onchange="calculateTotal(${status.index}, '${detail.quantity}')"
+                                           data-quantity="${detail.quantity}"
                                            required>
                                 </td>
                                 <td>
@@ -330,16 +331,34 @@
     <script>
         // Calculate total for each row
         function calculateTotal(rowIndex, quantity) {
-            const priceInputs = document.querySelectorAll('.price-input');
-            const priceInput = priceInputs[rowIndex];
-            const totalDiv = document.getElementById(`total_${rowIndex}`);
+            const priceInput = document.getElementById('price_' + rowIndex);
+            const totalDiv = document.getElementById('total_' + rowIndex);
             
             if (priceInput && totalDiv) {
                 const price = parseFloat(priceInput.value) || 0;
                 const total = price * parseInt(quantity);
-                totalDiv.textContent = total.toLocaleString('vi-VN');
+                totalDiv.textContent = total.toLocaleString('vi-VN') + ' VND';
             }
         }
+        
+        // Add event listeners to all price inputs when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            // Get all price inputs and add event listeners
+            const priceInputs = document.querySelectorAll('.price-input');
+            priceInputs.forEach((input, index) => {
+                input.addEventListener('input', function() {
+                    // Get quantity from data attribute
+                    const quantity = parseInt(input.getAttribute('data-quantity')) || 0;
+                    calculateTotal(index, quantity);
+                });
+                
+                // Calculate initial totals if price is already set
+                if (input.value && parseFloat(input.value) > 0) {
+                    const quantity = parseInt(input.getAttribute('data-quantity')) || 0;
+                    calculateTotal(index, quantity);
+                }
+            });
+        });
         
         // Reset form
         function resetForm() {
@@ -351,45 +370,50 @@
             }
         }
         
-        // Form validation
-        document.getElementById('quoteForm').addEventListener('submit', function(e) {
-            const priceInputs = document.querySelectorAll('.price-input');
-            let hasPrice = false;
-            
-            priceInputs.forEach(input => {
-                if (input.value && parseFloat(input.value) > 0) {
-                    hasPrice = true;
-                }
-            });
-            
-            if (!hasPrice) {
-                e.preventDefault();
-                alert('Vui lòng nhập ít nhất một đơn giá cho sản phẩm!');
-                return false;
+        // Reset form
+        function resetForm() {
+            if (confirm('Bạn có chắc chắn muốn làm lại? Tất cả dữ liệu đã nhập sẽ bị xóa.')) {
+                document.getElementById('quoteForm').reset();
+                // Reset all total displays
+                const totalDivs = document.querySelectorAll('[id^="total_"]');
+                totalDivs.forEach(div => div.textContent = '0 VND');
             }
-            
-            return confirm('Bạn có chắc chắn muốn gửi báo giá này không?');
+        }
+        
+        // Form validation
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('quoteForm').addEventListener('submit', function(e) {
+                const priceInputs = document.querySelectorAll('.price-input');
+                let hasPrice = false;
+                
+                priceInputs.forEach(input => {
+                    if (input.value && parseFloat(input.value) > 0) {
+                        hasPrice = true;
+                    }
+                });
+                
+                if (!hasPrice) {
+                    e.preventDefault();
+                    alert('Vui lòng nhập ít nhất một đơn giá cho sản phẩm!');
+                    return false;
+                }
+                
+                return confirm('Bạn có chắc chắn muốn gửi báo giá này không?');
+            });
         });
         
         // Auto-save functionality (optional)
         let autoSaveTimer;
-        document.querySelectorAll('.price-input').forEach(input => {
-            input.addEventListener('input', function() {
-                clearTimeout(autoSaveTimer);
-                autoSaveTimer = setTimeout(() => {
-                    // You can implement auto-save to localStorage here
-                    console.log('Auto-saving...');
-                }, 2000);
-            });
-        });
-        
-        // Initialize totals on page load
         document.addEventListener('DOMContentLoaded', function() {
-            <c:forEach var="detail" items="${rfqDetails}" varStatus="status">
-                <c:if test="${detail.price != null}">
-                    calculateTotal(${status.index}, ${detail.quantity});
-                </c:if>
-            </c:forEach>
+            document.querySelectorAll('.price-input').forEach(input => {
+                input.addEventListener('input', function() {
+                    clearTimeout(autoSaveTimer);
+                    autoSaveTimer = setTimeout(() => {
+                        // You can implement auto-save to localStorage here
+                        console.log('Auto-saving...');
+                    }, 2000);
+                });
+            });
         });
     </script>
 </body>
