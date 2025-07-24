@@ -44,10 +44,22 @@
                                             </c:if>
 
                                             <c:if test="${rfq.status == 'sent' && existingPO == null}">
-                                                <a href="purchasing?action=create-po-from-rfq&rfqId=${rfq.rfqId}"
-                                                    class="btn btn-primary">
-                                                    <i class="fas fa-file-invoice"></i> Tạo đơn mua hàng
-                                                </a>
+                                                <c:choose>
+                                                    <c:when test="${allProductsHavePrice}">
+                                                        <a href="purchasing?action=create-po-from-rfq&rfqId=${rfq.rfqId}"
+                                                            class="btn btn-primary">
+                                                            <i class="fas fa-file-invoice"></i> Tạo đơn mua hàng
+                                                        </a>
+                                                    </c:when>
+                                                    <c:otherwise>
+                                                        <button class="btn btn-secondary" disabled>
+                                                            <i class="fas fa-clock"></i> Đợi báo giá
+                                                        </button>
+                                                        <small class="text-muted d-block mt-1">
+                                                            Cần có báo giá đầy đủ từ nhà cung cấp trước khi tạo PO
+                                                        </small>
+                                                    </c:otherwise>
+                                                </c:choose>
                                             </c:if>
 
                                             <c:if test="${existingPO != null}">
@@ -142,6 +154,7 @@
                                                         <th>Tên sản phẩm</th>
                                                         <th>Đơn vị</th>
                                                         <th>Số lượng yêu cầu</th>
+                                                        <th>Trạng thái báo giá</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
@@ -153,13 +166,30 @@
                                                                     <td>${product.productName}</td>
                                                                     <td>${product.unit}</td>
                                                                     <td>${detail.quantity}</td>
+                                                                    <td>
+                                                                        <c:choose>
+                                                                            <c:when test="${detail.price != null && detail.price > 0}">
+                                                                                <span class="badge bg-success">
+                                                                                    <i class="fas fa-check"></i> Đã báo giá
+                                                                                </span>
+                                                                                <div class="small text-muted mt-1">
+                                                                                    <fmt:formatNumber value="${detail.price}" type="number" maxFractionDigits="0"/> VND
+                                                                                </div>
+                                                                            </c:when>
+                                                                            <c:otherwise>
+                                                                                <span class="badge bg-warning">
+                                                                                    <i class="fas fa-clock"></i> Chưa báo giá
+                                                                                </span>
+                                                                            </c:otherwise>
+                                                                        </c:choose>
+                                                                    </td>
                                                                 </tr>
                                                             </c:if>
                                                         </c:forEach>
                                                     </c:forEach>
                                                     <c:if test="${empty rfqDetails}">
                                                         <tr>
-                                                            <td colspan="6" class="text-center">Không có sản phẩm nào
+                                                            <td colspan="5" class="text-center">Không có sản phẩm nào
                                                             </td>
                                                         </tr>
                                                     </c:if>

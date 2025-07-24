@@ -34,6 +34,21 @@
                                         </a>
                                     </div>
                                     <div class="card-body">
+                                        <!-- Error/Success Messages -->
+                                        <c:if test="${not empty errorMessage}">
+                                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                                <i class="fas fa-exclamation-triangle"></i> ${errorMessage}
+                                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                            </div>
+                                        </c:if>
+                                        
+                                        <c:if test="${not empty successMessage}">
+                                            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                                                <i class="fas fa-check-circle"></i> ${successMessage}
+                                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                            </div>
+                                        </c:if>
+
                                         <!-- RFQ Information -->
                                         <div class="card mb-4">
                                             <div class="card-header">
@@ -104,33 +119,49 @@
                                                                             value="${product.productId}">
                                                                         <input type="hidden" name="quantity"
                                                                             value="${detail.quantity}">
+                                                                        <input type="hidden" name="unitPrice"
+                                                                            value="${detail.price}">
 
                                                                         <td>${product.productCode}</td>
                                                                         <td>${product.productName}</td>
                                                                         <td>${product.unit}</td>
                                                                         <td>${detail.quantity}</td>
                                                                         <td>
-                                                                            <input type="number"
-                                                                                class="form-control unit-price"
-                                                                                name="unitPrice" min="0" step="0.01"
-                                                                                value="${product.purchasePrice}"
-                                                                                data-quantity="${detail.quantity}"
-                                                                                onchange="calculateRowTotal(this)"
-                                                                                required>
+                                                                            <c:choose>
+                                                                                <c:when test="${detail.price != null}">
+                                                                                    <input type="text"
+                                                                                        class="form-control bg-light"
+                                                                                        value="<fmt:formatNumber value='${detail.price}' type='number' maxFractionDigits='0'/>"
+                                                                                        readonly>
+                                                                                    <small class="text-muted">Giá từ nhà cung cấp báo giá</small>
+                                                                                </c:when>
+                                                                                <c:otherwise>
+                                                                                    <span class="text-danger">Chưa có báo giá</span>
+                                                                                </c:otherwise>
+                                                                            </c:choose>
                                                                         </td>
                                                                         <td>
                                                                             <span class="row-total fw-bold">
-                                                                                <c:set var="unitPrice"
-                                                                                    value="${product.purchasePrice}" />
-                                                                                <fmt:formatNumber
-                                                                                    value="${unitPrice * detail.quantity}"
-                                                                                    type="currency"
-                                                                                    currencySymbol="₫" />
+                                                                                <c:choose>
+                                                                                    <c:when test="${detail.price != null}">
+                                                                                        <fmt:formatNumber
+                                                                                            value="${detail.price * detail.quantity}"
+                                                                                            type="currency"
+                                                                                            currencySymbol="₫" />
+                                                                                    </c:when>
+                                                                                    <c:otherwise>
+                                                                                        <span class="text-muted">0 ₫</span>
+                                                                                    </c:otherwise>
+                                                                                </c:choose>
                                                                             </span>
                                                                         </td>
                                                                     </tr>
-                                                                    <c:set var="grandTotal"
-                                                                        value="${grandTotal + (unitPrice * detail.quantity)}" />
+                                                                    <c:choose>
+                                                                        <c:when test="${detail.price != null}">
+                                                                            <c:set var="grandTotal"
+                                                                                value="${grandTotal + (detail.price * detail.quantity)}" />
+                                                                        </c:when>
+                                                                    </c:choose>
                                                                 </c:if>
                                                             </c:forEach>
                                                         </c:forEach>
@@ -149,10 +180,20 @@
                                                 </table>
                                             </div>
 
+                                            <!-- Error message if not all products have prices -->
+                                            <c:if test="${not allProductsHavePrice}">
+                                                <div class="alert alert-warning mt-3">
+                                                    <i class="fas fa-exclamation-triangle"></i>
+                                                    <strong>Cảnh báo:</strong> Một số sản phẩm chưa có báo giá từ nhà cung cấp. 
+                                                    Vui lòng đợi nhà cung cấp hoàn thành báo giá trước khi tạo đơn PO.
+                                                </div>
+                                            </c:if>
+
                                             <div class="d-flex justify-content-end gap-2 mt-4">
                                                 <a href="purchasing?action=view-rfq&id=${rfq.rfqId}"
                                                     class="btn btn-secondary">Hủy</a>
-                                                <button type="submit" class="btn btn-primary">
+                                                <button type="submit" class="btn btn-primary" 
+                                                    ${not allProductsHavePrice ? 'disabled' : ''}>
                                                     <i class="fas fa-save"></i> Tạo Đơn Mua Hàng
                                                 </button>
                                             </div>

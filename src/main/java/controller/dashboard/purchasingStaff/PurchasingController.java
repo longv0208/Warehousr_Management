@@ -233,12 +233,22 @@ public class PurchasingController extends HttpServlet {
         // Check if PO exists for this RFQ
         PurchaseOrder existingPO = purchaseOrderDAO.findByRfqId(rfqId);
 
+        // Check if all products have quoted prices
+        boolean allProductsHavePrice = true;
+        for (RfqDetail detail : rfqDetails) {
+            if (detail.getPrice() == null || detail.getPrice() <= 0) {
+                allProductsHavePrice = false;
+                break;
+            }
+        }
+
         request.setAttribute("rfq", rfq);
         request.setAttribute("rfqDetails", rfqDetails);
         request.setAttribute("supplier", supplier);
         request.setAttribute("warehouse", warehouse);
         request.setAttribute("existingPO", existingPO);
         request.setAttribute("products", productDAO.findAll());
+        request.setAttribute("allProductsHavePrice", allProductsHavePrice);
 
         request.getRequestDispatcher("view/dashboard/purchasingStaff/rfq/view-rfq.jsp").forward(request, response);
     }
@@ -304,6 +314,15 @@ public class PurchasingController extends HttpServlet {
         Rfq rfq = rfqDAO.findById(rfqId);
         List<RfqDetail> rfqDetails = rfqDetailDAO.findByRfqId(rfqId);
 
+        // Check if all products have quoted prices
+        boolean allProductsHavePrice = true;
+        for (RfqDetail detail : rfqDetails) {
+            if (detail.getPrice() == null || detail.getPrice() <= 0) {
+                allProductsHavePrice = false;
+                break;
+            }
+        }
+
         Supplier supplier = supplierDAO.findById(rfq.getProviderId());
         Warehouse warehouse = warehouseDAO.findById(rfq.getWarehouseId());
         List<Product> products = productDAO.findAll();
@@ -313,6 +332,11 @@ public class PurchasingController extends HttpServlet {
         request.setAttribute("supplier", supplier);
         request.setAttribute("warehouse", warehouse);
         request.setAttribute("products", products);
+        request.setAttribute("allProductsHavePrice", allProductsHavePrice);
+
+        if (!allProductsHavePrice) {
+            request.setAttribute("errorMessage", "Không thể tạo đơn PO. Vui lòng đợi nhà cung cấp báo giá đầy đủ cho tất cả sản phẩm.");
+        }
 
         request.getRequestDispatcher("view/dashboard/purchasingStaff/po/create-po.jsp").forward(request, response);
     }
@@ -322,6 +346,18 @@ public class PurchasingController extends HttpServlet {
         try {
             int rfqId = Integer.parseInt(request.getParameter("rfqId"));
             Rfq rfq = rfqDAO.findById(rfqId);
+            List<RfqDetail> rfqDetails = rfqDetailDAO.findByRfqId(rfqId);
+
+            // Validate that all products have quoted prices
+            for (RfqDetail detail : rfqDetails) {
+                if (detail.getPrice() == null || detail.getPrice() <= 0) {
+                    HttpSession session = request.getSession();
+                    session.setAttribute("toastMessage", "Không thể tạo đơn PO! Một số sản phẩm chưa có báo giá từ nhà cung cấp.");
+                    session.setAttribute("toastType", "error");
+                    response.sendRedirect("purchasing?action=create-po-from-rfq&rfqId=" + rfqId);
+                    return;
+                }
+            }
 
             // Create Purchase Order
             PurchaseOrder po = PurchaseOrder.builder()
@@ -337,23 +373,15 @@ public class PurchasingController extends HttpServlet {
             int poId = purchaseOrderDAO.insert(po);
 
             if (poId > 0) {
-                // Create PO Details with prices from form
-                String[] productIds = request.getParameterValues("productId");
-                String[] quantities = request.getParameterValues("quantity");
-                String[] unitPrices = request.getParameterValues("unitPrice");
-
-                if (productIds != null && quantities != null && unitPrices != null) {
-                    for (int i = 0; i < productIds.length; i++) {
-                        if (!productIds[i].isEmpty() && !quantities[i].isEmpty() && !unitPrices[i].isEmpty()) {
-                            PurchaseOrderDetail detail = PurchaseOrderDetail.builder()
-                                    .poId(poId)
-                                    .productId(Integer.valueOf(productIds[i]))
-                                    .quantity(Integer.valueOf(quantities[i]))
-                                    .unitPrice(new BigDecimal(unitPrices[i]))
-                                    .build();
-                            purchaseOrderDetailDAO.insert(detail);
-                        }
-                    }
+                // Create PO Details using prices from RFQ details (supplier quotes)
+                for (RfqDetail rfqDetail : rfqDetails) {
+                    PurchaseOrderDetail detail = PurchaseOrderDetail.builder()
+                            .poId(poId)
+                            .productId(rfqDetail.getProductId())
+                            .quantity(rfqDetail.getQuantity())
+                            .unitPrice(BigDecimal.valueOf(rfqDetail.getPrice()))
+                            .build();
+                    purchaseOrderDetailDAO.insert(detail);
                 }
 
                 // Update RFQ status
