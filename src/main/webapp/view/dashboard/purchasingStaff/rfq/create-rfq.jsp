@@ -101,7 +101,6 @@
                                                     <tr>
                                                         <th>Sản phẩm</th>
                                                         <th>Số lượng</th>
-                                                        <th>Giá mong muốn (VND)</th>
                                                         <th>Thao tác</th>
                                                     </tr>
                                                 </thead>
@@ -122,10 +121,6 @@
                                                                 min="1" required>
                                                         </td>
                                                         <td>
-                                                            <input type="number" class="form-control"
-                                                                name="suggestedPrice" min="0" step="0.01"
-                                                                placeholder="Nhập giá mong muốn">
-                                                        </td>
                                                         <td>
                                                             <button type="button" class="btn btn-sm btn-danger"
                                                                 onclick="removeProductRow(this)">

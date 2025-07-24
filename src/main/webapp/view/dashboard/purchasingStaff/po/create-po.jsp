@@ -90,7 +90,6 @@
                                                             <th>Tên sản phẩm</th>
                                                             <th>Đơn vị</th>
                                                             <th>Số lượng</th>
-                                                            <th>Giá Thực Tế</th>
                                                             <th>Đơn giá <span class="text-danger">*</span></th>
                                                             <th>Tổng tiền</th>
                                                         </tr>
@@ -111,25 +110,10 @@
                                                                         <td>${product.unit}</td>
                                                                         <td>${detail.quantity}</td>
                                                                         <td>
-                                                                            <c:choose>
-                                                                                <c:when
-                                                                                    test="${detail.actualPrice != null}">
-                                                                                    <fmt:formatNumber
-                                                                                        value="${detail.actualPrice}"
-                                                                                        type="currency"
-                                                                                        currencySymbol="₫" />
-                                                                                </c:when>
-                                                                                <c:otherwise>
-                                                                                    <span class="text-muted">Chưa
-                                                                                        có</span>
-                                                                                </c:otherwise>
-                                                                            </c:choose>
-                                                                        </td>
-                                                                        <td>
                                                                             <input type="number"
                                                                                 class="form-control unit-price"
                                                                                 name="unitPrice" min="0" step="0.01"
-                                                                                value="${detail.actualPrice != null ? detail.actualPrice : product.purchasePrice}"
+                                                                                value="${product.purchasePrice}"
                                                                                 data-quantity="${detail.quantity}"
                                                                                 onchange="calculateRowTotal(this)"
                                                                                 required>
@@ -137,7 +121,7 @@
                                                                         <td>
                                                                             <span class="row-total fw-bold">
                                                                                 <c:set var="unitPrice"
-                                                                                    value="${detail.actualPrice != null ? detail.actualPrice : product.purchasePrice}" />
+                                                                                    value="${product.purchasePrice}" />
                                                                                 <fmt:formatNumber
                                                                                     value="${unitPrice * detail.quantity}"
                                                                                     type="currency"

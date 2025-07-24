@@ -37,8 +37,8 @@
                                                     <input type="hidden" name="action" value="send-rfq">
                                                     <input type="hidden" name="id" value="${rfq.rfqId}">
                                                     <button type="submit" class="btn btn-success"
-                                                        onclick="return confirm('Bạn có chắc chắn muốn gửi yêu cầu báo giá này?')">
-                                                        <i class="fas fa-paper-plane"></i> Gửi YCB
+                                                        onclick="return confirm('Bạn có chắc chắn muốn gửi yêu cầu báo giá này?\n\nEmail sẽ được gửi đến nhà cung cấp: ${supplier.supplierName}\nĐịa chỉ email: ${supplier.email}')">
+                                                        <i class="fas fa-paper-plane"></i> Gửi YCB & Email
                                                     </button>
                                                 </form>
                                             </c:if>
@@ -142,8 +142,6 @@
                                                         <th>Tên sản phẩm</th>
                                                         <th>Đơn vị</th>
                                                         <th>Số lượng yêu cầu</th>
-                                                        <th>Giá mong muốn</th>
-                                                        <th>Giá thực tế</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
@@ -155,41 +153,6 @@
                                                                     <td>${product.productName}</td>
                                                                     <td>${product.unit}</td>
                                                                     <td>${detail.quantity}</td>
-                                                                    <td>
-                                                                        <c:choose>
-                                                                            <c:when
-                                                                                test="${detail.suggestPrice != null}">
-                                                                                <fmt:formatNumber
-                                                                                    value="${detail.suggestPrice}"
-                                                                                    type="currency"
-                                                                                    currencySymbol="₫" />
-                                                                            </c:when>
-                                                                            <c:otherwise>
-                                                                                <span class="text-muted">Chưa có</span>
-                                                                            </c:otherwise>
-                                                                        </c:choose>
-                                                                    </td>
-                                                                    <td>
-                                                                        <c:choose>
-                                                                            <c:when
-                                                                                test="${detail.actualPrice != null}">
-                                                                                <input type="number"
-                                                                                    class="form-control form-control-sm"
-                                                                                    value="${detail.actualPrice}"
-                                                                                    step="0.01" min="0"
-                                                                                    onchange="updateActualPrice(${detail.rfqDetailId}, this.value)"
-                                                                                    style="width: 120px;">
-                                                                            </c:when>
-                                                                            <c:otherwise>
-                                                                                <input type="number"
-                                                                                    class="form-control form-control-sm"
-                                                                                    placeholder="Nhập giá" step="0.01"
-                                                                                    min="0"
-                                                                                    onchange="updateActualPrice(${detail.rfqDetailId}, this.value)"
-                                                                                    style="width: 120px;">
-                                                                            </c:otherwise>
-                                                                        </c:choose>
-                                                                    </td>
                                                                 </tr>
                                                             </c:if>
                                                         </c:forEach>
@@ -203,6 +166,26 @@
                                                 </tbody>
                                             </table>
                                         </div>
+                                        
+                                        <c:if test="${rfq.status == 'sent'}">
+                                            <hr>
+                                            <div class="alert alert-success">
+                                                <h5><i class="fas fa-check-circle"></i> <strong>Yêu cầu báo giá đã được gửi thành công!</strong></h5>
+                                                <p class="mb-2">
+                                                    <strong>📧 Email đã được gửi đến:</strong><br>
+                                                    <i class="fas fa-building"></i> <strong>${supplier.supplierName}</strong><br>
+                                                    <i class="fas fa-user"></i> Người liên hệ: ${supplier.contactPerson}<br>
+                                                    <i class="fas fa-envelope"></i> Email: <code>${supplier.email}</code><br>
+                                                    <i class="fas fa-phone"></i> SĐT: ${supplier.phoneNumber}
+                                                </p>
+                                                <div class="alert alert-info mt-3 mb-0" style="font-size: 0.9em;">
+                                                    <i class="fas fa-info-circle"></i> 
+                                                    <strong>Lưu ý:</strong> Nhà cung cấp sẽ nhận được email chi tiết về yêu cầu báo giá 
+                                                    bao gồm danh sách sản phẩm, số lượng và thông tin liên hệ.
+                                                </div>
+                                            </div>
+                                        </c:if>
+                                        
                                         <c:if test="${existingPO != null}">
                                             <hr>
                                             <div class="alert alert-info">
@@ -222,48 +205,6 @@
                 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
                 <script>
-                    // Function to update actual price
-                    function updateActualPrice(rfqDetailId, actualPrice) {
-                        if (actualPrice === '' || actualPrice === null) {
-                            return; // Don't update if empty
-                        }
-
-                        fetch('purchasing', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/x-www-form-urlencoded',
-                            },
-                            body: `action=update-actual-price&rfqDetailId=` + rfqDetailId + `&actualPrice=` + actualPrice
-                        })
-                            .then(response => response.json())
-                            .then(data => {
-                                if (data.success) {
-                                    iziToast.success({
-                                        title: 'Thành công',
-                                        message: 'Đã cập nhật giá thực tế',
-                                        position: 'topRight',
-                                        timeout: 3000
-                                    });
-                                } else {
-                                    iziToast.error({
-                                        title: 'Lỗi',
-                                        message: 'Không thể cập nhật giá thực tế',
-                                        position: 'topRight',
-                                        timeout: 3000
-                                    });
-                                }
-                            })
-                            .catch(error => {
-                                console.error('Error:', error);
-                                iziToast.error({
-                                    title: 'Lỗi',
-                                    message: 'Đã xảy ra lỗi khi cập nhật',
-                                    position: 'topRight',
-                                    timeout: 3000
-                                });
-                            });
-                    }
-
                     // Toast message display
                     var toastMessage = "${sessionScope.toastMessage}";
                     var toastType = "${sessionScope.toastType}";

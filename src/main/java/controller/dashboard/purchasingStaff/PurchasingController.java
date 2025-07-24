@@ -116,9 +116,6 @@ public class PurchasingController extends HttpServlet {
             case "send-rfq":
                 handleSendRfq(request, response);
                 break;
-            case "update-actual-price":
-                handleUpdateActualPrice(request, response);
-                break;
             case "create-po":
                 handleCreatePo(request, response);
                 break;
@@ -187,29 +184,14 @@ public class PurchasingController extends HttpServlet {
                 // Create RFQ Details
                 String[] productIds = request.getParameterValues("productId");
                 String[] quantities = request.getParameterValues("quantity");
-                String[] suggestedPrices = request.getParameterValues("suggestedPrice");
 
                 if (productIds != null && quantities != null) {
                     for (int i = 0; i < productIds.length; i++) {
                         if (!productIds[i].isEmpty() && !quantities[i].isEmpty()) {
-                            // Parse suggested price, default to null if empty
-                            BigDecimal suggestedPrice = null;
-                            if (suggestedPrices != null && i < suggestedPrices.length &&
-                                    !suggestedPrices[i].isEmpty()) {
-                                try {
-                                    suggestedPrice = new BigDecimal(suggestedPrices[i]);
-                                } catch (NumberFormatException e) {
-                                    // Log error but continue with null price
-                                    System.out.println("Invalid suggested price: " + suggestedPrices[i]);
-                                }
-                            }
-
                             RfqDetail detail = RfqDetail.builder()
                                     .rfqId(rfqId)
                                     .productId(Integer.valueOf(productIds[i]))
                                     .quantity(Integer.valueOf(quantities[i]))
-                                    .suggestPrice(suggestedPrice)
-                                    .actualPrice(null) // Will be set later by supplier
                                     .build();
                             rfqDetailDAO.insert(detail);
                         }
@@ -272,8 +254,40 @@ public class PurchasingController extends HttpServlet {
 
             HttpSession session = request.getSession();
             if (success) {
-                session.setAttribute("toastMessage", "Gửi yêu cầu báo giá thành công!");
-                session.setAttribute("toastType", "success");
+                // Gửi email cho nhà cung cấp
+                try {
+                    Supplier supplier = supplierDAO.findById(rfq.getProviderId());
+                    List<RfqDetail> rfqDetails = rfqDetailDAO.findByRfqId(rfqId);
+                    List<Product> products = productDAO.findAll();
+                    
+                    boolean emailSent = utils.RfqEmailService.sendRfqToSupplier(supplier, rfq, rfqDetails, products);
+                    
+                    if (emailSent) {
+                        session.setAttribute("toastMessage", 
+                            "Gửi yêu cầu báo giá thành công! Email đã được gửi đến nhà cung cấp: " + supplier.getSupplierName());
+                        session.setAttribute("toastType", "success");
+                        
+                        // Log thông tin gửi email thành công
+                        System.out.println("=== RFQ EMAIL SENT SUCCESSFULLY ===");
+                        System.out.println("RFQ ID: " + rfqId);
+                        System.out.println("RFQ Code: " + rfq.getRfqCode());
+                        System.out.println("Supplier ID: " + supplier.getSupplierId());
+                        System.out.println("Supplier Name: " + supplier.getSupplierName());
+                        System.out.println("Supplier Email: " + supplier.getEmail());
+                        System.out.println("Email sent at: " + new java.util.Date());
+                        System.out.println("=====================================");
+                    } else {
+                        session.setAttribute("toastMessage", 
+                            "Gửi yêu cầu báo giá thành công nhưng không thể gửi email đến nhà cung cấp!");
+                        session.setAttribute("toastType", "warning");
+                    }
+                } catch (Exception e) {
+                    System.err.println("Error sending RFQ email: " + e.getMessage());
+                    e.printStackTrace();
+                    session.setAttribute("toastMessage", 
+                        "Gửi yêu cầu báo giá thành công nhưng có lỗi khi gửi email: " + e.getMessage());
+                    session.setAttribute("toastType", "warning");
+                }
             } else {
                 session.setAttribute("toastMessage", "Gửi yêu cầu báo giá thất bại!");
                 session.setAttribute("toastType", "error");
@@ -692,29 +706,14 @@ public class PurchasingController extends HttpServlet {
                 // Create new RFQ Details
                 String[] productIds = request.getParameterValues("productId");
                 String[] quantities = request.getParameterValues("quantity");
-                String[] suggestedPrices = request.getParameterValues("suggestedPrice");
 
                 if (productIds != null && quantities != null) {
                     for (int i = 0; i < productIds.length; i++) {
                         if (!productIds[i].isEmpty() && !quantities[i].isEmpty()) {
-                            // Parse suggested price, default to null if empty
-                            BigDecimal suggestedPrice = null;
-                            if (suggestedPrices != null && i < suggestedPrices.length &&
-                                    !suggestedPrices[i].isEmpty()) {
-                                try {
-                                    suggestedPrice = new BigDecimal(suggestedPrices[i]);
-                                } catch (NumberFormatException e) {
-                                    // Log error but continue with null price
-                                    System.out.println("Invalid suggested price: " + suggestedPrices[i]);
-                                }
-                            }
-
                             RfqDetail detail = RfqDetail.builder()
                                     .rfqId(rfqId)
                                     .productId(Integer.valueOf(productIds[i]))
                                     .quantity(Integer.valueOf(quantities[i]))
-                                    .suggestPrice(suggestedPrice)
-                                    .actualPrice(null) // Will be set later by supplier
                                     .build();
                             rfqDetailDAO.insert(detail);
                         }
@@ -807,44 +806,4 @@ public class PurchasingController extends HttpServlet {
         request.getRequestDispatcher("view/dashboard/purchasingStaff/inventory-list.jsp").forward(request, response);
     }
 
-    // Handle AJAX request to update actual price
-    private void handleUpdateActualPrice(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        response.setContentType("application/json");
-        response.setCharacterEncoding("UTF-8");
-
-        try {
-            int rfqDetailId = Integer.parseInt(request.getParameter("rfqDetailId"));
-            String actualPriceStr = request.getParameter("actualPrice");
-
-            if (actualPriceStr == null || actualPriceStr.trim().isEmpty()) {
-                response.getWriter().write("{\"success\": false, \"message\": \"Giá không được để trống\"}");
-                return;
-            }
-
-            BigDecimal actualPrice = new BigDecimal(actualPriceStr);
-
-            // Get the existing RFQ detail
-            RfqDetail rfqDetail = rfqDetailDAO.findById(rfqDetailId);
-            if (rfqDetail == null) {
-                response.getWriter().write("{\"success\": false, \"message\": \"Không tìm thấy chi tiết YCB\"}");
-                return;
-            }
-
-            // Update the actual price
-            rfqDetail.setActualPrice(actualPrice);
-            boolean success = rfqDetailDAO.update(rfqDetail);
-
-            if (success) {
-                response.getWriter().write("{\"success\": true, \"message\": \"Đã cập nhật giá thực tế\"}");
-            } else {
-                response.getWriter().write("{\"success\": false, \"message\": \"Không thể cập nhật giá thực tế\"}");
-            }
-
-        } catch (NumberFormatException e) {
-            response.getWriter().write("{\"success\": false, \"message\": \"Giá không hợp lệ\"}");
-        } catch (Exception e) {
-            response.getWriter().write("{\"success\": false, \"message\": \"Lỗi hệ thống: " + e.getMessage() + "\"}");
-        }
-    }
 }

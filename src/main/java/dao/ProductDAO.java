@@ -639,5 +639,29 @@ public class ProductDAO extends DBContext implements I_DAO<Product> {
             close();
         }
     }
+    
+    /**
+     * Get product by ID
+     */
+    public Product getProductById(int productId) {
+        String sql = "SELECT * FROM products WHERE product_id = ?";
+        
+        try {
+            conn = getConnection();
+            statement = conn.prepareStatement(sql);
+            statement.setInt(1, productId);
+            resultSet = statement.executeQuery();
+            
+            if (resultSet.next()) {
+                return getFromResultSet(resultSet);
+            }
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Error getting product by ID: " + productId, ex);
+        } finally {
+            close();
+        }
+        
+        return null;
+    }
 
 }

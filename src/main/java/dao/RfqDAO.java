@@ -228,4 +228,28 @@ public class RfqDAO extends DBContext implements I_DAO<Rfq> {
         }
         return "RFQ000001";
     }
+    
+    /**
+     * Get RFQ by ID
+     */
+    public Rfq getRfqById(int rfqId) {
+        String sql = "SELECT * FROM rfqs WHERE rfq_id = ?";
+        
+        try {
+            conn = getConnection();
+            statement = conn.prepareStatement(sql);
+            statement.setInt(1, rfqId);
+            resultSet = statement.executeQuery();
+            
+            if (resultSet.next()) {
+                return getFromResultSet(resultSet);
+            }
+        } catch (SQLException ex) {
+            System.out.println("Error getting RFQ by ID: " + ex.getMessage());
+        } finally {
+            closeResources();
+        }
+        
+        return null;
+    }
 } 
