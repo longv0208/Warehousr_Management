@@ -29,7 +29,7 @@ public class RfqEmailService {
     // Server configuration - adjust these based on your deployment
     private static final String SERVER_HOST = "localhost";
     private static final String SERVER_PORT = "9999"; // Updated to match your Tomcat server
-    private static final String CONTEXT_PATH = "Test"; // Updated to match your actual deployment
+    private static final String CONTEXT_PATH = "ClotheWareHouse"; // Updated to match your actual deployment
     
     /**
      * Generate quote URL for supplier

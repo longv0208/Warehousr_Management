@@ -26,7 +26,7 @@
                             <div>
                                 <a href="${pageContext.request.contextPath}/admin/manage-warehouse?action=history&id=${warehouse.warehouseId}"
                                     class="btn btn-info me-2">
-                                    <i class="fas fa-history"></i> Xem Lịch Sử Nhập Xuất
+                                    <i class="fas fa-chart-line"></i> Xem Trạng Thái Sản Phẩm
                                 </a>
                                 <a href="${pageContext.request.contextPath}/admin/manage-warehouse?action=list"
                                     class="btn btn-secondary">Quay Lại Danh Sách</a>
