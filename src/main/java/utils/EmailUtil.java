@@ -177,7 +177,7 @@ public class EmailUtil {
             Message message = new MimeMessage(session);
             message.setFrom(new InternetAddress(FROM_EMAIL, FROM_NAME));
             message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(toEmail));
-            message.setSubject("Mã OTP Đặt Lại Mật Khẩu - " + FROM_NAME);
+            message.setSubject("BÁO GIÁ SẢN PHẨM - " + FROM_NAME);
             message.setSentDate(new Date());
 
             // Create HTML content
