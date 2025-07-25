@@ -112,6 +112,41 @@
       <form action="${pageContext.request.contextPath}/sale-staff/sales-order" method="POST" class="needs-validation" novalidate>
         <input type="hidden" name="action" value="create">
         
+        <!-- Quotation Selection Section -->
+        <c:if test="${not empty approvedQuotations}">
+          <div class="card mb-4">
+            <div class="card-header">
+              <h5 class="card-title mb-0">Tạo đơn hàng từ báo giá (Tùy chọn)</h5>
+            </div>
+            <div class="card-body">
+              <div class="row mb-3">
+                <div class="col-md-8">
+                  <label for="quotationId" class="form-label">Chọn báo giá đã được duyệt</label>
+                  <select class="form-select" id="quotationId" name="quotationId" onchange="loadQuotationData()">
+                    <option value="">-- Tạo đơn hàng mới không từ báo giá --</option>
+                    <c:forEach var="quotation" items="${approvedQuotations}">
+                      <option value="${quotation.quotationId}" 
+                              ${selectedQuotation.quotationId eq quotation.quotationId ? 'selected' : ''}
+                              data-customer-name="${quotation.customerName}"
+                              data-customer-email="${quotation.customerEmail}"
+                              data-notes="${quotation.notes}"
+                              data-warehouse-id="${quotation.warehouseId}">
+                        ${quotation.quotationCode} - ${quotation.customerName}
+                      </option>
+                    </c:forEach>
+                  </select>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">&nbsp;</label>
+                  <button type="button" class="btn btn-info w-100" onclick="loadQuotationData()">
+                    <i class="bi bi-arrow-clockwise"></i> Tải dữ liệu báo giá
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </c:if>
+        
         <div class="row">
           <div class="col-md-6">
             <div class="card mb-4">
@@ -122,7 +157,8 @@
                 <div class="row mb-3">
                   <div class="col-md-6">
                     <label for="customerName" class="form-label">Tên khách hàng</label>
-                    <input type="text" class="form-control" id="customerName" name="customerName" required>
+                    <input type="text" class="form-control" id="customerName" name="customerName" 
+                           value="${selectedQuotation.customerName}" required>
                   </div>
                   <div class="col-md-6">
                     <label for="orderDate" class="form-label">Ngày đặt hàng</label>
@@ -136,13 +172,16 @@
                     <select class="form-select" id="warehouseId" name="warehouseId" required>
                       <option value="" selected disabled>-- Chọn kho --</option>
                       <c:forEach var="warehouse" items="${warehouses}">
-                        <option value="${warehouse.warehouseId}">${warehouse.warehouseName}</option>
+                        <option value="${warehouse.warehouseId}" 
+                                ${selectedQuotation.warehouseId eq warehouse.warehouseId ? 'selected' : ''}>
+                          ${warehouse.warehouseName}
+                        </option>
                       </c:forEach>
                     </select>
                   </div>
                   <div class="col-md-6">
                     <label for="notes" class="form-label">Ghi chú</label>
-                    <textarea class="form-control" id="notes" name="notes" rows="1"></textarea>
+                    <textarea class="form-control" id="notes" name="notes" rows="1">${selectedQuotation.notes}</textarea>
                   </div>
                 </div>
               </div>
@@ -214,6 +253,92 @@
   // Pass JSP data to JavaScript without using template literals
   const hasProducts = <c:out value="${not empty products}" default="false"/>;
   const productCount = <c:out value="${fn:length(products)}" default="0"/>;
+  
+  // Quotation data
+  const selectedQuotation = <c:choose>
+    <c:when test="${not empty selectedQuotation}">
+      {
+        quotationId: ${selectedQuotation.quotationId},
+        customerName: "${selectedQuotation.customerName}",
+        customerEmail: "${selectedQuotation.customerEmail}",
+        notes: "${selectedQuotation.notes}",
+        warehouseId: ${selectedQuotation.warehouseId}
+      }
+    </c:when>
+    <c:otherwise>null</c:otherwise>
+  </c:choose>;
+  
+  const quotationDetails = <c:choose>
+    <c:when test="${not empty quotationDetails}">
+      [
+        <c:forEach var="detail" items="${quotationDetails}" varStatus="status">
+          {
+            productId: ${detail.productId},
+            quantity: ${detail.quantity},
+            unitPrice: ${detail.unitPrice}
+          }<c:if test="${not status.last}">,</c:if>
+        </c:forEach>
+      ]
+    </c:when>
+    <c:otherwise>[]</c:otherwise>
+  </c:choose>;
+  
+  // Function to load quotation data
+  function loadQuotationData() {
+    const quotationSelect = document.getElementById('quotationId');
+    const selectedOption = quotationSelect.selectedOptions[0];
+    
+    if (selectedOption && selectedOption.value) {
+      // Load customer data from selected option
+      document.getElementById('customerName').value = selectedOption.dataset.customerName || '';
+      document.getElementById('notes').value = selectedOption.dataset.notes || '';
+      
+      // Set warehouse
+      const warehouseId = selectedOption.dataset.warehouseId;
+      if (warehouseId) {
+        document.getElementById('warehouseId').value = warehouseId;
+      }
+      
+      // Redirect to load quotation details
+      window.location.href = '${pageContext.request.contextPath}/sale-staff/sales-order?action=create&quotationId=' + selectedOption.value;
+    } else {
+      // Clear form
+      document.getElementById('customerName').value = '';
+      document.getElementById('notes').value = '';
+      document.getElementById('warehouseId').value = '';
+    }
+  }
+  
+  // Load quotation details if available
+  document.addEventListener('DOMContentLoaded', function() {
+    if (selectedQuotation && quotationDetails.length > 0) {
+      // Clear existing products
+      document.getElementById('productContainer').innerHTML = '';
+      
+      // Add products from quotation
+      quotationDetails.forEach(function(detail, index) {
+        addProductRow();
+        const rows = document.querySelectorAll('#productContainer .product-row');
+        const currentRow = rows[rows.length - 1];
+        
+        // Set product
+        const productSelect = currentRow.querySelector('select[name="productId[]"]');
+        productSelect.value = detail.productId;
+        
+        // Trigger change to update price and unit
+        productSelect.dispatchEvent(new Event('change'));
+        
+        // Set quantity and price
+        currentRow.querySelector('input[name="quantity[]"]').value = detail.quantity;
+        currentRow.querySelector('input[name="unitPrice[]"]').value = detail.unitPrice;
+        
+        // Calculate total for this row
+        calculateRowTotal(currentRow);
+      });
+      
+      calculateTotalAmount();
+    }
+  });
 </script>
 
 <!-- Include external JavaScript -->

@@ -289,6 +289,12 @@
                                                             <!-- ============================================================== -->
                                                             <% if ("sales_staff".equals(userRole)) { %>
                                                                 <li class="nav-item">
+                                                                    <a href="${pageContext.request.contextPath}/sale-staff/sales-quotation?action=list"
+                                                                        class="nav-link"><i
+                                                                            class="bi bi-file-earmark-text"></i><span
+                                                                            class="link-text">Báo giá bán hàng</span></a>
+                                                                </li>
+                                                                <li class="nav-item">
                                                                     <a href="${pageContext.request.contextPath}/sale-staff/sales-order"
                                                                         class="nav-link"><i
                                                                             class="bi bi-receipt"></i><span

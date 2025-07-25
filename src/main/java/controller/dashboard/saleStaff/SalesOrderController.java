@@ -3,6 +3,8 @@ package controller.dashboard.saleStaff;
 import dao.ProductDAO;
 import dao.SalesOrderDAO;
 import dao.SalesOrderDetailDAO;
+import dao.SalesQuotationDAO;
+import dao.SalesQuotationDetailDAO;
 import dao.UserDAO;
 import dao.InventoryDAO;
 import dao.WarehouseDAO;
@@ -10,6 +12,8 @@ import utils.SessionUtil;
 import model.Product;
 import model.SalesOrder;
 import model.SalesOrderDetail;
+import model.SalesQuotation;
+import model.SalesQuotationDetail;
 import model.User;
 import model.Warehouse;
 import jakarta.servlet.ServletException;
@@ -32,6 +36,8 @@ public class SalesOrderController extends HttpServlet {
 
     private SalesOrderDAO salesOrderDAO;
     private SalesOrderDetailDAO salesOrderDetailDAO;
+    private SalesQuotationDAO salesQuotationDAO;
+    private SalesQuotationDetailDAO salesQuotationDetailDAO;
     private ProductDAO productDAO;
     private UserDAO userDAO;
     private InventoryDAO inventoryDAO;
@@ -42,6 +48,8 @@ public class SalesOrderController extends HttpServlet {
         super.init();
         salesOrderDAO = new SalesOrderDAO();
         salesOrderDetailDAO = new SalesOrderDetailDAO();
+        salesQuotationDAO = new SalesQuotationDAO();
+        salesQuotationDetailDAO = new SalesQuotationDetailDAO();
         productDAO = new ProductDAO();
         userDAO = new UserDAO();
         inventoryDAO = new InventoryDAO();
@@ -140,6 +148,23 @@ public class SalesOrderController extends HttpServlet {
     private void showCreateForm(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         try {
+            // Check if creating from quotation
+            String quotationIdStr = request.getParameter("quotationId");
+            SalesQuotation selectedQuotation = null;
+            List<SalesQuotationDetail> quotationDetails = null;
+
+            if (quotationIdStr != null && !quotationIdStr.isEmpty()) {
+                try {
+                    Integer quotationId = Integer.parseInt(quotationIdStr);
+                    selectedQuotation = salesQuotationDAO.findById(quotationId);
+                    if (selectedQuotation != null && "approved".equals(selectedQuotation.getStatus())) {
+                        quotationDetails = salesQuotationDetailDAO.findByQuotationId(quotationId);
+                    }
+                } catch (NumberFormatException e) {
+                    System.err.println("Invalid quotation ID: " + quotationIdStr);
+                }
+            }
+
             // Get all active products for selection with detailed information
             List<Product> products = productDAO.findActiveProducts();
 
@@ -174,8 +199,18 @@ public class SalesOrderController extends HttpServlet {
             // Get all warehouses for selection
             List<Warehouse> warehouses = warehouseDAO.findAll();
 
+            // Get approved quotations for selection
+            List<SalesQuotation> approvedQuotations = salesQuotationDAO.findApprovedQuotations();
+
             request.setAttribute("products", productsWithInventory);
             request.setAttribute("warehouses", warehouses);
+            request.setAttribute("approvedQuotations", approvedQuotations);
+
+            // If creating from quotation, set quotation data
+            if (selectedQuotation != null) {
+                request.setAttribute("selectedQuotation", selectedQuotation);
+                request.setAttribute("quotationDetails", quotationDetails);
+            }
 
             // Set product count for JSP
             int productCount = productsWithInventory != null ? productsWithInventory.size() : 0;
@@ -224,9 +259,20 @@ public class SalesOrderController extends HttpServlet {
             String notes = request.getParameter("notes");
             String orderDateStr = request.getParameter("orderDate");
             String warehouseIdStr = request.getParameter("warehouseId");
+            String quotationIdStr = request.getParameter("quotationId");
 
             // Parse order date
             Date orderDate = Date.valueOf(orderDateStr != null ? orderDateStr : LocalDate.now().toString());
+
+            // Handle quotation ID
+            Integer quotationId = null;
+            if (quotationIdStr != null && !quotationIdStr.isEmpty() && !"".equals(quotationIdStr.trim())) {
+                try {
+                    quotationId = Integer.parseInt(quotationIdStr);
+                } catch (NumberFormatException e) {
+                    System.err.println("Invalid quotation ID: " + quotationIdStr);
+                }
+            }
 
             // Validate warehouse selection
             if (warehouseIdStr == null || warehouseIdStr.isEmpty()) {
@@ -266,6 +312,7 @@ public class SalesOrderController extends HttpServlet {
             salesOrder.setStatus("pending_stock_check"); // Set a more appropriate initial status
             salesOrder.setNotes(notes);
             salesOrder.setWarehouseId(warehouseId);
+            salesOrder.setQuotationId(quotationId); // Set quotation ID if provided
 
             // Use a map to handle product aggregation and prevent duplicates from form submission
             Map<Integer, SalesOrderDetail> productMap = new HashMap<>();

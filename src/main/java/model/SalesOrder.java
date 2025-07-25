@@ -30,6 +30,7 @@ public class SalesOrder {
     private String status; // 'pending_stock_check','awaiting_shipment','shipped','completed','cancelled'
     private String priority; // 'high', 'medium', 'low' - order priority
     private String notes;
+    private Integer quotationId; // Foreign key to sales_quotations table (optional)
     private Timestamp createdAt;
     
     // Thông tin chi tiết (để hiển thị - không có trong DB)
