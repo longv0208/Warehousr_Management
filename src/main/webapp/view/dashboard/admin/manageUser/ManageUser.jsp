@@ -122,8 +122,8 @@
                                     <td><%= u.getCreatedAt()%></td>
                                     <td><%= u.getUpdatedAt()%></td>
                                     <td>
-                                        <button class="btn btn-sm btn-info" onclick="openEditModal('<%= u.getUserId()%>', '<%= u.getFullName()%>', '<%= u.getEmail()%>', '<%= u.getRoleId()%>', '<%= u.isActive()%>')">Sửa</button>
-                                        <button class="btn btn-sm btn-danger" onclick="openInactiveModal('<%= u.getUserId()%>')">Vô Hiệu Hóa</button>
+                                        <button class="btn btn-sm btn-info me-1" style="min-width: 90px;" onclick="openEditModal('<%= u.getUserId()%>', '<%= u.getFullName()%>', '<%= u.getEmail()%>', '<%= u.getRoleId()%>', '<%= u.isActive()%>')">Sửa</button>
+                                        <button class="btn btn-sm btn-danger" style="min-width: 90px;" onclick="openInactiveModal('<%= u.getUserId()%>')">Vô Hiệu Hóa</button>
                                     </td>
                                 </tr>
                                 <% } %>
