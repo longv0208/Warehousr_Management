@@ -274,10 +274,10 @@
                                                 <th>Mã Sản Phẩm</th>
                                                 <th>Tên Sản Phẩm</th>
                                                 <th>Đơn Vị</th>
-                                                <th>On Hand<br><small>(Có thể bán)</small></th>
+                                                <th>Free to use<br><small>(Có thể bán)</small></th>
                                                 <th>Outgoing<br><small>(Đã đặt)</small></th>
                                                 <th>Incoming<br><small>(Sắp nhập)</small></th>
-                                                <th>Tổng Tồn Kho</th>
+                                                <th>On hand</th>
                                                 <th>Đơn Giá</th>
                                                 <th>Trạng Thái</th>
                                             </tr>
@@ -360,7 +360,7 @@
                                         <div class="card-body">
                                             <div class="row">
                                                 <div class="col-md-4">
-                                                    <strong class="status-available">On Hand:</strong> Số lượng có thể bán ngay (Tổng tồn kho - Outgoing)
+                                                    <strong class="status-available">Free to use:</strong> Số lượng có thể bán ngay (Tổng tồn kho - Outgoing)
                                                 </div>
                                                 <div class="col-md-4">
                                                     <strong class="status-out">Outgoing:</strong> Số lượng đã được đặt hàng và chờ xuất kho
