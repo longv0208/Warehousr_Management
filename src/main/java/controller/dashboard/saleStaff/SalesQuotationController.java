@@ -353,13 +353,6 @@ public class SalesQuotationController extends HttpServlet {
                             "Gửi báo giá thành công! Email đã được gửi đến khách hàng: " + quotation.getCustomerName());
                         session.setAttribute("toastType", "success");
                         
-                        // Log thông tin gửi email thành công
-                        System.out.println("=== SALES QUOTATION EMAIL SENT SUCCESSFULLY ===");
-                        System.out.println("Quotation ID: " + quotationId);
-                        System.out.println("Quotation Code: " + quotation.getQuotationCode());
-                        System.out.println("Customer Name: " + quotation.getCustomerName());
-                        System.out.println("Email sent at: " + new java.util.Date());
-                        System.out.println("=====================================");
                     } else {
                         session.setAttribute("toastMessage", 
                             "Gửi báo giá thành công nhưng không thể gửi email đến khách hàng!");

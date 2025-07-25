@@ -27,58 +27,28 @@ public class CustomerQuoteResponseController extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         
+        String quotationIdStr = request.getParameter("quotationId");
+        String action = request.getParameter("action");
+
+        if (quotationIdStr == null || action == null) {
+            request.setAttribute("error", "Thông tin không hợp lệ");
+            request.getRequestDispatcher("/view/customer-response-error.jsp").forward(request, response);
+            return;
+        }
+
         try {
-            int quotationId = Integer.parseInt(request.getParameter("quotationId"));
-            String action = request.getParameter("action");
+            int quotationId = Integer.parseInt(quotationIdStr);
             
-            // Get quotation information
-            SalesQuotation quotation = salesQuotationDAO.findById(quotationId);
-            if (quotation == null) {
-                response.sendError(HttpServletResponse.SC_NOT_FOUND, "Quotation not found");
-                return;
-            }
-            
-            // Check if quotation is still valid and in sent status
-            if (!"sent".equals(quotation.getStatus())) {
-                request.setAttribute("errorMessage", "Báo giá này đã được xử lý hoặc không còn hợp lệ.");
-                request.getRequestDispatcher("/view/customer-quote-error.jsp").forward(request, response);
-                return;
-            }
-            
-            // Check if quotation is still within valid period
-            java.util.Date now = new java.util.Date();
-            if (quotation.getValidUntil().before(now)) {
-                request.setAttribute("errorMessage", "Báo giá này đã hết hạn.");
-                request.getRequestDispatcher("/view/customer-quote-error.jsp").forward(request, response);
-                return;
-            }
-            
-            // Get quotation details
-            List<SalesQuotationDetail> quotationDetails = salesQuotationDetailDAO.findByQuotationId(quotationId);
-            
-            // Get product information for each detail
-            List<Product> products = new ArrayList<>();
-            for (SalesQuotationDetail detail : quotationDetails) {
-                Product product = productDAO.findById(detail.getProductId());
-                if (product != null) {
-                    products.add(product);
-                }
-            }
-            
-            // Set attributes for JSP
-            request.setAttribute("quotation", quotation);
-            request.setAttribute("quotationDetails", quotationDetails);
-            request.setAttribute("products", products);
-            request.setAttribute("action", action);
-            
-            // Forward to customer response page
-            request.getRequestDispatcher("/view/customer-quote-response.jsp").forward(request, response);
+            // Process the response directly in GET method
+            doPost(request, response);
             
         } catch (NumberFormatException e) {
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid parameters");
+            request.setAttribute("error", "Mã báo giá không hợp lệ");
+            request.getRequestDispatcher("/view/customer-response-error.jsp").forward(request, response);
         } catch (Exception e) {
             e.printStackTrace();
-            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Server error: " + e.getMessage());
+            request.setAttribute("error", "Có lỗi hệ thống xảy ra. Vui lòng thử lại sau.");
+            request.getRequestDispatcher("/view/customer-response-error.jsp").forward(request, response);
         }
     }
 
@@ -98,21 +68,24 @@ public class CustomerQuoteResponseController extends HttpServlet {
             }
             
             // Update quotation status based on customer response
+            String newStatus;
             if ("confirm".equals(action)) {
-                quotation.setStatus("approved");
-                request.setAttribute("successMessage", "Cảm ơn bạn đã xác nhận báo giá! Chúng tôi sẽ liên hệ với bạn để xử lý đơn hàng.");
+                newStatus = "approved";
             } else if ("reject".equals(action)) {
-                quotation.setStatus("rejected");
-                request.setAttribute("successMessage", "Cảm ơn bạn đã phản hồi. Chúng tôi sẽ ghi nhận và cải thiện dịch vụ.");
+                newStatus = "rejected";
             } else {
-                response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid action");
+                request.setAttribute("error", "Hành động không hợp lệ");
+                request.getRequestDispatcher("/view/customer-response-error.jsp").forward(request, response);
                 return;
             }
             
-            // Update in database
-            boolean updated = salesQuotationDAO.update(quotation);
+            // Update status in database
+            boolean updated = salesQuotationDAO.updateStatus(quotationId, newStatus);
             
             if (updated) {
+                // Update quotation object for display
+                quotation.setStatus(newStatus);
+                
                 // Log the customer response
                 System.out.println("=== CUSTOMER QUOTE RESPONSE ===");
                 System.out.println("Quotation ID: " + quotationId);
@@ -124,10 +97,12 @@ public class CustomerQuoteResponseController extends HttpServlet {
                 System.out.println("===============================");
                 
                 request.setAttribute("quotation", quotation);
-                request.getRequestDispatcher("/view/customer-quote-success.jsp").forward(request, response);
+                request.setAttribute("action", action);
+                request.getRequestDispatcher("/view/customer-response-success.jsp").forward(request, response);
             } else {
-                request.setAttribute("errorMessage", "Có lỗi xảy ra khi xử lý phản hồi. Vui lòng thử lại.");
-                request.getRequestDispatcher("/view/customer-quote-error.jsp").forward(request, response);
+                request.setAttribute("error", "Có lỗi xảy ra khi xử lý phản hồi. Vui lòng thử lại.");
+                request.setAttribute("quotation", quotation);
+                request.getRequestDispatcher("/view/customer-response-error.jsp").forward(request, response);
             }
             
         } catch (NumberFormatException e) {

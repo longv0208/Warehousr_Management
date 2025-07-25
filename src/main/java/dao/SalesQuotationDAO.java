@@ -291,4 +291,27 @@ public class SalesQuotationDAO extends DBContext implements I_DAO<SalesQuotation
     public List<SalesQuotation> findApprovedQuotations() {
         return findByStatus("approved");
     }
+
+    /**
+     * Update status of a sales quotation
+     */
+    public boolean updateStatus(int quotationId, String status) {
+        String sql = "UPDATE sales_quotations SET status = ? WHERE quotation_id = ?";
+        
+        try {
+            conn = getConnection();
+            statement = conn.prepareStatement(sql);
+            statement.setString(1, status);
+            statement.setInt(2, quotationId);
+            
+            int rowsAffected = statement.executeUpdate();
+            return rowsAffected > 0;
+        } catch (SQLException ex) {
+            System.out.println("Error updating Sales Quotation status: " + ex.getMessage());
+            ex.printStackTrace();
+            return false;
+        } finally {
+            closeResources();
+        }
+    }
 }
