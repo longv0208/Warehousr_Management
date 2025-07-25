@@ -173,7 +173,7 @@
                 if (result.isConfirmed) {
                     // Create form and submit
                     const form = document.createElement('form');
-                    form.method = 'POST';
+                    form.method = 'GET';
                     form.action = '${pageContext.request.contextPath}/sale-staff/sales-quotation';
 
                     const actionInput = document.createElement('input');

@@ -152,4 +152,48 @@ public class EmailUtil {
         System.out.println("To change mock mode, update MOCK_MODE constant in EmailUtil.java");
         System.out.println("Current mock mode: " + MOCK_MODE);
     }
+    
+      public static boolean sendMail(String toEmail, String subject, String content) {
+     
+        // Real email implementation using JavaMail
+        try {
+
+            // Create properties for Gmail SMTP
+           Properties props = new Properties();
+            props.put("mail.smtp.host", "smtp.gmail.com");
+            props.put("mail.smtp.port", "587");
+            props.put("mail.smtp.auth", "true");
+            props.put("mail.smtp.starttls.enable", "true");
+
+            // Create session with authentication
+            Session session = Session.getInstance(props, new Authenticator() {
+                @Override
+                protected PasswordAuthentication getPasswordAuthentication() {
+                    return new PasswordAuthentication(EMAIL_USERNAME, EMAIL_PASSWORD);
+                }
+            });
+
+            // Create message
+            Message message = new MimeMessage(session);
+            message.setFrom(new InternetAddress(FROM_EMAIL, FROM_NAME));
+            message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(toEmail));
+            message.setSubject("Mã OTP Đặt Lại Mật Khẩu - " + FROM_NAME);
+            message.setSentDate(new Date());
+
+            // Create HTML content
+            message.setContent(content, "text/html; charset=utf-8");
+
+            // Send message
+            System.out.println("Sending email...");
+            Transport.send(message);
+            return true;
+
+        } catch (Exception e) {
+            System.out.println("Error sending real email: " + e.getMessage());
+            e.printStackTrace();
+            String error = e.getMessage();
+            // Fallback to console output
+            return false; // Still return true to continue flow
+        }
+    }
 }

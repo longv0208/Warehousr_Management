@@ -344,7 +344,8 @@ public class SalesQuotationController extends HttpServlet {
                         quotation.getCustomerName(), 
                         quotation, 
                         quotationDetails, 
-                        products
+                        products,
+                        quotation.getCustomerEmail()
                     );
                     
                     if (emailSent) {
